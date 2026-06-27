@@ -384,7 +384,8 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     m3Items.slice(0, 10).forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. ${escapeHtml(item.code)}\n`;
-      message += `│ └─ Unit confirm handover: ${escapeHtml(item.unitConfirm)}\n`;
+      message += `│ └─ Handover Unit: ${escapeHtml(item.warehouse)}\n`;
+      message += `│ └─ Unit Confirm: ${escapeHtml(item.unitConfirm)}\n`;
       message += `│ └─ Q'ty of Day: ${item.daysDiff || 0}\n`;
       message += `└─────────────────────────┘\n`;
     });

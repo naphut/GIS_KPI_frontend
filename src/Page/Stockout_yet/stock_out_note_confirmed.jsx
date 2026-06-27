@@ -113,7 +113,8 @@ const StockOutNoteConfirmed = () => {
     { key: 'unitConfirm', label: 'Unit confirm handover', width: 'w-36' },
     { key: 'date', label: 'Handover date', width: 'w-24' },
     { key: 'status', label: 'Status', width: 'w-20' },
-    { key: 'daysDiff', label: 'Days', width: 'w-16' }
+    { key: 'daysDiff', label: 'Days', width: 'w-16' },
+    { key: 'unit', label: 'UNIT', width: 'w-20' }
   ];
 
   // Helper functions
@@ -1262,6 +1263,11 @@ const StockOutNoteConfirmed = () => {
                     </td>
                     <td className="px-2 py-1.5">{getStatusBadgeForRow(item.status)}</td>
                     <td className="px-2 py-1.5"><span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getDaysColor(item.daysDiff)}`}>{item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} d</span></td>
+                    <td className="px-2 py-1.5">
+                      <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-800 border border-gray-200">
+                        {item.unit || 'OTHER'}
+                      </span>
+                    </td>
                     <td className="px-2 py-1.5"><div className="flex gap-1">{getConfirmStatusBadge(item)}<button onClick={() => deleteRow(item.id)} className="text-rose-500 hover:text-rose-700 p-1 transition-colors">🗑️</button></div></td>
                   </tr>
                 );
