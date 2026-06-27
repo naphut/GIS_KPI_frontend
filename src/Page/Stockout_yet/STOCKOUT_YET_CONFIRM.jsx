@@ -128,9 +128,10 @@ const STOCKOUT_YET_CONFIRM = () => {
     return diffDays;
   };
 
-  const getUnit = (exportCode, exportNo) => {
+  const getUnit = (exportCode, exportNo, constructionReceiver) => {
     const code = (exportCode || exportNo || '').toUpperCase();
-    if (!code) return 'OTHER';
+    const construction = (constructionReceiver || '').toUpperCase();
+    if (!code && !construction) return 'OTHER';
     const unitMap = {
       'BAN': 'BAN', 'BAT': 'BAT', 'CHA': 'CHA', 'CHH': 'CHH',
       'KAM': 'KAM', 'KAN': 'KAN', 'KANZ1': 'KANZ1', 'KOH': 'KOH',
@@ -141,6 +142,9 @@ const STOCKOUT_YET_CONFIRM = () => {
     };
     for (const [key, value] of Object.entries(unitMap)) {
       if (code.includes(key)) return value;
+    }
+    for (const [key, value] of Object.entries(unitMap)) {
+      if (construction.includes(key)) return value;
     }
     return 'OTHER';
   };
@@ -303,7 +307,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       stockReceiver: item.stockReceiver || '',
       groupReceiver: item.groupReceiver || '',
       constructionReceiver: item.constructionReceiver || '',
-      unit: getUnit(item.exportCode, item.exportNo),
+      unit: getUnit(item.exportCode, item.exportNo, item.constructionReceiver),
       daysDiff: calculateDaysDiff(item.realExport)
     }));
     
@@ -572,7 +576,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     });
     const computedData = updatedData.map(item => ({
       ...item,
-      unit: getUnit(item.exportCode, item.exportNo),
+      unit: getUnit(item.exportCode, item.exportNo, item.constructionReceiver),
       daysDiff: calculateDaysDiff(item.realExport)
     }));
     setData(computedData);
