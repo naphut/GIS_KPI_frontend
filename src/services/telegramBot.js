@@ -143,7 +143,7 @@ export const getUnitData = (unit) => {
 
   // Get remaining items with days diff
   const m1RemainingItems = unitStockout
-    .filter(item => !stockoutHistory.some(c => c.code === item.exportNo))
+    .filter(item => !stockoutHistory.some(c => c.exportNo === item.exportNo || c.code === item.exportNo))
     .map(item => ({
       exportCode: item.exportCode || item.code || '-',
       exportNo: item.exportNo || '-',
@@ -326,8 +326,9 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   if (m1Items.length > 0) {
     message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
     m1Items.slice(0, 10).forEach((item, index) => {
+      const fullExportNo = (item.exportCode && item.exportCode !== '-' ? item.exportCode : '') + (item.exportNo && item.exportNo !== '-' ? item.exportNo : '') || '-';
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.exportNo)}\n`;
+      message += `│ ${index + 1}. ${escapeHtml(fullExportNo)}\n`;
       message += `│ └─Group Receiver: ${escapeHtml(item.groupReceiver)}\n`;
       message += `│ └─ Q'ty Day: ${item.daysDiff || 0}\n`;
       message += `└─────────────────────────┘\n`;
@@ -1039,7 +1040,10 @@ export const sendTestToAll = async (onProgress) => {
 
 const getBackendBaseUrl = () => {
   const host = window.location.hostname || 'localhost';
-  return `http://${host}:8000/api`;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:8000/api';
+  }
+  return 'https://gis-kpi-backend.onrender.com/api';
 };
 
 export const getSavedTemplates = async () => {

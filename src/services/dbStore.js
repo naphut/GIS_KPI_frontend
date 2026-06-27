@@ -2,7 +2,10 @@
 
 const getBackendBaseUrl = () => {
   const host = window.location.hostname || 'localhost';
-  return `http://${host}:8000/api/store`;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:8000/api/store';
+  }
+  return 'https://gis-kpi-backend.onrender.com/api/store';
 };
 
 /**

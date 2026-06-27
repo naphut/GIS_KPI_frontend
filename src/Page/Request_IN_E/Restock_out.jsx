@@ -1384,8 +1384,8 @@ export const Restock_out = () => {
         </div>
 
         {/* ─── PAGINATION ─── */}
-        <div className="bg-white px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-700">
-          <div className="flex items-center gap-2">
+        <div className="bg-white px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-700 relative">
+          <div className="flex items-center gap-2 sm:absolute sm:left-6">
             <span>Show</span>
             <select 
               value={pageSize} 
@@ -1402,7 +1402,7 @@ export const Restock_out = () => {
             <span>Showing {totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries</span>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 sm:mx-auto">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
               disabled={currentPage === 1}

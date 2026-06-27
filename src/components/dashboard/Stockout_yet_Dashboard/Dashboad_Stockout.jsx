@@ -320,7 +320,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     const getStockoutItems = (unitFilter = null) => {
       const data = JSON.parse(localStorage.getItem('kpi_stockout_data') || '[]');
       const completionHistory = JSON.parse(localStorage.getItem('kpi_stockout_completionHistory') || '[]');
-      const remaining = data.filter(item => !completionHistory.some(c => c.code === item.exportNo));
+      const remaining = data.filter(item => !completionHistory.some(c => c.exportNo === item.exportNo || c.code === item.exportNo));
       return unitFilter ? remaining.filter(item => item.unit === unitFilter) : remaining;
     };
 
