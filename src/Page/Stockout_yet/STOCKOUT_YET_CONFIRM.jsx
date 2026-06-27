@@ -27,7 +27,108 @@ const getStorageData = (key) => {
   }
 };
 
+// Helper function to extract Unit from Group Receiver
+const getUnitFromGroupReceiver = (groupReceiver) => {
+  if (!groupReceiver) return null;
+  
+  const upper = groupReceiver.toUpperCase().trim();
+  
+  const unitPatterns = [
+    // 1. PNPZ1 patterns (specific)
+    { pattern: /GIS_PNP_FBC(0?[13567]|10|13|14)/, unit: 'PNPZ1' },
+    { pattern: /_PNPZ1_/, unit: 'PNPZ1' },
+    { pattern: /^PNPZ1\b/, unit: 'PNPZ1' },
+    
+    // 2. PNPZ2 patterns (specific)
+    { pattern: /GIS_PNP_FBC(0?[2489]|12)/, unit: 'PNPZ2' },
+    { pattern: /_PNPZ2_/, unit: 'PNPZ2' },
+    { pattern: /^PNPZ2\b/, unit: 'PNPZ2' },
+    
+    // 3. KANZ1 patterns (specific)
+    { pattern: /GIS_KAN_FBC(0?[1-7])/, unit: 'KANZ1' },
+    { pattern: /_KANZ1_/, unit: 'KANZ1' },
+    { pattern: /^KANZ1\b/, unit: 'KANZ1' },
 
+    // 4. PNP patterns (general)
+    { pattern: /GIS_PNP_SOS(\d{2})/, unit: 'PNP' },
+    { pattern: /PNP_PLA_PLANNING/, unit: 'PNP' },
+    { pattern: /PNP_PLA/, unit: 'PNP' },
+    { pattern: /_PNP_/, unit: 'PNP' },
+    { pattern: /^PNP\b/, unit: 'PNP' },
+    
+    // 5. KAN patterns (general)
+    { pattern: /GIS_KAN_SOS(\d{2})/, unit: 'KAN' },
+    { pattern: /KAN_PLA_PLANNING/, unit: 'KAN' },
+    { pattern: /KAN_PLA/, unit: 'KAN' },
+    { pattern: /_KAN_/, unit: 'KAN' },
+    { pattern: /^KAN\b/, unit: 'KAN' },
+    
+    // 6. Other units - general patterns
+    { pattern: /GIS_ODD_/, unit: 'ODD' },
+    { pattern: /GIS_STU_/, unit: 'STU' },
+    { pattern: /GIS_BAN_/, unit: 'BAN' },
+    { pattern: /GIS_BAT_/, unit: 'BAT' },
+    { pattern: /GIS_CHA_/, unit: 'CHA' },
+    { pattern: /GIS_CHH_/, unit: 'CHH' },
+    { pattern: /GIS_KAM_/, unit: 'KAM' },
+    { pattern: /GIS_KOH_/, unit: 'KOH' },
+    { pattern: /GIS_KRA_/, unit: 'KRA' },
+    { pattern: /GIS_MON_/, unit: 'MON' },
+    { pattern: /GIS_PRE_/, unit: 'PRE' },
+    { pattern: /GIS_PRH_/, unit: 'PRH' },
+    { pattern: /GIS_PUR_/, unit: 'PUR' },
+    { pattern: /GIS_ROT_/, unit: 'ROT' },
+    { pattern: /GIS_SIE_/, unit: 'SIE' },
+    { pattern: /GIS_SIH_/, unit: 'SIH' },
+    { pattern: /GIS_SPE_/, unit: 'SPE' },
+    { pattern: /GIS_SVA_/, unit: 'SVA' },
+    { pattern: /GIS_TAK_/, unit: 'TAK' },
+    { pattern: /GIS_THO_/, unit: 'THO' },
+  ];
+  
+  // Check each pattern
+  for (const { pattern, unit } of unitPatterns) {
+    if (pattern.test(upper)) {
+      return unit;
+    }
+  }
+  
+  // Check if it starts with any unit code (GIS_XXX or XXX_)
+  for (const unit of allUnits) {
+    if (upper.includes(`GIS_${unit}_`) || upper.includes(`_${unit}_`) || upper.startsWith(unit)) {
+      return unit;
+    }
+  }
+  
+  return null;
+};
+
+// Updated getUnit function with groupReceiver priority
+const getUnit = (exportCode, exportNo, groupReceiver) => {
+  // First try to get unit from groupReceiver
+  const unitFromGroup = getUnitFromGroupReceiver(groupReceiver);
+  if (unitFromGroup && allUnits.includes(unitFromGroup)) {
+    return unitFromGroup;
+  }
+  
+  // Fallback: try to get from exportCode or exportNo
+  const code = (exportCode || exportNo || '').toUpperCase();
+  if (!code) return 'OTHER';
+  
+  const unitMap = {
+    'BAN': 'BAN', 'BAT': 'BAT', 'CHA': 'CHA', 'CHH': 'CHH',
+    'KAM': 'KAM', 'KAN': 'KAN', 'KANZ1': 'KANZ1', 'KOH': 'KOH',
+    'KRA': 'KRA', 'MON': 'MON', 'ODD': 'ODD', 'PNP': 'PNP',
+    'PNPZ1': 'PNPZ1', 'PNPZ2': 'PNPZ2', 'PRE': 'PRE', 'PRH': 'PRH',
+    'PUR': 'PUR', 'ROT': 'ROT', 'SIE': 'SIE', 'SIH': 'SIH',
+    'SPE': 'SPE', 'STU': 'STU', 'SVA': 'SVA', 'TAK': 'TAK', 'THO': 'THO'
+  };
+  
+  for (const [key, value] of Object.entries(unitMap)) {
+    if (code.includes(key)) return value;
+  }
+  return 'OTHER';
+};
 
 const STOCKOUT_YET_CONFIRM = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -58,7 +159,6 @@ const STOCKOUT_YET_CONFIRM = () => {
   const [kpiSortOrder, setKpiSortOrder] = useState('asc');
   const [showComparisonAlert, setShowComparisonAlert] = useState(false);
   const [comparisonChanges, setComparisonChanges] = useState([]);
-
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -128,27 +228,6 @@ const STOCKOUT_YET_CONFIRM = () => {
     return diffDays;
   };
 
-  const getUnit = (exportCode, exportNo, constructionReceiver) => {
-    const code = (exportCode || exportNo || '').toUpperCase();
-    const construction = (constructionReceiver || '').toUpperCase();
-    if (!code && !construction) return 'OTHER';
-    const unitMap = {
-      'BAN': 'BAN', 'BAT': 'BAT', 'CHA': 'CHA', 'CHH': 'CHH',
-      'KAM': 'KAM', 'KAN': 'KAN', 'KANZ1': 'KANZ1', 'KOH': 'KOH',
-      'KRA': 'KRA', 'MON': 'MON', 'ODD': 'ODD', 'PNP': 'PNP',
-      'PNPZ1': 'PNPZ1', 'PNPZ2': 'PNPZ2', 'PRE': 'PRE', 'PRH': 'PRH',
-      'PUR': 'PUR', 'ROT': 'ROT', 'SIE': 'SIE', 'SIH': 'SIH',
-      'SPE': 'SPE', 'STU': 'STU', 'SVA': 'SVA', 'TAK': 'TAK', 'THO': 'THO'
-    };
-    for (const [key, value] of Object.entries(unitMap)) {
-      if (code.includes(key)) return value;
-    }
-    for (const [key, value] of Object.entries(unitMap)) {
-      if (construction.includes(key)) return value;
-    }
-    return 'OTHER';
-  };
-
   const playAlarmSound = () => {
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -202,6 +281,21 @@ const STOCKOUT_YET_CONFIRM = () => {
     `;
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 4000);
+  };
+
+  // 🚫 FILTER FUNCTION: Check if item should be excluded
+  const shouldExcludeItem = (item) => {
+    // Exclude if constructionReceiver contains "GPON" (case insensitive)
+    if (item.constructionReceiver && 
+        item.constructionReceiver.toUpperCase().includes('GPON')) {
+      return true;
+    }
+    // Exclude if groupReceiver contains "GIS_MOD"
+    if (item.groupReceiver && 
+        item.groupReceiver.toUpperCase().includes('GIS_MOD')) {
+      return true;
+    }
+    return false;
   };
 
   // Auto create target based on time of day
@@ -293,12 +387,20 @@ const STOCKOUT_YET_CONFIRM = () => {
     showNotification(`📊 Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit}: ${oldTarget} → ${newTarget}`, 'info');
   };
 
-  // Process import with auto-target creation
+  // Process import with auto-target creation and FILTERS
   const processImport = (newRawData) => {
-    const currentExportNos = new Set(data.map(item => item.exportNo));
-    const newExportNosSet = new Set(newRawData.map(item => item.exportNo));
+    // 🚫 Step 1: Filter out excluded items BEFORE processing
+    const filteredRawData = newRawData.filter(item => !shouldExcludeItem(item));
     
-    const processedNewData = newRawData.map((item, index) => ({
+    if (filteredRawData.length === 0) {
+      showNotification('⚠️ All data was filtered out (GPON or GIS_MOD excluded)!', 'warning');
+      return;
+    }
+
+    const currentExportNos = new Set(data.map(item => item.exportNo));
+    const newExportNosSet = new Set(filteredRawData.map(item => item.exportNo));
+    
+    const processedNewData = filteredRawData.map((item, index) => ({
       id: Math.max(...data.map(d => d.id), 0, index) + index + 1,
       no: index + 1,
       exportCode: item.exportCode,
@@ -307,7 +409,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       stockReceiver: item.stockReceiver || '',
       groupReceiver: item.groupReceiver || '',
       constructionReceiver: item.constructionReceiver || '',
-      unit: getUnit(item.exportCode, item.exportNo, item.constructionReceiver),
+      unit: getUnit(item.exportCode, item.exportNo, item.groupReceiver),
       daysDiff: calculateDaysDiff(item.realExport)
     }));
     
@@ -353,7 +455,8 @@ const STOCKOUT_YET_CONFIRM = () => {
     setData(processedNewData);
     setTimeout(() => checkTargetChanges(), 500);
     
-    showNotification(`📊 Import Summary:\n✅ Completed: ${completedExportNosArray.length}\n🆕 New Added: ${newRawData.length}\n🎯 New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}`, 'info');
+    const excludedCount = newRawData.length - filteredRawData.length;
+    showNotification(`📊 Import Summary:\n✅ Completed: ${completedExportNosArray.length}\n🆕 New Added: ${filteredRawData.length}\n🚫 Excluded: ${excludedCount} (GPON/GIS_MOD)\n🎯 New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}`, 'info');
   };
 
   // Calculate KPI Data
@@ -567,8 +670,6 @@ const STOCKOUT_YET_CONFIRM = () => {
     setPasteData('');
   };
 
-
-
   const updateCell = (id, field, value) => {
     const updatedData = data.map(item => {
       if (item.id === id) return { ...item, [field]: value };
@@ -576,7 +677,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     });
     const computedData = updatedData.map(item => ({
       ...item,
-      unit: getUnit(item.exportCode, item.exportNo, item.constructionReceiver),
+      unit: getUnit(item.exportCode, item.exportNo, item.groupReceiver),
       daysDiff: calculateDaysDiff(item.realExport)
     }));
     setData(computedData);
@@ -709,8 +810,13 @@ const STOCKOUT_YET_CONFIRM = () => {
     showNotification('📎 KPI Export completed!', 'success');
   };
 
+  // 🚫 Filtered data with exclusions applied
   const filteredData = useMemo(() => {
     let filtered = data;
+    
+    // 🚫 Apply exclusion filters FIRST
+    filtered = filtered.filter(item => !shouldExcludeItem(item));
+    
     if (filterGIS) {
       filtered = filtered.filter(item => 
         (item.stockReceiver && item.stockReceiver.includes('GIS')) || 
@@ -721,7 +827,8 @@ const STOCKOUT_YET_CONFIRM = () => {
       filtered = filtered.filter(item => 
         item.exportCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.exportNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.groupReceiver?.toLowerCase().includes(searchTerm.toLowerCase())
+        item.groupReceiver?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.constructionReceiver?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     return filtered;
@@ -956,7 +1063,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                 <span className="text-2xl">📊</span>
                 <div>
                   <h2 className="text-xl font-bold text-white">KPI Dashboard - Stockout Performance</h2>
-                  <p className="text-purple-100 text-sm">Track Morning & Evening Targets</p>
+                  <p className="text-purple-100 text-sm">Track Morning & Evening Targets | Unit from Group Receiver</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -1092,13 +1199,14 @@ const STOCKOUT_YET_CONFIRM = () => {
             {/* Info Box */}
             <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
               <div className="text-sm text-blue-800">
-                <strong>📌 How to use Morning & Evening Targets:</strong>
+                <strong>📌 How Unit Extraction Works:</strong>
                 <ul className="mt-1 ml-4 list-disc">
-                  <li>🌅 <strong>Morning Target</strong> = Set at start of day</li>
-                  <li>🌙 <strong>Evening Target</strong> = Set at end of day (editable)</li>
-                  <li>📊 <strong>Comparison</strong> = System shows alert when changes detected</li>
-                  <li>✏️ <strong>Edit</strong> = Click on target value to edit manually</li>
-                  <li>📜 <strong>History</strong> = Click "History" to view all changes</li>
+                  <li>🎯 <strong>Unit</strong> extracted from <strong>Group Receiver</strong> (highest priority)</li>
+                  <li>📋 Falls back to <strong>Export Code / Export No</strong> if not found</li>
+                  <li>🚫 <strong>GPON</strong> removed from Construction Receiver</li>
+                  <li>🚫 <strong>GIS_MOD</strong> removed from Group Receiver</li>
+                  <li>🌅 <strong>Morning Target</strong> = Auto-created at start of day</li>
+                  <li>🌙 <strong>Evening Target</strong> = Can be edited manually</li>
                 </ul>
               </div>
             </div>
@@ -1124,7 +1232,7 @@ const STOCKOUT_YET_CONFIRM = () => {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold text-white">🔄 Smart Import</h2>
-                <p className="text-blue-100 text-sm">Paste data - Auto creates targets</p>
+                <p className="text-blue-100 text-sm">Auto-filters GPON & GIS_MOD | Unit from Group Receiver</p>
               </div>
               <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
             </div>
@@ -1133,13 +1241,15 @@ const STOCKOUT_YET_CONFIRM = () => {
             <textarea 
               value={pasteData} 
               onChange={(e) => setPasteData(e.target.value)} 
-              placeholder="Paste your system data here...&#10;&#10;Format: Export Code, Export No, Date, Stock Receiver, Group Receiver, Construction Receiver" 
+              placeholder="Paste your system data here...&#10;&#10;Format: Export Code, Export No, Date, Stock Receiver, Group Receiver, Construction Receiver&#10;&#10;🚫 Items with GPON or GIS_MOD will be automatically excluded" 
               className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
             <div className="mt-4 p-3 bg-gray-50 rounded-xl">
               <div className="text-sm text-gray-600">
                 <strong>📊 What will happen:</strong>
                 <ul className="mt-1 ml-4 list-disc">
+                  <li>🎯 <span className="text-purple-600">Unit</span> → Extracted from Group Receiver</li>
+                  <li>🚫 <span className="text-rose-600">EXCLUDED</span> → GPON (Construction) &amp; GIS_MOD (Group Receiver)</li>
                   <li>🎯 <span className="text-purple-600">New Unit</span> → Auto-create target (morning/evening)</li>
                   <li>✅ <span className="text-emerald-600">COMPLETED</span> → Missing Export No (+1 Result)</li>
                   <li>📋 <span className="text-blue-600">REMAINING</span> → Same Export No</li>
@@ -1279,7 +1389,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-blue-100 mt-1 text-sm">Smart Import | Track Morning &amp; Evening Targets</p>
+              <p className="text-blue-100 mt-1 text-sm">🎯 Unit from Group Receiver | 🚫 Auto-filters GPON &amp; GIS_MOD</p>
             </div>
             <div className="flex gap-2">
               <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-sm transition-colors">🗑️ Clear All</button>
@@ -1297,7 +1407,6 @@ const STOCKOUT_YET_CONFIRM = () => {
               {selectedRows.size > 0 && (
                 <button onClick={deleteSelectedRows} className="px-4 py-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors text-sm flex items-center gap-1">🗑️ Complete ({selectedRows.size})</button>
               )}
-
             </div>
             <div className="flex gap-2 items-center flex-wrap">
               <div className="flex items-center gap-1 bg-amber-100 px-3 py-1.5 rounded-full">
@@ -1401,7 +1510,11 @@ const STOCKOUT_YET_CONFIRM = () => {
                       </div>
                     </td>
                     <td className="px-2 py-1.5 text-xs whitespace-normal break-words">
-                      <div onClick={() => startEdit(item.id, 'constructionReceiver', item.constructionReceiver)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">{item.constructionReceiver || '-'}</div>
+                      <div onClick={() => startEdit(item.id, 'constructionReceiver', item.constructionReceiver)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">
+                        {item.constructionReceiver?.toUpperCase().includes('GPON') ? (
+                          <span className="text-rose-500 line-through font-medium">{item.constructionReceiver} 🚫</span>
+                        ) : item.constructionReceiver || '-'}
+                      </div>
                     </td>
                     <td className="px-2 py-1.5 text-center">
                       <span className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${isAlarm ? 'bg-rose-200 text-rose-800' : 'bg-indigo-100 text-indigo-800'}`}>{item.unit}</span>
@@ -1424,6 +1537,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                       <div className="text-4xl">📭</div>
                       <p className="text-lg font-medium">No data in system</p>
                       <p className="text-sm text-gray-400">Click "Smart Import" to import data</p>
+                      <p className="text-xs text-rose-400">🚫 GPON and GIS_MOD are automatically filtered out</p>
                     </div>
                   </td>
                 </tr>
@@ -1494,7 +1608,7 @@ const STOCKOUT_YET_CONFIRM = () => {
         {/* ─── FOOTER ─── */}
         <div className="bg-gray-50 px-6 py-3 border-t text-sm text-gray-500 flex justify-between flex-wrap gap-2">
           <span>📋 In System: <strong>{data.length}</strong> rows | GIS: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
-          <span>🌅 Morning Target | 🌙 Evening Target | ✅ Cleared = +1 Result | 📊 Auto Comparison</span>
+          <span>🎯 Unit from Group Receiver | 🚫 Excluded: GPON (Construction) | GIS_MOD (Group Receiver)</span>
         </div>
       </div>
 
