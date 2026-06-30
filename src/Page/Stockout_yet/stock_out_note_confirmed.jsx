@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb } from '../../services/dbStore';
 
@@ -25,6 +25,7 @@ const getStorageData = (key) => {
 
 const StockOutNoteConfirmed = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const isLoaded = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -72,29 +73,41 @@ const StockOutNoteConfirmed = () => {
 
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
+      
+      isLoaded.current = true;
     };
     fetchDbData();
   }, []);
 
   // Sync to database
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.DATA, data);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.DATA, data);
+    }
   }, [data]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    }
   }, [completionHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGETS, targets);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGETS, targets);
+    }
   }, [targets]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    }
   }, [targetHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    }
   }, [confirmedStatus]);
 
   // Complete list of all possible Units
@@ -135,7 +148,42 @@ const StockOutNoteConfirmed = () => {
 
   const getUnitFromRecipient = (recipient) => {
     if (!recipient) return 'OTHER';
-    const parts = recipient.split('_');
+    
+    // Normalize: convert to uppercase and remove all spaces
+    const normalized = recipient.toUpperCase().replace(/\s+/g, '');
+    
+    // 1. PNP Planning Department check
+    if (normalized.includes('PNP_PLA_PLANNING') || normalized.includes('PNP_PLANNING')) {
+      return 'PNP';
+    }
+    
+    // 2. KAN Planning Department check
+    if (normalized.includes('KAN_PLA_PLANNING') || normalized.includes('KAN_PLANNING')) {
+      return 'KAN';
+    }
+    
+    // 3. PNP FBC checks (PNPZ1 / PNPZ2)
+    if (normalized.includes('PNP_FBC') || normalized.includes('PNP_FBCO') || normalized.includes('PNPFBC')) {
+      const pnpz1Codes = ['FBC01', 'FBC03', 'FBC05', 'FBCO5', 'FBC06', 'FBC07', 'FBC10', 'FBC13', 'FBC14'];
+      const pnpz2Codes = ['FBC02', 'FBC04', 'FBC08', 'FBC09', 'FBC12'];
+      
+      if (pnpz1Codes.some(code => normalized.includes(code))) {
+        return 'PNPZ1';
+      }
+      if (pnpz2Codes.some(code => normalized.includes(code))) {
+        return 'PNPZ2';
+      }
+      // Fallback default for any other PNP FBC to PNPZ1
+      return 'PNPZ1';
+    }
+    
+    // 4. KAN FBC check (KANZ1)
+    if (normalized.includes('KAN_FBC') || normalized.includes('KANFBC')) {
+      return 'KANZ1';
+    }
+    
+    // 5. Standard fallback matching logic
+    const parts = normalized.split('_');
     if (parts.length >= 2 && parts[0] === 'GIS') {
       const unitCode = parts[1];
       const validUnits = ['BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
@@ -145,6 +193,7 @@ const StockOutNoteConfirmed = () => {
       if (unitCode === 'KANZ') return 'KANZ1';
       if (unitCode === 'PNPZ') return 'PNPZ1';
     }
+    
     return 'OTHER';
   };
 
@@ -268,13 +317,13 @@ const StockOutNoteConfirmed = () => {
 
   const processImport = (newRawData) => {
     const filteredData = newRawData.filter(item => {
-      const isGIS = item.unitConfirm && item.unitConfirm.toUpperCase().includes('GIS');
+      const isGIS = item.unitConfirm && (item.unitConfirm.toUpperCase().includes('GIS') || getUnitFromRecipient(item.unitConfirm) !== 'OTHER');
       const isNotConfirmed = item.status && item.status.toLowerCase() === 'not confirmed';
       return isGIS && isNotConfirmed;
     });
 
     if (filteredData.length === 0) {
-      showNotification('⚠️ No GIS "Not confirmed" records found!', 'warning');
+      showNotification('⚠️ No valid "Not confirmed" records found!', 'warning');
       return;
     }
 
@@ -604,12 +653,12 @@ const StockOutNoteConfirmed = () => {
     showNotification('📎 KPI Export completed!', 'success');
   };
 
-  // 🎯 FILTER: GIS + Not confirmed only
+  // 🎯 FILTER: Matching unitConfirm + Not confirmed only
   const filteredData = useMemo(() => {
     let filtered = data;
     
     filtered = filtered.filter(item => 
-      item.unitConfirm && item.unitConfirm.toUpperCase().includes('GIS')
+      item.unitConfirm && (item.unitConfirm.toUpperCase().includes('GIS') || getUnitFromRecipient(item.unitConfirm) !== 'OTHER')
     );
     
     filtered = filtered.filter(item => 
@@ -740,7 +789,7 @@ const StockOutNoteConfirmed = () => {
   };
 
   const getUnitConfirmBadge = (unitConfirm) => {
-    if (unitConfirm && unitConfirm.toUpperCase().includes('GIS')) {
+    if (unitConfirm && (unitConfirm.toUpperCase().includes('GIS') || getUnitFromRecipient(unitConfirm) !== 'OTHER')) {
       return <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">{unitConfirm}</span>;
     }
     return <span className="text-gray-600">{unitConfirm}</span>;

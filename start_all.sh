@@ -25,19 +25,19 @@ trap cleanup SIGINT SIGTERM EXIT
 cd "$BACKEND_DIR"
 
 echo "🚀 Starting Asset Microservice on port 8001..."
-./.venv/bin/uvicorn services.asset.main:app --host 127.0.0.1 --port 8001 > asset.log 2>&1 &
+./.venv/bin/python -m uvicorn services.asset.main:app --host 127.0.0.1 --port 8001 > asset.log 2>&1 &
 ASSET_PID=$!
 
 echo "🚀 Starting Notification Microservice on port 8002..."
-./.venv/bin/uvicorn services.notification.main:app --host 127.0.0.1 --port 8002 > notification.log 2>&1 &
+./.venv/bin/python -m uvicorn services.notification.main:app --host 127.0.0.1 --port 8002 > notification.log 2>&1 &
 NOTIFY_PID=$!
 
 echo "🚀 Starting KPI Microservice on port 8003..."
-./.venv/bin/uvicorn services.kpi.main:app --host 127.0.0.1 --port 8003 > kpi.log 2>&1 &
+./.venv/bin/python -m uvicorn services.kpi.main:app --host 127.0.0.1 --port 8003 > kpi.log 2>&1 &
 KPI_PID=$!
 
 echo "🚀 Starting API Gateway on port 8000..."
-./.venv/bin/uvicorn services.gateway.main:app --host 0.0.0.0 --port 8000 > gateway.log 2>&1 &
+./.venv/bin/python -m uvicorn services.gateway.main:app --host 0.0.0.0 --port 8000 > gateway.log 2>&1 &
 GATEWAY_PID=$!
 
 # Wait for backend gateway to be ready

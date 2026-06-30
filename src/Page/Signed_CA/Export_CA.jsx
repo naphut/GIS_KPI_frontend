@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb } from '../../services/dbStore';
 
@@ -21,10 +21,213 @@ const getStorageData = (key) => {
   }
 };
 
+// Complete list of all possible Units
+const allUnits = [
+  'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
+  'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
+  'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
+];
 
+// 🎯 UNIT EXTRACTION LOGIC (Priority: Warehouse → Note Code → Command Code)
+
+// 1. ចាប់យក Unit ពី Export Warehouse
+const getUnitFromWarehouse = (warehouse) => {
+  if (!warehouse) return null;
+  
+  const normalized = warehouse.toUpperCase().replace(/\s+/g, '');
+  
+  // PNP Planning Department
+  if (normalized.includes('PNP_PLA_PLANNING') || normalized.includes('PNP_PLANNING')) {
+    return 'PNP';
+  }
+  
+  // KAN Planning Department
+  if (normalized.includes('KAN_PLA_PLANNING') || normalized.includes('KAN_PLANNING')) {
+    return 'KAN';
+  }
+  
+  // PNP FBC (PNPZ1 / PNPZ2)
+  if (normalized.includes('PNP_FBC') || normalized.includes('PNP_FBCO') || normalized.includes('PNPFBC')) {
+    const pnpz1Codes = ['FBC01', 'FBC03', 'FBC05', 'FBCO5', 'FBC06', 'FBC07', 'FBC10', 'FBC13', 'FBC14'];
+    const pnpz2Codes = ['FBC02', 'FBC04', 'FBC08', 'FBC09', 'FBC12'];
+    
+    if (pnpz1Codes.some(code => normalized.includes(code))) {
+      return 'PNPZ1';
+    }
+    if (pnpz2Codes.some(code => normalized.includes(code))) {
+      return 'PNPZ2';
+    }
+    return 'PNPZ1';
+  }
+  
+  // KAN FBC (KANZ1)
+  if (normalized.includes('KAN_FBC') || normalized.includes('KANFBC')) {
+    return 'KANZ1';
+  }
+  
+  // Standard GIS_XXX_ pattern
+  const parts = normalized.split('_');
+  if (parts.length >= 2 && parts[0] === 'GIS') {
+    const unitCode = parts[1];
+    if (allUnits.includes(unitCode)) return unitCode;
+    if (unitCode === 'KANZ') return 'KANZ1';
+    if (unitCode === 'PNPZ') return 'PNPZ1';
+  }
+  
+  return null;
+};
+
+// 2. ចាប់យក Unit ពី Export Note Code
+const getUnitFromNoteCode = (noteCode) => {
+  if (!noteCode) return null;
+  
+  const upper = noteCode.toUpperCase();
+  
+  // ពិនិត្យលំនាំ PXKGIS_XXX ឬ PXKXXX
+  const match = upper.match(/(?:PXK|LNK)(?:GIS_)?([A-Z0-9_]+)/);
+  if (match && match[1]) {
+    const codePart = match[1];
+    
+    // FBC → PNPZ1, PNPZ2, KANZ1
+    if (codePart.includes('FBC')) {
+      if (codePart.startsWith('PNP_')) {
+        const fbcNum = codePart.match(/FBC(\d+)/);
+        if (fbcNum) {
+          const num = parseInt(fbcNum[1]);
+          if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+          if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
+        }
+        return 'PNPZ1';
+      }
+      if (codePart.startsWith('KAN_')) {
+        return 'KANZ1';
+      }
+    }
+    
+    // SOS → PNP, KAN
+    if (codePart.includes('SOS')) {
+      if (codePart.startsWith('PNP_')) return 'PNP';
+      if (codePart.startsWith('KAN_')) return 'KAN';
+    }
+    
+    // PLA → PNP, KAN
+    if (codePart.includes('PLA')) {
+      if (codePart.startsWith('PNP_')) return 'PNP';
+      if (codePart.startsWith('KAN_')) return 'KAN';
+    }
+    
+    // TEC → PNP, KAN
+    if (codePart.includes('TEC')) {
+      if (codePart.startsWith('PNP_')) return 'PNP';
+      if (codePart.startsWith('KAN_')) return 'KAN';
+    }
+    
+    // ចាប់យក Unit ដំបូង
+    const unitMatch = codePart.match(/^([A-Z]+)/);
+    if (unitMatch && unitMatch[1]) {
+      const unit = unitMatch[1];
+      if (allUnits.includes(unit)) return unit;
+      if (unit === 'PNPZ') return 'PNPZ1';
+      if (unit === 'KANZ') return 'KANZ1';
+    }
+  }
+  
+  return null;
+};
+
+// 3. ចាប់យក Unit ពី Export Command Code
+const getUnitFromCommandCode = (commandCode) => {
+  if (!commandCode) return null;
+  
+  const upper = commandCode.toUpperCase();
+  
+  // ពិនិត្យលំនាំ LXKGIS_XXX ឬ LXKXXX
+  const match = upper.match(/(?:PXK|LNK)(?:GIS_)?([A-Z0-9_]+)/);
+  if (match && match[1]) {
+    const codePart = match[1];
+    
+    // FBC → PNPZ1, PNPZ2, KANZ1
+    if (codePart.includes('FBC')) {
+      if (codePart.startsWith('PNP_')) {
+        const fbcNum = codePart.match(/FBC(\d+)/);
+        if (fbcNum) {
+          const num = parseInt(fbcNum[1]);
+          if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+          if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
+        }
+        return 'PNPZ1';
+      }
+      if (codePart.startsWith('KAN_')) {
+        return 'KANZ1';
+      }
+    }
+    
+    // SOS → PNP, KAN
+    if (codePart.includes('SOS')) {
+      if (codePart.startsWith('PNP_')) return 'PNP';
+      if (codePart.startsWith('KAN_')) return 'KAN';
+    }
+    
+    // PLA → PNP, KAN
+    if (codePart.includes('PLA')) {
+      if (codePart.startsWith('PNP_')) return 'PNP';
+      if (codePart.startsWith('KAN_')) return 'KAN';
+    }
+    
+    // TEC → PNP, KAN
+    if (codePart.includes('TEC')) {
+      if (codePart.startsWith('PNP_')) return 'PNP';
+      if (codePart.startsWith('KAN_')) return 'KAN';
+    }
+    
+    // ចាប់យក Unit ដំបូង
+    const unitMatch = codePart.match(/^([A-Z]+)/);
+    if (unitMatch && unitMatch[1]) {
+      const unit = unitMatch[1];
+      if (allUnits.includes(unit)) return unit;
+      if (unit === 'PNPZ') return 'PNPZ1';
+      if (unit === 'KANZ') return 'KANZ1';
+    }
+  }
+  
+  return null;
+};
+
+// 4. មុខងារចាប់យក Unit សំខាន់ (Main) - អាទិភាព Warehouse → Note Code → Command Code
+const getUnit = (exportWarehouse, exportNoteCode, exportCommandCode) => {
+  // អាទិភាពទី 1: ចាប់ពី Export Warehouse
+  const unitFromWarehouse = getUnitFromWarehouse(exportWarehouse);
+  if (unitFromWarehouse && allUnits.includes(unitFromWarehouse)) {
+    // បើជា PNP ឬ KAN ហើយមាន FBC ក្នុង Export Note Code
+    if ((unitFromWarehouse === 'PNP' || unitFromWarehouse === 'KAN') && 
+        exportNoteCode && exportNoteCode.toUpperCase().includes('FBC')) {
+      // ចាប់ពី Export Note Code ដើម្បីបែងចែក PNPZ1/PNPZ2/KANZ1
+      const unitFromNote = getUnitFromNoteCode(exportNoteCode);
+      if (unitFromNote && allUnits.includes(unitFromNote) && unitFromNote !== unitFromWarehouse) {
+        return unitFromNote;
+      }
+    }
+    return unitFromWarehouse;
+  }
+  
+  // អាទិភាពទី 2: ចាប់ពី Export Note Code
+  const unitFromNote = getUnitFromNoteCode(exportNoteCode);
+  if (unitFromNote && allUnits.includes(unitFromNote)) {
+    return unitFromNote;
+  }
+  
+  // អាទិភាពទី 3: ចាប់ពី Export Command Code
+  const unitFromCommand = getUnitFromCommandCode(exportCommandCode);
+  if (unitFromCommand && allUnits.includes(unitFromCommand)) {
+    return unitFromCommand;
+  }
+  
+  return 'OTHER';
+};
 
 export const Export_CA = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const isLoaded = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -72,37 +275,44 @@ export const Export_CA = () => {
 
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
+      
+      isLoaded.current = true;
     };
     fetchDbData();
   }, []);
 
   // Sync to database
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.DATA, data);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.DATA, data);
+    }
   }, [data]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    }
   }, [completionHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGETS, targets);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGETS, targets);
+    }
   }, [targets]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    }
   }, [targetHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    }
   }, [confirmedStatus]);
 
-  // Complete list of all possible Units
-  const allUnits = useMemo(() => [
-    'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
-    'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
-    'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
-  ], []);
+
 
   // Columns
   const columns = [
@@ -153,20 +363,7 @@ export const Export_CA = () => {
     return '';
   };
 
-  const getUnitFromWarehouse = (warehouse) => {
-    if (!warehouse) return 'OTHER';
-    const parts = warehouse.split('_');
-    if (parts.length >= 2 && parts[0] === 'GIS') {
-      const unitCode = parts[1];
-      const validUnits = ['BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
-        'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
-        'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'];
-      if (validUnits.includes(unitCode)) return unitCode;
-      if (unitCode === 'KANZ') return 'KANZ1';
-      if (unitCode === 'PNPZ') return 'PNPZ1';
-    }
-    return 'OTHER';
-  };
+
 
   const getStatusCABadge = (statusCA) => {
     const config = {
@@ -178,7 +375,8 @@ export const Export_CA = () => {
   };
 
   const getStatusBadge = (status) => {
-    const isCompleted = status?.includes('Actual Export all') || status?.includes('Thực xuất hết');
+    const upper = (status || '').toUpperCase();
+    const isCompleted = upper.includes('ACTUAL EXPORT ALL') || upper.includes('THỰC XUẤT HẾT') || upper.includes('THUC XUAT HET');
     if (isCompleted) {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">✅ {status}</span>;
     }
@@ -193,7 +391,7 @@ export const Export_CA = () => {
   };
 
   const getWarehouseBadge = (warehouse) => {
-    if (warehouse && warehouse.toUpperCase().includes('GIS')) {
+    if (warehouse && (warehouse.toUpperCase().includes('GIS') || getUnitFromWarehouse(warehouse) !== null)) {
       return <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">{warehouse}</span>;
     }
     return <span className="text-gray-600">{warehouse}</span>;
@@ -294,9 +492,15 @@ export const Export_CA = () => {
 
   const processImport = (newRawData) => {
     const filteredData = newRawData.filter(item => {
-      const isGIS = item.exportWarehouse && item.exportWarehouse.toUpperCase().includes('GIS');
-      const isStatusOK = item.status?.includes('Actual Export all') || item.status?.includes('Thực xuất hết');
-      const isCAOK = item.statusCA === 'Unsigned' || item.statusCA === 'Is signing';
+      const warehouse = (item.exportWarehouse || '').toUpperCase().replace(/\s+/g, '');
+      const isGIS = warehouse.includes('GIS') || getUnitFromWarehouse(warehouse) !== null;
+      
+      const status = (item.status || '').toUpperCase().replace(/\s+/g, ' ').trim();
+      const isStatusOK = status.includes('ACTUAL EXPORT ALL') || status.includes('THỰC XUẤT HẾT') || status.includes('THUC XUAT HET');
+      
+      const statusCA = (item.statusCA || '').toUpperCase().replace(/\s+/g, ' ').trim();
+      const isCAOK = statusCA.includes('UNSIGNED') || statusCA.includes('IS SIGNING') || statusCA.includes('ISSIGNING');
+      
       return isGIS && isStatusOK && isCAOK;
     });
 
@@ -309,7 +513,8 @@ export const Export_CA = () => {
     const newCodesSet = new Set(filteredData.map(item => item.exportNoteCode));
     
     const processedNewData = filteredData.map((item, index) => {
-      const unit = getUnitFromWarehouse(item.exportWarehouse);
+      // 🎯 ប្រើមុខងារ getUnit ថ្មី
+      const unit = getUnit(item.exportWarehouse, item.exportNoteCode, item.exportCommandCode);
       const daysDiff = calculateDaysDiff(item.dateCreate);
       const year = extractYearFromDate(item.dateCreate);
       
@@ -469,7 +674,7 @@ export const Export_CA = () => {
         completedUnits: kpiData.filter(item => item.hasData && item.remain === 0 && item.target > 0).length
       }
     };
-  }, [data, targets, completionHistory, confirmedStatus, allUnits, kpiViewMode, kpiSortBy, kpiSortOrder]);
+  }, [data, targets, completionHistory, confirmedStatus, kpiViewMode, kpiSortBy, kpiSortOrder]);
 
   const parsePastedData = (text) => {
     const rows = text.split(/\r?\n/);
@@ -526,9 +731,17 @@ export const Export_CA = () => {
           updated.daysDiff = calculateDaysDiff(value);
           updated.year = extractYearFromDate(value);
         }
-        if (field === 'exportWarehouse') updated.unit = getUnitFromWarehouse(value);
+        if (field === 'exportWarehouse' || field === 'exportNoteCode' || field === 'exportCommandCode') {
+          // 🎯 ប្រើមុខងារ getUnit ថ្មី
+          updated.unit = getUnit(
+            field === 'exportWarehouse' ? value : item.exportWarehouse,
+            field === 'exportNoteCode' ? value : item.exportNoteCode,
+            field === 'exportCommandCode' ? value : item.exportCommandCode
+          );
+        }
         if (field === 'status') {
-          updated.isCompleted = value?.includes('Actual Export all') || value?.includes('Thực xuất hết');
+          const upperVal = (value || '').toUpperCase();
+          updated.isCompleted = upperVal.includes('ACTUAL EXPORT ALL') || upperVal.includes('THỰC XUẤT HẾT') || upperVal.includes('THUC XUAT HET');
         }
         return updated;
       }
@@ -673,11 +886,11 @@ export const Export_CA = () => {
     showNotification('📎 KPI Export completed!', 'success');
   };
 
-  // 🎯 FILTER: Only show GIS warehouses
+  // 🎯 FILTER: Show matching warehouses (GIS or other mapped Units)
   const filteredData = useMemo(() => {
     let filtered = data;
     filtered = filtered.filter(item => 
-      item.exportWarehouse && item.exportWarehouse.toUpperCase().includes('GIS')
+      item.exportWarehouse && (item.exportWarehouse.toUpperCase().includes('GIS') || getUnitFromWarehouse(item.exportWarehouse) !== null)
     );
     if (searchTerm) {
       filtered = filtered.filter(item =>
@@ -1004,12 +1217,14 @@ export const Export_CA = () => {
 
             <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
               <div className="text-sm text-blue-800">
-                <strong>📌 How KPI Dashboard Works:</strong>
+                <strong>📌 Unit Extraction Priority:</strong>
                 <ul className="mt-1 ml-4 list-disc">
-                  <li>🎯 <strong>Target</strong> = Auto-created from data count (can be edited)</li>
-                  <li>✅ <strong>Result</strong> = Confirmed items</li>
-                  <li>📋 <strong>Remain</strong> = Target - Result</li>
-                  <li>📊 <strong>Ratio</strong> = (Result / Target) × 100%</li>
+                  <li>🥇 <strong>Export Warehouse</strong> - អាទិភាពខ្ពស់បំផុត</li>
+                  <li>🥈 <strong>Export Note Code</strong> - សម្រាប់បែងចែក PNPZ1/PNPZ2/KANZ1</li>
+                  <li>🥉 <strong>Export Command Code</strong> - ជាជម្រើសចុងក្រោយ</li>
+                  <li>📋 <strong>FBC</strong> → PNPZ1, PNPZ2, KANZ1</li>
+                  <li>📋 <strong>SOS</strong> → PNP, KAN</li>
+                  <li>📋 <strong>PLA</strong> → PNP, KAN</li>
                 </ul>
               </div>
             </div>
@@ -1047,13 +1262,15 @@ export const Export_CA = () => {
             />
             <div className="mt-4 p-3 bg-gray-50 rounded-xl">
               <div className="text-sm text-gray-600">
-                <strong>📊 Filter Rules:</strong>
+                <strong>📊 Filter Rules & Unit Extraction:</strong>
                 <ul className="mt-1 ml-4 list-disc">
                   <li>🏠 <strong>Export Warehouse</strong> - Must contain "GIS"</li>
                   <li>✅ <strong>Status</strong> - Must be "Actual Export all" or "Thực xuất hết"</li>
                   <li>📋 <strong>Status CA</strong> - Must be "Unsigned" or "Is signing"</li>
-                  <li>🎯 <strong>New Units</strong> → Auto-create target</li>
-                  <li>📅 <strong>Year</strong> - Auto-extracted from Date Create</li>
+                  <li>🥇 <strong>Unit Priority</strong> - Warehouse → Note Code → Command Code</li>
+                  <li>🎯 <strong>FBC</strong> → PNPZ1, PNPZ2, KANZ1</li>
+                  <li>🎯 <strong>SOS</strong> → PNP, KAN</li>
+                  <li>🎯 <strong>PLA</strong> → PNP, KAN</li>
                 </ul>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb } from '../../services/dbStore';
 
@@ -20,8 +20,6 @@ const getStorageData = (key) => {
     return null;
   }
 };
-
-
 
 const VALID_UNITS = [
   'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
@@ -55,58 +53,305 @@ const extractYearFromDate = (dateString) => {
   return '';
 };
 
-const getUnitFromRequestCode = (importRequestCode) => {
-  if (!importRequestCode) return null;
-  if (importRequestCode.includes('GIS')) {
-    const parts = importRequestCode.split('_');
-    if (parts.length >= 2) {
-      for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
-        if (VALID_UNITS.includes(part)) return part;
-        if (part === 'KANZ') return 'KANZ1';
-        if (part === 'PNPZ') return 'PNPZ1';
-      }
-      if (parts.length >= 2) {
-        const unitCode = parts[1];
-        if (VALID_UNITS.includes(unitCode)) return unitCode;
-        if (unitCode === 'KANZ') return 'KANZ1';
-        if (unitCode === 'PNPZ') return 'PNPZ1';
-      }
-    }
-  }
-  return null;
-};
+// ============================================================
+// 🎯 UNIT EXTRACTION LOGIC (FIXED - Working)
+// ============================================================
 
-const getUnitFromExportNoteCode = (exportNoteCode) => {
-  if (!exportNoteCode) return null;
-  if (exportNoteCode.startsWith('PXKGIS_')) {
-    const parts = exportNoteCode.split('_');
-    if (parts.length >= 2) {
-      const unitCode = parts[1];
-      if (VALID_UNITS.includes(unitCode)) return unitCode;
-      if (unitCode === 'KANZ') return 'KANZ1';
-      if (unitCode === 'PNPZ') return 'PNPZ1';
-    }
-  }
-  return null;
-};
-
+// 1. ចាប់យក Unit ពី Request Export Code (អាទិភាពទី១)
 const getUnitFromRequestExportCode = (requestExportCode) => {
   if (!requestExportCode) return null;
-  if (requestExportCode.includes('GIS')) {
-    const parts = requestExportCode.split('_');
+  
+  const upper = requestExportCode.toUpperCase();
+  if (!upper.includes('GIS')) return null;
+  
+  let unitPart = '';
+  
+  if (upper.startsWith('YCXGIS_')) {
+    const afterPrefix = upper.substring(7);
+    const parts = afterPrefix.split('/');
+    if (parts.length > 0) unitPart = parts[0];
+  } else if (upper.startsWith('YCX_')) {
+    const afterPrefix = upper.substring(4);
+    const parts = afterPrefix.split('/');
+    if (parts.length > 0) unitPart = parts[0];
+  } else {
+    const parts = upper.split('_');
     for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      if (VALID_UNITS.includes(part)) return part;
-      if (part === 'KANZ') return 'KANZ1';
-      if (part === 'PNPZ') return 'PNPZ1';
+      if (parts[i].includes('GIS')) {
+        if (i + 1 < parts.length) {
+          const nextPart = parts[i + 1];
+          const subParts = nextPart.split('/');
+          unitPart = subParts[0];
+          break;
+        }
+      }
     }
   }
+  
+  if (!unitPart) return null;
+  
+  // FBC → KANZ1, PNPZ1, PNPZ2
+  if (unitPart.includes('FBC')) {
+    if (unitPart.startsWith('KAN_')) return 'KANZ1';
+    if (unitPart.startsWith('PNP_')) {
+      const fbcNum = unitPart.match(/FBC(\d+)/);
+      if (fbcNum) {
+        const num = parseInt(fbcNum[1]);
+        if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+        if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
+      }
+      return 'PNPZ1';
+    }
+  }
+  
+  // SOS → KAN, PNP
+  if (unitPart.includes('SOS')) {
+    if (unitPart.startsWith('KAN_')) return 'KAN';
+    if (unitPart.startsWith('PNP_')) return 'PNP';
+  }
+  
+  // PLA → KAN, PNP
+  if (unitPart.includes('PLA')) {
+    if (unitPart.startsWith('KAN_')) return 'KAN';
+    if (unitPart.startsWith('PNP_')) return 'PNP';
+  }
+  
+  // TEC → KAN, PNP
+  if (unitPart.includes('TEC')) {
+    if (unitPart.startsWith('KAN_')) return 'KAN';
+    if (unitPart.startsWith('PNP_')) return 'PNP';
+  }
+  
+  const unitMatch = unitPart.match(/^([A-Z]+)/);
+  if (unitMatch && unitMatch[1]) {
+    const unit = unitMatch[1];
+    if (VALID_UNITS.includes(unit)) return unit;
+    if (unit === 'KANZ') return 'KANZ1';
+    if (unit === 'PNPZ') return 'PNPZ1';
+  }
+  
+  return null;
+};
+
+// 2. ចាប់យក Unit ពី Command Export Code (អាទិភាពទី២)
+const getUnitFromCommandExportCode = (commandExportCode) => {
+  if (!commandExportCode) return null;
+  
+  const upper = commandExportCode.toUpperCase();
+  if (!upper.includes('GIS')) return null;
+  
+  let unitPart = '';
+  
+  if (upper.startsWith('LXK') || upper.startsWith('PXK')) {
+    const afterPrefix = upper.substring(3);
+    const parts = afterPrefix.split('/');
+    if (parts.length > 0) {
+      const codePart = parts[0];
+      if (codePart.includes('_')) {
+        const subParts = codePart.split('_');
+        for (let i = 0; i < subParts.length; i++) {
+          if (subParts[i].includes('GIS')) {
+            if (i + 1 < subParts.length) {
+              unitPart = subParts[i + 1];
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if (!unitPart) return null;
+  
+  // FBC → KANZ1, PNPZ1, PNPZ2
+  if (unitPart.includes('FBC')) {
+    if (unitPart.startsWith('KAN_')) return 'KANZ1';
+    if (unitPart.startsWith('PNP_')) {
+      const fbcNum = unitPart.match(/FBC(\d+)/);
+      if (fbcNum) {
+        const num = parseInt(fbcNum[1]);
+        if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+        if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
+      }
+      return 'PNPZ1';
+    }
+  }
+  
+  // SOS → KAN, PNP
+  if (unitPart.includes('SOS')) {
+    if (unitPart.startsWith('KAN_')) return 'KAN';
+    if (unitPart.startsWith('PNP_')) return 'PNP';
+  }
+  
+  const unitMatch = unitPart.match(/^([A-Z]+)/);
+  if (unitMatch && unitMatch[1]) {
+    const unit = unitMatch[1];
+    if (VALID_UNITS.includes(unit)) return unit;
+    if (unit === 'KANZ') return 'KANZ1';
+    if (unit === 'PNPZ') return 'PNPZ1';
+  }
+  
+  return null;
+};
+
+// 3. ចាប់យក Unit ពី Note Export Code (អាទិភាពទី៣)
+const getUnitFromNoteExportCode = (noteExportCode) => {
+  if (!noteExportCode) return null;
+  
+  const upper = noteExportCode.toUpperCase();
+  
+  // GIS_XXX_
+  const match = upper.match(/^GIS_([A-Z0-9]+)_/);
+  if (match && match[1]) {
+    const unit = match[1];
+    if (VALID_UNITS.includes(unit)) return unit;
+    if (unit === 'KANZ') return 'KANZ1';
+    if (unit === 'PNPZ') return 'PNPZ1';
+  }
+  
+  // FBC → KANZ1, PNPZ1
+  if (upper.includes('FBC')) {
+    if (upper.includes('KAN')) return 'KANZ1';
+    if (upper.includes('PNP')) {
+      const fbcMatch = upper.match(/FBC(\d+)/);
+      if (fbcMatch) {
+        const num = parseInt(fbcMatch[1]);
+        if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
+        if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+      }
+      return 'PNPZ1';
+    }
+  }
+  
+  // SOS → KAN, PNP
+  if (upper.includes('SOS')) {
+    if (upper.includes('KAN')) return 'KAN';
+    if (upper.includes('PNP')) return 'PNP';
+  }
+  
+  // PLA → KAN, PNP
+  if (upper.includes('PLA')) {
+    if (upper.includes('KAN')) return 'KAN';
+    if (upper.includes('PNP')) return 'PNP';
+  }
+  
+  for (const unit of VALID_UNITS) {
+    if (upper.includes(`_${unit}_`) || upper.includes(`GIS_${unit}_`)) {
+      return unit;
+    }
+  }
+  
+  return null;
+};
+
+// 4. ចាប់យក Unit ពី Group Request (អាទិភាពទី៤)
+const getUnitFromGroupRequest = (groupRequest) => {
+  if (!groupRequest) return null;
+  
+  const upper = groupRequest.toUpperCase();
+  
+  const match = upper.match(/^GIS_([A-Z0-9]+)_/);
+  if (match && match[1]) {
+    const unit = match[1];
+    if (VALID_UNITS.includes(unit)) return unit;
+    if (unit === 'KANZ') return 'KANZ1';
+    if (unit === 'PNPZ') return 'PNPZ1';
+  }
+  
+  if (upper.includes('FBC')) {
+    if (upper.includes('KAN')) return 'KANZ1';
+    if (upper.includes('PNP')) {
+      const fbcMatch = upper.match(/FBC(\d+)/);
+      if (fbcMatch) {
+        const num = parseInt(fbcMatch[1]);
+        if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
+        if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+      }
+      return 'PNPZ1';
+    }
+  }
+  
+  if (upper.includes('SOS')) {
+    if (upper.includes('KAN')) return 'KAN';
+    if (upper.includes('PNP')) return 'PNP';
+  }
+  
+  return null;
+};
+
+// 5. ចាប់យក Unit ពី Stock Out (អាទិភាពទី៥)
+const getUnitFromStockOut = (stockOut) => {
+  if (!stockOut) return null;
+  
+  const upper = stockOut.toUpperCase();
+  
+  const match = upper.match(/^([A-Z]+)_STOCK_/);
+  if (match && match[1]) {
+    const unit = match[1];
+    if (VALID_UNITS.includes(unit)) return unit;
+  }
+  
+  for (const unit of VALID_UNITS) {
+    if (upper.includes(`_${unit}_`) || upper.startsWith(unit)) {
+      return unit;
+    }
+  }
+  
+  return null;
+};
+
+// 6. មុខងារចាប់យក Unit សំខាន់ (Main) - ពិនិត្យ 5 ប្រភពតាមលំដាប់
+const getUnit = (requestExportCode, commandExportCode, noteExportCode, groupRequest, stockOut) => {
+  console.log('🔍 Checking 5 sources for unit:', {
+    requestExportCode,
+    commandExportCode,
+    noteExportCode,
+    groupRequest,
+    stockOut
+  });
+  
+  // អាទិភាពទី 1: Request Export Code
+  const unitFromRequest = getUnitFromRequestExportCode(requestExportCode);
+  if (unitFromRequest && VALID_UNITS.includes(unitFromRequest)) {
+    console.log(`✅ Unit from Request Export Code: ${unitFromRequest}`);
+    return unitFromRequest;
+  }
+  
+  // អាទិភាពទី 2: Command Export Code
+  const unitFromCommand = getUnitFromCommandExportCode(commandExportCode);
+  if (unitFromCommand && VALID_UNITS.includes(unitFromCommand)) {
+    console.log(`✅ Unit from Command Export Code: ${unitFromCommand}`);
+    return unitFromCommand;
+  }
+  
+  // អាទិភាពទី 3: Note Export Code
+  const unitFromNote = getUnitFromNoteExportCode(noteExportCode);
+  if (unitFromNote && VALID_UNITS.includes(unitFromNote)) {
+    console.log(`✅ Unit from Note Export Code: ${unitFromNote}`);
+    return unitFromNote;
+  }
+  
+  // អាទិភាពទី 4: Group Request
+  const unitFromGroup = getUnitFromGroupRequest(groupRequest);
+  if (unitFromGroup && VALID_UNITS.includes(unitFromGroup)) {
+    console.log(`✅ Unit from Group Request: ${unitFromGroup}`);
+    return unitFromGroup;
+  }
+  
+  // អាទិភាពទី 5: Stock Out
+  const unitFromStock = getUnitFromStockOut(stockOut);
+  if (unitFromStock && VALID_UNITS.includes(unitFromStock)) {
+    console.log(`✅ Unit from Stock Out: ${unitFromStock}`);
+    return unitFromStock;
+  }
+  
+  console.log('❌ No unit found from any source');
   return null;
 };
 
 export const Restock_out = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const isLoaded = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -154,29 +399,41 @@ export const Restock_out = () => {
 
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
+      
+      isLoaded.current = true;
     };
     fetchDbData();
   }, []);
 
   // Sync to database
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.DATA, data);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.DATA, data);
+    }
   }, [data]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    }
   }, [completionHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGETS, targets);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGETS, targets);
+    }
   }, [targets]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    }
   }, [targetHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    }
   }, [confirmedStatus]);
 
   // Columns for Restock_out
@@ -317,14 +574,35 @@ export const Restock_out = () => {
   };
 
   const processImport = (newRawData) => {
+    console.log('📥 Processing import with data:', newRawData);
+    
     const filteredData = newRawData.filter(item => {
       const isGIS = item.requestExportCode && item.requestExportCode.toUpperCase().includes('GIS');
       const isStatusOK = item.status && item.status === 'Command not created';
-      return isGIS && isStatusOK;
+      const unit = getUnit(
+        item.requestExportCode,
+        item.commandExportCode,
+        item.noteExportCode,
+        item.groupRequest,
+        item.stockOut
+      );
+      const isValidUnit = unit !== null && VALID_UNITS.includes(unit);
+      
+      console.log('🔍 Filtering item:', {
+        requestExportCode: item.requestExportCode,
+        unit,
+        isValidUnit,
+        isGIS,
+        isStatusOK
+      });
+      
+      return isGIS && isStatusOK && isValidUnit;
     });
 
+    console.log('✅ Filtered data:', filteredData);
+
     if (filteredData.length === 0) {
-      showNotification('⚠️ No valid records found! (GIS + Command not created)', 'warning');
+      showNotification('⚠️ No valid records found! (GIS + Command not created + Valid Unit)', 'warning');
       return;
     }
 
@@ -332,11 +610,13 @@ export const Restock_out = () => {
     const newCodesSet = new Set(filteredData.map(item => item.requestExportCode));
     
     const processedNewData = filteredData.map((item, index) => {
-      const unit = getUnitFromRequestExportCode(item.requestExportCode) || 
-                   getUnitFromRequestCode(item.requestExportCode) || 
-                   getUnitFromExportNoteCode(item.noteExportCode) || 
-                   null;
-      
+      const unit = getUnit(
+        item.requestExportCode,
+        item.commandExportCode,
+        item.noteExportCode,
+        item.groupRequest,
+        item.stockOut
+      );
       const daysDiff = calculateDaysDiff(item.createDate);
       const year = extractYearFromDate(item.createDate);
       
@@ -545,8 +825,15 @@ export const Restock_out = () => {
           updated.daysDiff = calculateDaysDiff(value);
           updated.year = extractYearFromDate(value);
         }
-        if (field === 'requestExportCode') {
-          const unit = getUnitFromRequestExportCode(value);
+        if (field === 'requestExportCode' || field === 'commandExportCode' || 
+            field === 'noteExportCode' || field === 'groupRequest' || field === 'stockOut') {
+          const unit = getUnit(
+            field === 'requestExportCode' ? value : item.requestExportCode,
+            field === 'commandExportCode' ? value : item.commandExportCode,
+            field === 'noteExportCode' ? value : item.noteExportCode,
+            field === 'groupRequest' ? value : item.groupRequest,
+            field === 'stockOut' ? value : item.stockOut
+          );
           updated.unit = unit && VALID_UNITS.includes(unit) ? unit : null;
         }
         if (field === 'status') {
@@ -774,7 +1061,13 @@ export const Restock_out = () => {
       const updated = prevData.map(item => {
         const currentDaysDiff = calculateDaysDiff(item.createDate);
         const currentYear = extractYearFromDate(item.createDate);
-        const currentUnit = getUnitFromRequestExportCode(item.requestExportCode);
+        const currentUnit = getUnit(
+          item.requestExportCode,
+          item.commandExportCode,
+          item.noteExportCode,
+          item.groupRequest,
+          item.stockOut
+        );
         const validUnit = currentUnit && VALID_UNITS.includes(currentUnit) ? currentUnit : null;
         if (item.daysDiff !== currentDaysDiff || item.year !== currentYear || item.unit !== validUnit) {
           changed = true;
@@ -1020,12 +1313,13 @@ export const Restock_out = () => {
 
             <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
               <div className="text-sm text-blue-800">
-                <strong className="font-bold">📌 How KPI Dashboard Works:</strong>
+                <strong className="font-bold">📌 How Unit Extraction Works:</strong>
                 <ul className="mt-1.5 ml-4 list-disc space-y-0.5 text-blue-700">
-                  <li>🎯 <strong>Target</strong> = Auto-created from data count (can be edited)</li>
-                  <li>✅ <strong>Result</strong> = Confirmed items</li>
-                  <li>📋 <strong>Remain</strong> = Target - Result</li>
-                  <li>📊 <strong>Ratio</strong> = (Result / Target) × 100%</li>
+                  <li>🥇 <strong>Priority 1:</strong> Request Export Code (YCXGIS_...)</li>
+                  <li>🥈 <strong>Priority 2:</strong> Group Request (GIS_...)</li>
+                  <li>🥉 <strong>Priority 3:</strong> Stock Out (XXX_STOCK_NOC)</li>
+                  <li>📋 <strong>FBC</strong> → KANZ1, PNPZ1, PNPZ2</li>
+                  <li>📋 <strong>SOS</strong> → KAN, PNP</li>
                 </ul>
               </div>
             </div>
@@ -1063,11 +1357,13 @@ export const Restock_out = () => {
             />
             <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
               <div className="text-sm text-gray-600">
-                <strong className="font-semibold text-gray-800">📊 Filter Rules:</strong>
+                <strong className="font-semibold text-gray-800">📊 Filter Rules & Unit Extraction:</strong>
                 <ul className="mt-1.5 ml-4 list-disc space-y-0.5">
                   <li>🏠 <strong>Request export code</strong> - Must contain "GIS"</li>
                   <li>📋 <strong>Status</strong> - Must be "Command not created"</li>
-                  <li>🎯 <strong>Unit</strong> - Auto-extracted from Request export code</li>
+                  <li>🎯 <strong>Unit Priority</strong> - Request Code → Group Request → Stock Out</li>
+                  <li>📋 <strong>FBC</strong> → KANZ1, PNPZ1, PNPZ2</li>
+                  <li>📋 <strong>SOS</strong> → KAN, PNP</li>
                   <li>📅 <strong>Year</strong> - Auto-extracted from Create date</li>
                 </ul>
               </div>
@@ -1447,8 +1743,6 @@ export const Restock_out = () => {
           <span>📋 Total Valid Records: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
           <div className="flex gap-3 flex-wrap">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>GIS Request</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-300"></span>Confirmed</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-300"></span>Not Confirmed</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&gt;{alarmThreshold}d)</span>
             <span className="flex items-center gap-1 text-gray-400">|</span>
             <span className="flex items-center gap-1"><span className="text-amber-600">✍️</span> Is signing</span>

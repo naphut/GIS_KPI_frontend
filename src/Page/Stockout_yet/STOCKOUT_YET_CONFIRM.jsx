@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb } from '../../services/dbStore';
 
@@ -31,27 +31,29 @@ const getStorageData = (key) => {
 const getUnitFromGroupReceiver = (groupReceiver) => {
   if (!groupReceiver) return null;
   
-  const upper = groupReceiver.toUpperCase().trim();
+  // Normalize: convert to uppercase and remove all spaces
+  const upper = groupReceiver.toUpperCase().replace(/\s+/g, '');
   
   const unitPatterns = [
     // 1. PNPZ1 patterns (specific)
-    { pattern: /GIS_PNP_FBC(0?[13567]|10|13|14)/, unit: 'PNPZ1' },
+    { pattern: /GIS_PNP_FBC([0O]?[13567]|10|13|14)/, unit: 'PNPZ1' },
     { pattern: /_PNPZ1_/, unit: 'PNPZ1' },
     { pattern: /^PNPZ1\b/, unit: 'PNPZ1' },
     
     // 2. PNPZ2 patterns (specific)
-    { pattern: /GIS_PNP_FBC(0?[2489]|12)/, unit: 'PNPZ2' },
+    { pattern: /GIS_PNP_FBC([0O]?[2489]|12)/, unit: 'PNPZ2' },
     { pattern: /_PNPZ2_/, unit: 'PNPZ2' },
     { pattern: /^PNPZ2\b/, unit: 'PNPZ2' },
     
     // 3. KANZ1 patterns (specific)
-    { pattern: /GIS_KAN_FBC(0?[1-7])/, unit: 'KANZ1' },
+    { pattern: /GIS_KAN_FBC([0O]?[1-7])/, unit: 'KANZ1' },
     { pattern: /_KANZ1_/, unit: 'KANZ1' },
     { pattern: /^KANZ1\b/, unit: 'KANZ1' },
 
     // 4. PNP patterns (general)
     { pattern: /GIS_PNP_SOS(\d{2})/, unit: 'PNP' },
     { pattern: /PNP_PLA_PLANNING/, unit: 'PNP' },
+    { pattern: /PNP_PLANNING/, unit: 'PNP' },
     { pattern: /PNP_PLA/, unit: 'PNP' },
     { pattern: /_PNP_/, unit: 'PNP' },
     { pattern: /^PNP\b/, unit: 'PNP' },
@@ -59,6 +61,7 @@ const getUnitFromGroupReceiver = (groupReceiver) => {
     // 5. KAN patterns (general)
     { pattern: /GIS_KAN_SOS(\d{2})/, unit: 'KAN' },
     { pattern: /KAN_PLA_PLANNING/, unit: 'KAN' },
+    { pattern: /KAN_PLANNING/, unit: 'KAN' },
     { pattern: /KAN_PLA/, unit: 'KAN' },
     { pattern: /_KAN_/, unit: 'KAN' },
     { pattern: /^KAN\b/, unit: 'KAN' },
@@ -132,6 +135,7 @@ const getUnit = (exportCode, exportNo, groupReceiver) => {
 
 const STOCKOUT_YET_CONFIRM = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const isLoaded = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -178,25 +182,35 @@ const STOCKOUT_YET_CONFIRM = () => {
 
       const dbTargetHistory = await loadFromDb(STORAGE_KEYS.TARGET_HISTORY, []);
       setTargetHistory(dbTargetHistory);
+      
+      isLoaded.current = true;
     };
     fetchDbData();
   }, []);
 
   // Sync to database
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.DATA, data);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.DATA, data);
+    }
   }, [data]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    }
   }, [completionHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGETS, targets);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGETS, targets);
+    }
   }, [targets]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    }
   }, [targetHistory]);
 
   // Columns
@@ -819,8 +833,8 @@ const STOCKOUT_YET_CONFIRM = () => {
     
     if (filterGIS) {
       filtered = filtered.filter(item => 
-        (item.stockReceiver && item.stockReceiver.includes('GIS')) || 
-        (item.groupReceiver && item.groupReceiver.includes('GIS'))
+        (item.stockReceiver && (item.stockReceiver.includes('GIS') || getUnitFromGroupReceiver(item.stockReceiver) !== null)) || 
+        (item.groupReceiver && (item.groupReceiver.includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null))
       );
     }
     if (searchTerm) {
@@ -1497,14 +1511,14 @@ const STOCKOUT_YET_CONFIRM = () => {
                     </td>
                     <td className="px-2 py-1.5 text-xs whitespace-normal break-words">
                       <div onClick={() => startEdit(item.id, 'stockReceiver', item.stockReceiver)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">
-                        {item.stockReceiver?.includes('GIS') ? (
+                        {(item.stockReceiver?.includes('GIS') || getUnitFromGroupReceiver(item.stockReceiver) !== null) ? (
                           <span className="text-emerald-600 font-medium">{item.stockReceiver}</span>
                         ) : item.stockReceiver || '-'}
                       </div>
                     </td>
                     <td className="px-2 py-1.5 text-xs whitespace-normal break-words">
                       <div onClick={() => startEdit(item.id, 'groupReceiver', item.groupReceiver)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">
-                        {item.groupReceiver?.includes('GIS') ? (
+                        {(item.groupReceiver?.includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null) ? (
                           <span className="text-emerald-600 font-medium">{item.groupReceiver}</span>
                         ) : item.groupReceiver || '-'}
                       </div>

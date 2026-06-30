@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb } from '../../services/dbStore';
 
@@ -21,8 +21,6 @@ const getStorageData = (key) => {
   }
 };
 
-
-
 const VALID_UNITS = [
   'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
   'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
@@ -40,8 +38,7 @@ const calculateDaysDiff = (dateString) => {
   const currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
   const diffTime = currentDate - createdDate;
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
 const extractYearFromDate = (dateString) => {
@@ -55,24 +52,206 @@ const extractYearFromDate = (dateString) => {
   return '';
 };
 
+// ============================================================
+// 🎯 UNIT EXTRACTION LOGIC (Priority: Request Code → Unit Requests → Unit Receive)
+// ============================================================
+
+// 1. ចាប់យក Unit ពី Import Request Code
 const getUnitFromRequestCode = (importRequestCode) => {
   if (!importRequestCode) return null;
+  
+  // ពិនិត្យមើលថាតើចាប់ផ្តើមដោយ YCNKGIS_ ឬទេ
   if (importRequestCode.startsWith('YCNKGIS_')) {
-    const parts = importRequestCode.split('_');
-    if (parts.length >= 2) {
-      const unitCode = parts[1];
-      if (VALID_UNITS.includes(unitCode)) {
-        return unitCode;
+    // យកផ្នែកបន្ទាប់ពី YCNKGIS_
+    const afterPrefix = importRequestCode.substring(8); // YCNKGIS_ = 8 characters
+    const parts = afterPrefix.split('/');
+    
+    if (parts.length >= 1) {
+      const unitCode = parts[0]; // KAN_FBC01, PNP_FBC01, KAN_SOS01, etc.
+      
+      console.log('🔍 Extracting unit from:', unitCode); // Debug
+      
+      // 🎯 ពិនិត្យ FBC → KANZ1, PNPZ1, PNPZ2
+      if (unitCode.includes('FBC')) {
+        // KAN_FBC01 → KANZ1
+        if (unitCode.startsWith('KAN_')) {
+          console.log('✅ Found KAN_FBC → KANZ1');
+          return 'KANZ1';
+        }
+        // PNP_FBC01 → PNPZ1 / PNPZ2
+        if (unitCode.startsWith('PNP_')) {
+          const fbcNum = unitCode.match(/FBC(\d+)/);
+          if (fbcNum) {
+            const num = parseInt(fbcNum[1]);
+            // PNPZ1: 01,03,05,06,07,10,13,14
+            if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) {
+              console.log(`✅ Found PNP_FBC${num} → PNPZ1`);
+              return 'PNPZ1';
+            }
+            // PNPZ2: 02,04,08,09,12
+            if ([2, 4, 8, 9, 12].includes(num)) {
+              console.log(`✅ Found PNP_FBC${num} → PNPZ2`);
+              return 'PNPZ2';
+            }
+          }
+          console.log('✅ Found PNP_FBC → PNPZ1 (default)');
+          return 'PNPZ1';
+        }
       }
-      if (unitCode === 'KANZ') return 'KANZ1';
-      if (unitCode === 'PNPZ') return 'PNPZ1';
+      
+      // 🎯 ពិនិត្យ SOS → KAN, PNP
+      if (unitCode.includes('SOS')) {
+        if (unitCode.startsWith('KAN_')) {
+          console.log('✅ Found KAN_SOS → KAN');
+          return 'KAN';
+        }
+        if (unitCode.startsWith('PNP_')) {
+          console.log('✅ Found PNP_SOS → PNP');
+          return 'PNP';
+        }
+      }
+      
+      // 🎯 ពិនិត្យ PLA → KAN, PNP
+      if (unitCode.includes('PLA')) {
+        if (unitCode.startsWith('KAN_')) {
+          console.log('✅ Found KAN_PLA → KAN');
+          return 'KAN';
+        }
+        if (unitCode.startsWith('PNP_')) {
+          console.log('✅ Found PNP_PLA → PNP');
+          return 'PNP';
+        }
+      }
+      
+      // 🎯 ពិនិត្យ TEC → KAN, PNP
+      if (unitCode.includes('TEC')) {
+        if (unitCode.startsWith('KAN_')) {
+          console.log('✅ Found KAN_TEC → KAN');
+          return 'KAN';
+        }
+        if (unitCode.startsWith('PNP_')) {
+          console.log('✅ Found PNP_TEC → PNP');
+          return 'PNP';
+        }
+      }
+      
+      // 🎯 ប្រសិនបើគ្មានលក្ខខណ្ឌពិសេស ចាប់យក Unit ដំបូង
+      const unitMatch = unitCode.match(/^([A-Z]+)/);
+      if (unitMatch && unitMatch[1]) {
+        const unit = unitMatch[1];
+        if (VALID_UNITS.includes(unit)) {
+          console.log(`✅ Found ${unit} in valid units`);
+          return unit;
+        }
+        if (unit === 'KANZ') {
+          console.log('✅ Found KANZ → KANZ1');
+          return 'KANZ1';
+        }
+        if (unit === 'PNPZ') {
+          console.log('✅ Found PNPZ → PNPZ1');
+          return 'PNPZ1';
+        }
+      }
     }
   }
+  
+  console.log('❌ No unit found');
+  return null;
+};
+
+// 2. ចាប់យក Unit ពី Unit Requests
+const getUnitFromUnitRequests = (unitRequests) => {
+  if (!unitRequests) return null;
+  
+  const upper = unitRequests.toUpperCase();
+  
+  // ពិនិត្យលំនាំ GIS_XXX_
+  const match = upper.match(/^GIS_([A-Z0-9]+)_/);
+  if (match && match[1]) {
+    const unit = match[1];
+    if (VALID_UNITS.includes(unit)) {
+      return unit;
+    }
+    if (unit === 'KANZ') return 'KANZ1';
+    if (unit === 'PNPZ') return 'PNPZ1';
+  }
+  
+  // ពិនិត្យមើល Unit ផ្សេងទៀត
+  for (const unit of VALID_UNITS) {
+    if (upper.includes(`_${unit}_`) || upper.includes(`GIS_${unit}_`)) {
+      return unit;
+    }
+  }
+  
+  return null;
+};
+
+// 3. ចាប់យក Unit ពី Unit Receive
+const getUnitFromUnitReceive = (unitReceive) => {
+  if (!unitReceive) return null;
+  
+  const upper = unitReceive.toUpperCase();
+  
+  // PLA → KAN, PNP
+  if (upper.includes('PLA')) {
+    if (upper.includes('KAN')) return 'KAN';
+    if (upper.includes('PNP')) return 'PNP';
+  }
+  
+  // SOS → KAN, PNP
+  if (upper.includes('SOS')) {
+    if (upper.includes('KAN')) return 'KAN';
+    if (upper.includes('PNP')) return 'PNP';
+  }
+  
+  // FBC → KANZ1, PNPZ1, PNPZ2
+  if (upper.includes('FBC')) {
+    if (upper.includes('KAN')) return 'KANZ1';
+    if (upper.includes('PNP')) return 'PNPZ1';
+  }
+  
+  // ពិនិត្យមើល Unit ផ្សេងទៀត
+  for (const unit of VALID_UNITS) {
+    if (upper.includes(unit)) {
+      return unit;
+    }
+  }
+  
+  return null;
+};
+
+// 4. មុខងារចាប់យក Unit សំខាន់ (Main)
+const getUnit = (importRequestCode, unitRequests, unitReceive) => {
+  console.log('🔍 Getting unit from:', { importRequestCode, unitRequests, unitReceive });
+  
+  // អាទិភាពទី 1: ចាប់ពី Import Request Code
+  const unitFromRequest = getUnitFromRequestCode(importRequestCode);
+  if (unitFromRequest && VALID_UNITS.includes(unitFromRequest)) {
+    console.log(`✅ Unit from Request Code: ${unitFromRequest}`);
+    return unitFromRequest;
+  }
+  
+  // អាទិភាពទី 2: ចាប់ពី Unit Requests
+  const unitFromRequests = getUnitFromUnitRequests(unitRequests);
+  if (unitFromRequests && VALID_UNITS.includes(unitFromRequests)) {
+    console.log(`✅ Unit from Unit Requests: ${unitFromRequests}`);
+    return unitFromRequests;
+  }
+  
+  // អាទិភាពទី 3: ចាប់ពី Unit Receive
+  const unitFromReceive = getUnitFromUnitReceive(unitReceive);
+  if (unitFromReceive && VALID_UNITS.includes(unitFromReceive)) {
+    console.log(`✅ Unit from Unit Receive: ${unitFromReceive}`);
+    return unitFromReceive;
+  }
+  
+  console.log('❌ No unit found from any source');
   return null;
 };
 
 export const Restock_in = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const isLoaded = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -120,29 +299,41 @@ export const Restock_in = () => {
 
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
+      
+      isLoaded.current = true;
     };
     fetchDbData();
   }, []);
 
   // Sync to database
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.DATA, data);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.DATA, data);
+    }
   }, [data]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    }
   }, [completionHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGETS, targets);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGETS, targets);
+    }
   }, [targets]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    }
   }, [targetHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    }
   }, [confirmedStatus]);
 
   // Columns for Restock_in
@@ -274,13 +465,26 @@ export const Restock_in = () => {
   };
 
   const processImport = (newRawData) => {
+    console.log('📥 Processing import with data:', newRawData);
+    
     const filteredData = newRawData.filter(item => {
       const isGIS = item.importRequestCode && item.importRequestCode.toUpperCase().includes('GIS');
       const isUnsigned = item.statusCA === 'Unsigned';
-      const unit = getUnitFromRequestCode(item.importRequestCode);
+      const unit = getUnit(item.importRequestCode, item.unitRequests, item.unitReceive);
       const isValidUnit = unit !== null && VALID_UNITS.includes(unit);
+      
+      console.log('🔍 Filtering item:', {
+        importRequestCode: item.importRequestCode,
+        unit,
+        isValidUnit,
+        isGIS,
+        isUnsigned
+      });
+      
       return isGIS && isUnsigned && isValidUnit;
     });
+
+    console.log('✅ Filtered data:', filteredData);
 
     if (filteredData.length === 0) {
       showNotification('⚠️ No valid records found! (GIS + Unsigned + Valid Unit)', 'warning');
@@ -291,7 +495,7 @@ export const Restock_in = () => {
     const newCodesSet = new Set(filteredData.map(item => item.importRequestCode));
     
     const processedNewData = filteredData.map((item, index) => {
-      const unit = getUnitFromRequestCode(item.importRequestCode);
+      const unit = getUnit(item.importRequestCode, item.unitRequests, item.unitReceive);
       const daysDiff = calculateDaysDiff(item.dateCreate);
       const year = extractYearFromDate(item.dateCreate);
       
@@ -451,36 +655,52 @@ export const Restock_in = () => {
   const parsePastedData = (text) => {
     const rows = text.split(/\r?\n/);
     const parsedRows = [];
+    
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i].trim();
       if (!row) continue;
+      
+      // បំបែកដោយ tab ឬ space ច្រើន
       const cells = row.split(/\t| {2,}/);
-      if (cells.length >= 6) {
-        const firstCell = cells[0].trim().replace(/\.$/, '');
-        const isSequence = /^\d+$/.test(firstCell);
-        const offset = isSequence ? 1 : 0;
-        
-        if (cells.length - offset >= 6) {
-          parsedRows.push({
-            importRequestCode: cells[offset + 0] || '',
-            importCommandCode: cells[offset + 1] || '',
-            dateCreate: cells[offset + 2] || '',
-            importWarehouse: cells[offset + 3] || '',
-            contract: cells[offset + 4] || '',
-            creator: cells[offset + 5] || '',
-            unitRequests: cells[offset + 6] || '',
-            unitReceive: cells[offset + 7] || '',
-            dateDelivery: cells[offset + 8] || '',
-            statusCA: cells[offset + 9] || ''
-          });
-        }
+      
+      // ពិនិត្យមើលថាតើជា header row ឬទេ
+      if (i === 0) {
+        const isHeader = cells.some(cell => 
+          cell && (cell.includes('Nº') || cell.includes('Request') || cell.includes('Command'))
+        );
+        if (isHeader) continue;
+      }
+      
+      // រំលងជួរទី 1 (Nº) ប្រសិនបើមាន
+      let startIndex = 0;
+      if (cells.length > 0 && /^\d+$/.test(cells[0].trim())) {
+        startIndex = 1;
+      }
+      
+      // ត្រូវការយ៉ាងហោចណាស់ 10 ជួរ
+      if (cells.length - startIndex >= 10) {
+        parsedRows.push({
+          importRequestCode: cells[startIndex + 0] || '',
+          importCommandCode: cells[startIndex + 1] || '',
+          dateCreate: cells[startIndex + 2] || '',
+          importWarehouse: cells[startIndex + 3] || '',
+          contract: cells[startIndex + 4] || '',
+          creator: cells[startIndex + 5] || '',
+          unitRequests: cells[startIndex + 6] || '',
+          unitReceive: cells[startIndex + 7] || '',
+          dateDelivery: cells[startIndex + 8] || '',
+          statusCA: cells[startIndex + 9] || ''
+        });
       }
     }
+    
     return parsedRows;
   };
 
   const handleSmartImport = () => {
     const parsedData = parsePastedData(pasteData);
+    console.log('📊 Parsed data:', parsedData);
+    
     if (parsedData.length === 0) {
       showNotification('No valid data found to import!', 'warning');
       return;
@@ -498,8 +718,12 @@ export const Restock_in = () => {
           updated.daysDiff = calculateDaysDiff(value);
           updated.year = extractYearFromDate(value);
         }
-        if (field === 'importRequestCode') {
-          const unit = getUnitFromRequestCode(value);
+        if (field === 'importRequestCode' || field === 'unitRequests' || field === 'unitReceive') {
+          const unit = getUnit(
+            field === 'importRequestCode' ? value : item.importRequestCode,
+            field === 'unitRequests' ? value : item.unitRequests,
+            field === 'unitReceive' ? value : item.unitReceive
+          );
           updated.unit = unit && VALID_UNITS.includes(unit) ? unit : null;
         }
         return updated;
@@ -720,7 +944,7 @@ export const Restock_in = () => {
       const updated = prevData.map(item => {
         const currentDaysDiff = calculateDaysDiff(item.dateCreate);
         const currentYear = extractYearFromDate(item.dateCreate);
-        const currentUnit = getUnitFromRequestCode(item.importRequestCode);
+        const currentUnit = getUnit(item.importRequestCode, item.unitRequests, item.unitReceive);
         const validUnit = currentUnit && VALID_UNITS.includes(currentUnit) ? currentUnit : null;
         if (item.daysDiff !== currentDaysDiff || item.year !== currentYear || item.unit !== validUnit) {
           changed = true;
@@ -966,12 +1190,14 @@ export const Restock_in = () => {
 
             <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
               <div className="text-sm text-blue-800">
-                <strong className="font-bold">📌 How KPI Dashboard Works:</strong>
+                <strong className="font-bold">📌 How Unit Extraction Works:</strong>
                 <ul className="mt-1.5 ml-4 list-disc space-y-0.5 text-blue-700">
-                  <li>🎯 <strong>Target</strong> = Auto-created from data count (can be edited)</li>
-                  <li>✅ <strong>Result</strong> = Confirmed items</li>
-                  <li>📋 <strong>Remain</strong> = Target - Result</li>
-                  <li>📊 <strong>Ratio</strong> = (Result / Target) × 100%</li>
+                  <li>🥇 <strong>Priority 1:</strong> Import Request Code (YCNKGIS_...)</li>
+                  <li>🥈 <strong>Priority 2:</strong> Unit Requests (GIS_...)</li>
+                  <li>🥉 <strong>Priority 3:</strong> Unit Receive</li>
+                  <li>📋 <strong>FBC</strong> → KANZ1, PNPZ1, PNPZ2</li>
+                  <li>📋 <strong>SOS</strong> → KAN, PNP</li>
+                  <li>📋 <strong>PLA</strong> → KAN, PNP</li>
                 </ul>
               </div>
             </div>
@@ -1009,11 +1235,13 @@ export const Restock_in = () => {
             />
             <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
               <div className="text-sm text-gray-600">
-                <strong className="font-semibold text-gray-800">📊 Filter Rules:</strong>
+                <strong className="font-semibold text-gray-800">📊 Filter Rules & Unit Extraction:</strong>
                 <ul className="mt-1.5 ml-4 list-disc space-y-0.5">
                   <li>🏠 <strong>Import Request code</strong> - Must start with "YCNKGIS_"</li>
                   <li>📋 <strong>Status CA</strong> - Must be "Unsigned"</li>
-                  <li>🎯 <strong>Unit</strong> - Must be in valid units list</li>
+                  <li>🎯 <strong>Unit Priority</strong> - Request Code → Unit Requests → Unit Receive</li>
+                  <li>📋 <strong>FBC</strong> → KANZ1, PNPZ1, PNPZ2</li>
+                  <li>📋 <strong>SOS</strong> → KAN, PNP</li>
                   <li>📅 <strong>Year</strong> - Auto-extracted from Date Create</li>
                 </ul>
               </div>
@@ -1112,7 +1340,7 @@ export const Restock_in = () => {
     <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
       {alarmCount > 0 && !showAlarmModal && (
         <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 animate-bounce flex items-center gap-2 transform hover:scale-105">
-          <span className="text-xl">🚨</span>
+          <span className="text-xl animate-pulse">🚨</span>
           <span className="font-bold">{alarmCount}</span>
         </button>
       )}

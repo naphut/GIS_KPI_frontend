@@ -19,11 +19,14 @@ const GROUP_IDS = {
   'CHH': '-1004433153728',
   'KAM': '-1005346518831',
   'KAN': '-1006666666666',
+  'KANZ1': '-1003827079137',
   'KOH': '-1007777777777',
   'KRA': '-1008888888888',
   'MON': '-1009999999999',
   'ODD': '-1001010101010',
   'PNP': '-1004361704022',
+  'PNPZ1': '-1004361704022',
+  'PNPZ2': '-1004361704022',
   'PRE': '-1001313131313',
   'PRH': '-1001414141414',
   'PUR': '-1001515151515',
@@ -325,7 +328,7 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   message += `└─────────────────────────┘\n`;
   if (m1Items.length > 0) {
     message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    m1Items.slice(0, 10).forEach((item, index) => {
+    m1Items.forEach((item, index) => {
       const fullExportNo = (item.exportCode && item.exportCode !== '-' ? item.exportCode : '') + (item.exportNo && item.exportNo !== '-' ? item.exportNo : '') || '-';
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. ${escapeHtml(fullExportNo)}\n`;
@@ -333,11 +336,6 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
       message += `│ └─ Q'ty Day: ${item.daysDiff || 0}\n`;
       message += `└─────────────────────────┘\n`;
     });
-    if (m1Items.length > 10) {
-      message += `┌─────────────────────────┐\n`;
-      message += `│ ... and ${m1Items.length - 10} more\n`;
-      message += `└─────────────────────────┘\n`;
-    }
   } else {
     message += `\n┌─────────────────────────┐\n│ ✅ All completed!\n└─────────────────────────┘\n`;
   }
@@ -353,7 +351,7 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   message += `└─────────────────────────┘\n`;
   if (m2Items.length > 0) {
     message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    m2Items.slice(0, 10).forEach((item, index) => {
+    m2Items.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. ${escapeHtml(item.code)}\n`;
       message += `│ └─Recipient: ${escapeHtml(item.recipient)}\n`;
@@ -361,11 +359,6 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
       message += `│ └─ Q'ty of Day: ${item.daysDiff || 0}\n`;
       message += `└─────────────────────────┘\n`;
     });
-    if (m2Items.length > 10) {
-      message += `┌─────────────────────────┐\n`;
-      message += `│ ... and ${m2Items.length - 10} more\n`;
-      message += `└─────────────────────────┘\n`;
-    }
   } else {
     message += `\n┌─────────────────────────┐\n│ ✅ All completed!\n└─────────────────────────┘\n`;
   }
@@ -381,7 +374,7 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   message += `└─────────────────────────┘\n`;
   if (m3Items.length > 0) {
     message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    m3Items.slice(0, 10).forEach((item, index) => {
+    m3Items.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. ${escapeHtml(item.code)}\n`;
       message += `│ └─ Handover Unit: ${escapeHtml(item.warehouse)}\n`;
@@ -389,11 +382,6 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
       message += `│ └─ Q'ty of Day: ${item.daysDiff || 0}\n`;
       message += `└─────────────────────────┘\n`;
     });
-    if (m3Items.length > 10) {
-      message += `┌─────────────────────────┐\n`;
-      message += `│ ... and ${m3Items.length - 10} more\n`;
-      message += `└─────────────────────────┘\n`;
-    }
   } else {
     message += `\n┌─────────────────────────┐\n│ ✅ All completed!\n└─────────────────────────┘\n`;
   }
@@ -438,7 +426,7 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   message += `📅 <b>DATE</b>   : ${date}\n`;
   message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  message += `📈 <b>KPI SUMMARY</b>\n`;
+  message += `📈 <b>KPI SUMMARY CA</b>\n`;
   message += `┌─────────────────────────┐\n`;
   message += `│ 🌅 Target ព្រឹក: ${targetMorning}\n`;
   message += `│ 🌙 Target ល្ងាច: ${targetEvening}\n`;
@@ -448,41 +436,33 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   message += `│ 📦 In System  : ${inSystem}\n`;
   message += `└─────────────────────────┘\n\n`;
 
-  // Restock In
-  message += `<b>RESTOCK IN✅</b>\n`;
-  if (unsignedInItems.length > 0) {
-    unsignedInItems.slice(0, 10).forEach((item, index) => {
+  // Restock Out (EXPORT CA)
+  message += `<b>EXPORT CA✅</b>\n`;
+  if (unsignedOutItems.length > 0) {
+    unsignedOutItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.code || item.importRequestCode || '-')}\n`;
-      message += `│ └─ Q'ty Day: ${item.daysDiff || 0} days\n`;
-      message += `│    🏠 ${escapeHtml(item.warehouse || item.unitRequests || '-')}\n`;
-      message += `│    📌 ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
-      message += `│    👤 ${escapeHtml(item.creator || '-')}\n`;
+      message += `│ ${index + 1}. ${escapeHtml(item.code || '-')}\n`;
+      message += `│    Group request: ${escapeHtml(item.groupRequest || '-')}\n`;
+      message += `│    Creator: ${escapeHtml(item.creator || '-')}\n`;
+      message += `│    Q'ty of day: ${item.daysDiff || 0} days\n`;
       message += `└─────────────────────────┘\n`;
     });
-    if (unsignedInItems.length > 10) {
-      message += `┌─────────────────────────┐\n│ ... and ${unsignedInItems.length - 10} more\n└─────────────────────────┘\n`;
-    }
   } else {
     message += `┌─────────────────────────┐\n│ 📋 No unsigned documents\n└─────────────────────────┘\n`;
   }
   message += `\n`;
 
-  // Restock Out
-  message += `<b>RESTOCK OUT✅</b>\n`;
-  if (unsignedOutItems.length > 0) {
-    unsignedOutItems.slice(0, 10).forEach((item, index) => {
+  // Restock In (IMPORT CA)
+  message += `<b>IMPORT CA✅</b>\n`;
+  if (unsignedInItems.length > 0) {
+    unsignedInItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.code || item.exportNoteCode || '-')}\n`;
-      message += `│ └─ Q'ty Day: ${item.daysDiff || 0} days\n`;
-      message += `│    🏠 ${escapeHtml(item.warehouse || item.exportWarehouse || '-')}\n`;
-      message += `│    📌 ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
-      message += `│    👤 ${escapeHtml(item.creator || item.createRequester || '-')}\n`;
+      message += `│ ${index + 1}. ${escapeHtml(item.code || '-')}\n`;
+      message += `│    Unit Requests: ${escapeHtml(item.unitRequests || '-')}\n`;
+      message += `│    Creator: ${escapeHtml(item.creator || '-')}\n`;
+      message += `│    Q'ty of day: ${item.daysDiff || 0} days\n`;
       message += `└─────────────────────────┘\n`;
     });
-    if (unsignedOutItems.length > 10) {
-      message += `┌─────────────────────────┐\n│ ... and ${unsignedOutItems.length - 10} more\n└─────────────────────────┘\n`;
-    }
   } else {
     message += `┌─────────────────────────┐\n│ 📋 No unsigned documents\n└─────────────────────────┘\n`;
   }
@@ -492,7 +472,7 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   if (customNote && customNote.trim()) {
     message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
   }
-  message += `<i>Report generated from Restock In & Restock Out Dashboard</i>`;
+  message += `<i>Report generated from Dashboard CA</i>`;
 
   return message;
 };
@@ -540,7 +520,7 @@ const formatCAMessage = (unit, data, customNote = '') => {
   // Export CA
   message += `<b>EXPORT CA✅</b>\n`;
   if (unsignedOutItems.length > 0) {
-    unsignedOutItems.slice(0, 10).forEach((item, index) => {
+    unsignedOutItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. ${escapeHtml(item.code || item.exportNoteCode || '-')}\n`;
       message += `│ └─ Q'ty Day: ${item.daysDiff || 0} days\n`;
@@ -549,9 +529,6 @@ const formatCAMessage = (unit, data, customNote = '') => {
       message += `│    👤 ${escapeHtml(item.creator || item.createRequester || '-')}\n`;
       message += `└─────────────────────────┘\n`;
     });
-    if (unsignedOutItems.length > 10) {
-      message += `┌─────────────────────────┐\n│ ... and ${unsignedOutItems.length - 10} more\n└─────────────────────────┘\n`;
-    }
   } else {
     message += `┌─────────────────────────┐\n│ 📋 No unsigned documents\n└─────────────────────────┘\n`;
   }
@@ -560,7 +537,7 @@ const formatCAMessage = (unit, data, customNote = '') => {
   // Import CA
   message += `<b>IMPORT CA✅</b>\n`;
   if (unsignedInItems.length > 0) {
-    unsignedInItems.slice(0, 10).forEach((item, index) => {
+    unsignedInItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. ${escapeHtml(item.code || item.codeReceipt || '-')}\n`;
       message += `│ └─ Q'ty Day: ${item.daysDiff || 0} days\n`;
@@ -569,9 +546,6 @@ const formatCAMessage = (unit, data, customNote = '') => {
       message += `│    👤 ${escapeHtml(item.creator || '-')}\n`;
       message += `└─────────────────────────┘\n`;
     });
-    if (unsignedInItems.length > 10) {
-      message += `┌─────────────────────────┐\n│ ... and ${unsignedInItems.length - 10} more\n└─────────────────────────┘\n`;
-    }
   } else {
     message += `┌─────────────────────────┐\n│ 📋 No unsigned documents\n└─────────────────────────┘\n`;
   }
@@ -604,37 +578,70 @@ const sendMessageToTelegram = async (unit, message, signal = null) => {
     }
 
     const token = getBotToken(unit);
-    const url = `https://api.telegram.org/bot${token}/sendMessage`;
+    const backendUrl = `${getBackendBaseUrl()}/telegram/send`;
     
-    console.log(`📤 Sending to ${unit}...`);
+    console.log(`📤 Sending to ${unit} via backend...`);
     
-    // Timeout 15 seconds
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: groupId,
-        text: message,
-        parse_mode: 'HTML',
-        disable_web_page_preview: true
-      }),
-      signal: signal || controller.signal
-    });
+    let response;
+    let result;
     
-    clearTimeout(timeoutId);
-    const result = await response.json();
-    const duration = Date.now() - startTime;
-    
-    if (result.ok) {
-      console.log(`✅ Sent to ${unit} (${duration}ms)`);
-      return { success: true, result, duration };
-    } else {
-      console.error(`❌ Failed to send to ${unit}: ${result.description}`);
-      return { success: false, error: result.description, duration };
+    try {
+      response = await fetch(backendUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: message,
+          chat_id: groupId,
+          token: token
+        }),
+        signal: signal || controller.signal
+      });
+      
+      if (response.ok) {
+        result = await response.json();
+      }
+    } catch (backendError) {
+      console.warn(`⚠️ Backend sending failed, falling back to direct sending:`, backendError);
     }
+    
+    // Fallback to direct sending if backend is not available or returned an error
+    if (!result || !result.success) {
+      console.log(`📤 Falling back to direct sending to Telegram API for ${unit}...`);
+      const directUrl = `https://api.telegram.org/bot${token}/sendMessage`;
+      const directResponse = await fetch(directUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: groupId,
+          text: message,
+          parse_mode: 'HTML',
+          disable_web_page_preview: true
+        }),
+        signal: signal || controller.signal
+      });
+      
+      const directResult = await directResponse.json();
+      const duration = Date.now() - startTime;
+      clearTimeout(timeoutId);
+      
+      if (directResult.ok) {
+        console.log(`✅ Sent directly to ${unit} (${duration}ms)`);
+        return { success: true, result: directResult, duration };
+      } else {
+        console.error(`❌ Failed to send directly to ${unit}: ${directResult.description}`);
+        return { success: false, error: directResult.description, duration };
+      }
+    }
+    
+    const duration = Date.now() - startTime;
+    clearTimeout(timeoutId);
+    
+    console.log(`✅ Sent via backend to ${unit} (${duration}ms)`);
+    return { success: true, result, duration };
+    
   } catch (error) {
     const duration = Date.now() - startTime;
     if (error.name === 'AbortError') {
@@ -1041,8 +1048,14 @@ export const sendTestToAll = async (onProgress) => {
 
 const getBackendBaseUrl = () => {
   const host = window.location.hostname || 'localhost';
-  if (host === 'localhost' || host === '127.0.0.1') {
-    return 'http://localhost:8000/api';
+  const isLocal = host === 'localhost' || 
+                  host === '127.0.0.1' || 
+                  host.startsWith('192.168.') || 
+                  host.startsWith('10.') || 
+                  host.startsWith('172.') || 
+                  host.endsWith('.local');
+  if (isLocal) {
+    return `http://${host}:8000/api`;
   }
   return 'https://gis-kpi-backend.onrender.com/api';
 };

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb } from '../../services/dbStore';
 
@@ -21,10 +21,9 @@ const getStorageData = (key) => {
   }
 };
 
-
-
 const Import_CA = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const isLoaded = useRef(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -72,29 +71,41 @@ const Import_CA = () => {
 
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
+      
+      isLoaded.current = true;
     };
     fetchDbData();
   }, []);
 
   // Sync to database
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.DATA, data);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.DATA, data);
+    }
   }, [data]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.COMPLETION, completionHistory);
+    }
   }, [completionHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGETS, targets);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGETS, targets);
+    }
   }, [targets]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
+    }
   }, [targetHistory]);
 
   useEffect(() => {
-    saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    if (isLoaded.current) {
+      saveToDb(STORAGE_KEYS.CONFIRMED, confirmedStatus);
+    }
   }, [confirmedStatus]);
 
   // Complete list of all possible Units
@@ -145,18 +156,233 @@ const Import_CA = () => {
     return '';
   };
 
-  const getUnitFromWarehouse = (warehouse) => {
-    if (!warehouse) return 'OTHER';
-    const parts = warehouse.split('_');
-    if (parts.length >= 2 && parts[0] === 'GIS') {
-      const unitCode = parts[1];
-      const validUnits = ['BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
-        'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
-        'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'];
-      if (validUnits.includes(unitCode)) return unitCode;
-      if (unitCode === 'KANZ') return 'KANZ1';
-      if (unitCode === 'PNPZ') return 'PNPZ1';
+  // ============================================================
+  // 🎯 UNIT EXTRACTION LOGIC
+  // ============================================================
+
+  // 1. ចាប់យក Unit ពី Code of receipt note
+  const getUnitFromReceiptCode = (codeReceipt) => {
+    if (!codeReceipt) return null;
+    
+    const upper = codeReceipt.toUpperCase();
+    
+    // ឧទាហរណ៍: PNKGIS_PNP_FBC01/26/000003
+    // ចាប់យកផ្នែកកណ្តាល: PNP_FBC01
+    const match = upper.match(/(?:PNK|LNK)GIS_([A-Z0-9_]+)/);
+    if (match && match[1]) {
+      const codePart = match[1]; // PNP_FBC01, KAN_SOS01, PNP_PLA
+  
+      // ពិនិត្យមើល FBC (PNPZ1, PNPZ2, KANZ1)
+      if (codePart.includes('FBC')) {
+        // PNP_FBC01 → PNPZ1
+        if (codePart.startsWith('PNP_')) {
+          const fbcNum = codePart.match(/FBC(\d+)/);
+          if (fbcNum) {
+            const num = parseInt(fbcNum[1]);
+            // PNPZ1: 01,03,05,06,07,10,13,14
+            if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) {
+              return 'PNPZ1';
+            }
+            // PNPZ2: 02,04,08,09,12
+            if ([2, 4, 8, 9, 12].includes(num)) {
+              return 'PNPZ2';
+            }
+          }
+          return 'PNPZ1'; // default
+        }
+        // KAN_FBC01 → KANZ1
+        if (codePart.startsWith('KAN_')) {
+          return 'KANZ1';
+        }
+      }
+      
+      // ពិនិត្យមើល SOS (PNP, KAN)
+      if (codePart.includes('SOS')) {
+        if (codePart.startsWith('PNP_')) {
+          return 'PNP';
+        }
+        if (codePart.startsWith('KAN_')) {
+          return 'KAN';
+        }
+      }
+      
+      // PLA (PNP, KAN)
+      if (codePart.includes('PLA')) {
+        if (codePart.startsWith('PNP_')) {
+          return 'PNP';
+        }
+        if (codePart.startsWith('KAN_')) {
+          return 'KAN';
+        }
+      }
+      
+      // TEC
+      if (codePart.includes('TEC')) {
+        if (codePart.startsWith('PNP_')) {
+          return 'PNP';
+        }
+        if (codePart.startsWith('KAN_')) {
+          return 'KAN';
+        }
+      }
+      
+      // ចាប់យក Unit ដំបូង
+      const unitMatch = codePart.match(/^([A-Z]+)/);
+      if (unitMatch && unitMatch[1]) {
+        const unit = unitMatch[1];
+        if (allUnits.includes(unit)) {
+          return unit;
+        }
+        if (unit === 'PNPZ') return 'PNPZ1';
+        if (unit === 'KANZ') return 'KANZ1';
+      }
     }
+    
+    return null;
+  };
+
+  // 2. ចាប់យក Unit ពី Code of command
+  const getUnitFromCommandCode = (codeCommand) => {
+    if (!codeCommand) return null;
+    
+    const upper = codeCommand.toUpperCase();
+    
+    // ឧទាហរណ៍: LNKGIS_PNP_FBC01/26/000003
+    const match = upper.match(/(?:PNK|LNK)GIS_([A-Z0-9_]+)/);
+    if (match && match[1]) {
+      const codePart = match[1];
+      
+      // FBC
+      if (codePart.includes('FBC')) {
+        if (codePart.startsWith('PNP_')) {
+          const fbcNum = codePart.match(/FBC(\d+)/);
+          if (fbcNum) {
+            const num = parseInt(fbcNum[1]);
+            if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) {
+              return 'PNPZ1';
+            }
+            if ([2, 4, 8, 9, 12].includes(num)) {
+              return 'PNPZ2';
+            }
+          }
+          return 'PNPZ1';
+        }
+        if (codePart.startsWith('KAN_')) {
+          return 'KANZ1';
+        }
+      }
+      
+      // SOS
+      if (codePart.includes('SOS')) {
+        if (codePart.startsWith('PNP_')) {
+          return 'PNP';
+        }
+        if (codePart.startsWith('KAN_')) {
+          return 'KAN';
+        }
+      }
+      
+      // PLA
+      if (codePart.includes('PLA')) {
+        if (codePart.startsWith('PNP_')) {
+          return 'PNP';
+        }
+        if (codePart.startsWith('KAN_')) {
+          return 'KAN';
+        }
+      }
+      
+      const unitMatch = codePart.match(/^([A-Z]+)/);
+      if (unitMatch && unitMatch[1]) {
+        const unit = unitMatch[1];
+        if (allUnits.includes(unit)) {
+          return unit;
+        }
+        if (unit === 'PNPZ') return 'PNPZ1';
+        if (unit === 'KANZ') return 'KANZ1';
+      }
+    }
+    
+    return null;
+  };
+
+  // 3. ចាប់យក Unit ពី Warehouse
+  const getUnitFromWarehouse = (warehouse) => {
+    if (!warehouse) return null;
+    
+    const upper = warehouse.toUpperCase();
+    
+    // 1. ពិនិត្យមើលលំនាំ GIS_XXX_
+    const match = upper.match(/^GIS_([A-Z0-9]+)_/);
+    if (match && match[1]) {
+      const unit = match[1];
+      if (allUnits.includes(unit)) {
+        return unit;
+      }
+      if (unit === 'PNPZ') return 'PNPZ1';
+      if (unit === 'KANZ') return 'KANZ1';
+    }
+    
+    // 2. ពិនិត្យ FBC → PNPZ1/KANZ1
+    if (upper.includes('FBC')) {
+      if (upper.includes('PNP')) {
+        return 'PNPZ1';
+      }
+      if (upper.includes('KAN')) {
+        return 'KANZ1';
+      }
+    }
+    
+    // 3. ពិនិត្យ SOS → PNP/KAN
+    if (upper.includes('SOS')) {
+      if (upper.includes('PNP')) {
+        return 'PNP';
+      }
+      if (upper.includes('KAN')) {
+        return 'KAN';
+      }
+    }
+    
+    // 4. ពិនិត្យ PLA → PNP/KAN
+    if (upper.includes('PLA')) {
+      if (upper.includes('PNP')) {
+        return 'PNP';
+      }
+      if (upper.includes('KAN')) {
+        return 'KAN';
+      }
+    }
+    
+    // 5. ពិនិត្យមើល Unit ផ្សេងទៀត
+    for (const unit of allUnits) {
+      if (upper.includes(`_${unit}_`) || upper.includes(`GIS_${unit}_`)) {
+        return unit;
+      }
+    }
+    
+    return null;
+  };
+
+  // 4. មុខងារចាប់យក Unit សំខាន់ (Main)
+  const getUnit = (codeReceipt, codeCommand, warehouse) => {
+    // អាទិភាពទី 1: ចាប់ពី Code of receipt note
+    const unitFromReceipt = getUnitFromReceiptCode(codeReceipt);
+    if (unitFromReceipt && allUnits.includes(unitFromReceipt)) {
+      return unitFromReceipt;
+    }
+    
+    // អាទិភាពទី 2: ចាប់ពី Code of command
+    const unitFromCommand = getUnitFromCommandCode(codeCommand);
+    if (unitFromCommand && allUnits.includes(unitFromCommand)) {
+      return unitFromCommand;
+    }
+    
+    // អាទិភាពទី 3: ចាប់ពី Warehouse
+    const unitFromWarehouse = getUnitFromWarehouse(warehouse);
+    if (unitFromWarehouse && allUnits.includes(unitFromWarehouse)) {
+      return unitFromWarehouse;
+    }
+    
     return 'OTHER';
   };
 
@@ -293,7 +519,8 @@ const Import_CA = () => {
     const newCodesSet = new Set(gisData.map(item => item.codeReceipt));
     
     const processedNewData = gisData.map((item, index) => {
-      const unit = getUnitFromWarehouse(item.warehouse);
+      // 🎯 ប្រើមុខងារ getUnit ថ្មី
+      const unit = getUnit(item.codeReceipt, item.codeCommand, item.warehouse);
       const daysDiff = calculateDaysDiff(item.date);
       const year = extractYearFromDate(item.date);
       const isCompleted = item.status?.includes('Actual Import finished') || item.status?.includes('Đã thực nhập hết');
@@ -495,7 +722,14 @@ const Import_CA = () => {
           updated.daysDiff = calculateDaysDiff(value);
           updated.year = extractYearFromDate(value);
         }
-        if (field === 'warehouse') updated.unit = getUnitFromWarehouse(value);
+        if (field === 'codeReceipt' || field === 'codeCommand' || field === 'warehouse') {
+          // 🎯 ប្រើមុខងារ getUnit ថ្មី
+          updated.unit = getUnit(
+            field === 'codeReceipt' ? value : item.codeReceipt,
+            field === 'codeCommand' ? value : item.codeCommand,
+            field === 'warehouse' ? value : item.warehouse
+          );
+        }
         if (field === 'status') {
           updated.isCompleted = value?.includes('Actual Import finished') || value?.includes('Đã thực nhập hết');
         }
@@ -962,12 +1196,14 @@ const Import_CA = () => {
 
             <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
               <div className="text-sm text-blue-800">
-                <strong className="font-bold">📌 How KPI Dashboard Works:</strong>
+                <strong className="font-bold">📌 How Unit Extraction Works:</strong>
                 <ul className="mt-1.5 ml-4 list-disc space-y-0.5 text-blue-700">
-                  <li>🎯 <strong>Target</strong> = Auto-created from data count (can be edited)</li>
-                  <li>✅ <strong>Result</strong> = Confirmed items</li>
-                  <li>📋 <strong>Remain</strong> = Target - Result</li>
-                  <li>📊 <strong>Ratio</strong> = (Result / Target) × 100%</li>
+                  <li>🎯 <strong>Priority 1:</strong> Extract from Code of receipt note</li>
+                  <li>🎯 <strong>Priority 2:</strong> Extract from Code of command</li>
+                  <li>🎯 <strong>Priority 3:</strong> Extract from Warehouse</li>
+                  <li>📋 <strong>FBC</strong> → PNPZ1, PNPZ2, KANZ1</li>
+                  <li>📋 <strong>SOS</strong> → PNP, KAN</li>
+                  <li>📋 <strong>PLA</strong> → PNP, KAN</li>
                 </ul>
               </div>
             </div>
@@ -1005,13 +1241,13 @@ const Import_CA = () => {
             />
             <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
               <div className="text-sm text-gray-600">
-                <strong className="font-semibold text-gray-800">📊 What will happen:</strong>
+                <strong className="font-semibold text-gray-800">📊 Unit Extraction Rules:</strong>
                 <ul className="mt-1.5 ml-4 list-disc space-y-0.5">
+                  <li>🎯 <strong>FBC</strong> in Code/Command/Warehouse → <span className="font-bold text-purple-600">PNPZ1, PNPZ2, KANZ1</span></li>
+                  <li>🎯 <strong>SOS</strong> in Code/Command/Warehouse → <span className="font-bold text-blue-600">PNP, KAN</span></li>
+                  <li>🎯 <strong>PLA</strong> in Code/Command/Warehouse → <span className="font-bold text-green-600">PNP, KAN</span></li>
                   <li>🏠 <strong>Auto-filter</strong> - Only GIS warehouses are kept</li>
                   <li>🚫 <strong>Filter out Signed</strong> - Only Unsigned and Is signing are imported</li>
-                  <li>🎯 <strong>New Units</strong> → Auto-create target</li>
-                  <li>✅ <strong>Completed</strong> → Auto-marked when status is "Actual Import finished"</li>
-                  <li>📋 <strong>Status CA</strong> - Unsigned / Is signing only</li>
                   <li>📅 <strong>Year</strong> - Auto-extracted from Date</li>
                 </ul>
               </div>
@@ -1146,7 +1382,7 @@ const Import_CA = () => {
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-blue-100 mt-1 text-sm">Smart Import | Auto-filter GIS | Only Unsigned/Is signing | Auto-extract Year</p>
+              <p className="text-blue-100 mt-1 text-sm">Smart Import | Auto-filter GIS | Only Unsigned/Is signing | Auto-extract Unit</p>
             </div>
             <div className="flex gap-2">
               <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all">🗑️ Clear All</button>

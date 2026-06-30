@@ -228,7 +228,7 @@ const Dashboard_Request = () => {
   const processedData = useMemo(() => {
     return data.map(item => ({
       ...item,
-      unit: getUnitFromRequestCode(item.importRequestCode) || item.unit,
+      unit: item.unit || getUnitFromRequestCode(item.importRequestCode),
       daysDiff: calculateDaysDiff(item.dateCreate),
       isCompleted: completionHistory.some(h => h.importRequestCode === item.importRequestCode) || 
                     confirmedStatus[item.id]
@@ -239,9 +239,9 @@ const Dashboard_Request = () => {
   const processedRestockOutData = useMemo(() => {
     return restockOutData.map(item => ({
       ...item,
-      unit: getUnitFromExportNoteCode(item.exportNoteCode) || item.unit,
-      daysDiff: calculateDaysDiff(item.dateCreate),
-      isCompleted: restockOutHistory.some(h => h.importRequestCode === item.importRequestCode) || 
+      unit: item.unit || getUnitFromRequestCode(item.requestExportCode),
+      daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.createDate),
+      isCompleted: restockOutHistory.some(h => h.requestExportCode === item.requestExportCode) || 
                     restockOutConfirmed[item.id]
     }));
   }, [restockOutData, restockOutHistory, restockOutConfirmed]);
@@ -544,19 +544,17 @@ const Dashboard_Request = () => {
         .map(item => ({
           code: item.importRequestCode || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate),
-          warehouse: item.unitRequests || '-',
-          statusCA: item.statusCA || 'Unsigned',
+          unitRequests: item.unitRequests || '-',
           creator: item.creator || '-'
         }));
 
       const unsignedOutItemsList = outItems
         .filter(item => !item.isCompleted)
         .map(item => ({
-          code: item.exportNoteCode || '',
-          daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate),
-          warehouse: item.exportWarehouse || '-',
-          statusCA: item.statusCA || 'Unsigned',
-          creator: item.createRequester || '-'
+          code: item.requestExportCode || '',
+          daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.createDate),
+          groupRequest: item.groupRequest || '-',
+          creator: item.creator || '-'
         }));
 
       unitsMap[unit] = {
