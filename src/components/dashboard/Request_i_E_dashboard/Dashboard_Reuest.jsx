@@ -51,21 +51,6 @@ const getUnitFromRequestCode = (importRequestCode) => {
   return null;
 };
 
-const getUnitFromExportNoteCode = (exportNoteCode) => {
-  if (!exportNoteCode) return null;
-  if (exportNoteCode.startsWith('PXKGIS_')) {
-    const parts = exportNoteCode.split('_');
-    if (parts.length >= 2) {
-      const unitCode = parts[1];
-      if (VALID_UNITS.includes(unitCode)) {
-        return unitCode;
-      }
-      if (unitCode === 'KANZ') return 'KANZ1';
-      if (unitCode === 'PNPZ') return 'PNPZ1';
-    }
-  }
-  return null;
-};
 
 const calculateDaysDiff = (dateString) => {
   if (!dateString) return 0;
