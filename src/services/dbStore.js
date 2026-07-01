@@ -75,13 +75,64 @@ export const saveToDb = async (key, value) => {
     });
     
     if (response.ok) {
-      return true;
+      const data = await response.json();
+      return data; // Return full DB object (key, value, status, result, updated_at, version)
     } else {
       console.error(`Failed to save key "${key}" to DB: ${response.status}`);
-      return false;
+      return null;
     }
   } catch (error) {
     console.error(`Network error saving key "${key}" to DB:`, error);
-    return false;
+    return null;
   }
+};
+
+/**
+ * Transition a store value's status to 'completed'.
+ */
+export const completeStore = async (key) => {
+  try {
+    const response = await fetch(`${getBackendBaseUrl()}/${key}/complete`, {
+      method: 'POST'
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error(`Error completing store for key "${key}":`, error);
+  }
+  return null;
+};
+
+/**
+ * Transition a store value's status to 'cleared'.
+ */
+export const clearStore = async (key) => {
+  try {
+    const response = await fetch(`${getBackendBaseUrl()}/${key}/clear`, {
+      method: 'POST'
+    });
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error(`Error clearing store for key "${key}":`, error);
+  }
+  return null;
+};
+
+/**
+ * Check if a store value is in 'draft' status.
+ */
+export const isStoreDraft = async (key) => {
+  try {
+    const response = await fetch(`${getBackendBaseUrl()}/${key}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data && data.status === 'draft';
+    }
+  } catch (error) {
+    console.error(`Error checking draft status for key "${key}":`, error);
+  }
+  return false;
 };

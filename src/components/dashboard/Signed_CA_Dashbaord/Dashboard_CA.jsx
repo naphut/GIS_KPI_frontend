@@ -10,7 +10,7 @@ import {
   saveTemplate,
   deleteTemplate
 } from '../../../services/telegramBot';
-import { loadFromDb, saveToDb } from '../../../services/dbStore';
+import { loadFromDb, saveToDb, completeStore } from '../../../services/dbStore';
 
 // Storage Keys
 const STORAGE_KEYS = {
@@ -21,27 +21,11 @@ const STORAGE_KEYS = {
 };
 
 // Helper functions
-const VALID_UNITS = [
-  'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
-  'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
-  'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
-];
 
-const getUnitFromWarehouse = (warehouseName) => {
-  if (!warehouseName) return 'UNKNOWN';
-  const parts = warehouseName.split('_');
-  if (parts.length >= 2) {
-    const unit = parts[1];
-    return VALID_UNITS.includes(unit) ? unit : 'OTHER';
-  }
-  return 'OTHER';
-};
 
-const getItemUnit = (item, isStockOut = true) => {
-  if (item.unit) return item.unit;
-  const wh = isStockOut ? item.exportWarehouse : item.warehouse;
-  return getUnitFromWarehouse(wh);
-};
+
+
+
 
 const getStorageData = (key) => {
   try {
@@ -335,16 +319,28 @@ const Dashboard_CA = () => {
       const targetEvening = exportTarget;
       const totalUnitTarget = targetMorning + targetEvening;
 
-      const outItems = stockOutData.filter(item => getItemUnit(item, true) === unit);
+      const outItems = stockOutData.filter(item => item.unit === unit);
       const outTotal = outItems.length;
-      const outResult = outItems.filter(item => item.statusCA === 'Is signing' || item.statusCA === 'Signing').length;
-      const outUnsigned = outItems.filter(item => item.statusCA === 'Unsigned' || !item.statusCA).length;
+      const outResult = outItems.filter(item => {
+        const s = (item.statusCA || '').toLowerCase();
+        return s.includes('signing') || s.includes('is signing');
+      }).length;
+      const outUnsigned = outItems.filter(item => {
+        const s = (item.statusCA || '').toLowerCase();
+        return s.includes('unsigned') || !item.statusCA;
+      }).length;
       const outRatio = outTotal > 0 ? parseFloat(((outResult / outTotal) * 100).toFixed(2)) : 100;
       
-      const inItems = stockInData.filter(item => getItemUnit(item, false) === unit);
+      const inItems = stockInData.filter(item => item.unit === unit);
       const inTotal = inItems.length;
-      const inResult = inItems.filter(item => item.statusCA === 'Is signing' || item.statusCA === 'Signing').length;
-      const inUnsigned = inItems.filter(item => item.statusCA === 'Unsigned' || !item.statusCA).length;
+      const inResult = inItems.filter(item => {
+        const s = (item.statusCA || '').toLowerCase();
+        return s.includes('signing') || s.includes('is signing');
+      }).length;
+      const inUnsigned = inItems.filter(item => {
+        const s = (item.statusCA || '').toLowerCase();
+        return s.includes('unsigned') || !item.statusCA;
+      }).length;
       const inRatio = inTotal > 0 ? parseFloat(((inResult / inTotal) * 100).toFixed(2)) : 100;
       
       const overallTotal = outTotal + inTotal;
@@ -360,17 +356,24 @@ const Dashboard_CA = () => {
         : (overallUnsigned === 0 && overallResult === 0 ? 100 : 0);
       
       const unsignedOutItemsList = outItems
-        .filter(item => item.statusCA === 'Unsigned' || !item.statusCA)
+        .filter(item => {
+          const s = (item.statusCA || '').toLowerCase();
+          return !s.includes('signed') || s.includes('unsigned');
+        })
         .map(item => ({
           code: item.exportNoteCode || item.code || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate),
           warehouse: item.exportWarehouse || '-',
           statusCA: item.statusCA || 'Unsigned',
-          creator: item.createRequester || '-'
+          creator: item.createRequester || '-',
+          unitEntering: item.unitEntering || '-'
         }));
 
       const unsignedInItemsList = inItems
-        .filter(item => item.statusCA === 'Unsigned' || !item.statusCA)
+        .filter(item => {
+          const s = (item.statusCA || '').toLowerCase();
+          return !s.includes('signed') || s.includes('unsigned');
+        })
         .map(item => ({
           code: item.codeReceipt || item.code || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.date),
@@ -463,6 +466,11 @@ const Dashboard_CA = () => {
       
       setSendResults(result.summary);
       
+      if (result.summary.success > 0) {
+        completeStore(STORAGE_KEYS.EXPORT_CA_DATA);
+        completeStore(STORAGE_KEYS.IMPORT_CA_DATA);
+      }
+      
       let message = `✅ Report sent to ${result.summary.success}/${result.summary.total} groups`;
       if (result.summary.failed > 0) {
         message += `\n❌ Failed: ${result.summary.failed}`;
@@ -513,6 +521,8 @@ const Dashboard_CA = () => {
       const result = await sendCAToTelegram(unit, data, customNote, abortControllerRef.current.signal);
       
       if (result && result.success) {
+        completeStore(STORAGE_KEYS.EXPORT_CA_DATA);
+        completeStore(STORAGE_KEYS.IMPORT_CA_DATA);
         setSendProgress({
           current: 1,
           total: 1,

@@ -11,7 +11,7 @@ import {
   saveTemplate,
   deleteTemplate
 } from '../../../services/telegramBot';
-import { loadFromDb, saveToDb } from '../../../services/dbStore';
+import { loadFromDb, saveToDb, completeStore } from '../../../services/dbStore';
 
 // Import the same storage keys from your Restock_in component
 const STORAGE_KEYS = {
@@ -623,6 +623,11 @@ const Dashboard_Request = () => {
       
       setSendResults(result.summary);
       
+      if (result.summary.success > 0) {
+        completeStore(STORAGE_KEYS.DATA);
+        completeStore('restock_out_data');
+      }
+      
       let message = `✅ Report sent to ${result.summary.success}/${result.summary.total} groups`;
       if (result.summary.failed > 0) {
         message += `\n❌ Failed: ${result.summary.failed}`;
@@ -673,6 +678,8 @@ const Dashboard_Request = () => {
       const result = await sendRestockToTelegram(unit, data, customNote, abortControllerRef.current.signal);
       
       if (result && result.success) {
+        completeStore(STORAGE_KEYS.DATA);
+        completeStore('restock_out_data');
         setSendProgress({
           current: 1,
           total: 1,

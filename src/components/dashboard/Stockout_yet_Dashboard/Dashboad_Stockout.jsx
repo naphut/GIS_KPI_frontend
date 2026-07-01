@@ -404,7 +404,39 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         inSystem: m1Count + m2Count + m3Count,
         stockoutYetConfirm: getStockoutItems(unit),
         noCreateHandOver: getNoCreateItems(unit),
-        stockOutNoteNotConfirmed: getNotConfirmedItems(unit)
+        stockOutNoteNotConfirmed: getNotConfirmedItems(unit),
+        
+        // Also map to standard telegram bot keys:
+        m1Target: m1Target,
+        m1Morning: m1Morning,
+        m1Evening: m1Evening,
+        m1Result: m1Result,
+        m1Remain: m1Remain,
+        m1Ratio: m1Target > 0 ? parseFloat(((m1Result / m1Target) * 100).toFixed(2)) : (m1Remain === 0 && m1Result === 0 ? 100 : 0),
+        m1Items: getStockoutItems(unit),
+        
+        m2Target: m2Target,
+        m2Result: m2Result,
+        m2Remain: m2Remain,
+        m2Ratio: m2Target > 0 ? parseFloat(((m2Result / m2Target) * 100).toFixed(2)) : (m2Remain === 0 && m2Result === 0 ? 100 : 0),
+        m2Items: getNoCreateItems(unit),
+        
+        m3Target: m3Target,
+        m3Result: m3Result,
+        m3Remain: m3Remain,
+        m3Ratio: m3Target > 0 ? parseFloat(((m3Result / m3Target) * 100).toFixed(2)) : (m3Remain === 0 && m3Result === 0 ? 100 : 0),
+        m3Items: getNotConfirmedItems(unit).map(item => ({
+          code: item.code || '-',
+          warehouse: item.handoverUnit || item.unitConfirm || '-',
+          unitConfirm: item.unitConfirm || '-',
+          daysDiff: item.daysDiff || 0,
+          creator: item.creator || '-'
+        })),
+        
+        totalResult: unitResult,
+        totalRemain: unitRemain,
+        totalRatio: unitRatio,
+        totalInSystem: m1Count + m2Count + m3Count
       };
     });
 

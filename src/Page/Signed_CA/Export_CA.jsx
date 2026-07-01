@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { loadFromDb, saveToDb } from '../../services/dbStore';
+import { loadFromDb, saveToDb, clearStore, isStoreDraft } from '../../services/dbStore';
 
 // Storage Keys
 const STORAGE_KEYS = {
@@ -490,7 +490,12 @@ export const Export_CA = () => {
     showNotification(`📊 Target for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
   };
 
-  const processImport = (newRawData) => {
+  const processImport = async (newRawData) => {
+    const isDraft = await isStoreDraft(STORAGE_KEYS.DATA);
+    if (isDraft) {
+      showNotification('⚠️ Current draft is not completed. New import is ignored.', 'warning');
+      return;
+    }
     const filteredData = newRawData.filter(item => {
       const warehouse = (item.exportWarehouse || '').toUpperCase().replace(/\s+/g, '');
       const isGIS = warehouse.includes('GIS') || getUnitFromWarehouse(warehouse) !== null;
@@ -750,12 +755,16 @@ export const Export_CA = () => {
     setData(updatedData);
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
     if (window.confirm('⚠️ Are you sure you want to delete ALL data? This cannot be undone!')) {
       setData([]);
       setCompletionHistory([]);
       setTargets({});
       setConfirmedStatus({});
+      await clearStore(STORAGE_KEYS.DATA);
+      await clearStore(STORAGE_KEYS.COMPLETION);
+      await clearStore(STORAGE_KEYS.TARGETS);
+      await clearStore(STORAGE_KEYS.CONFIRMED);
       showNotification('All data cleared!', 'warning');
     }
   };

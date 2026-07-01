@@ -1,4 +1,5 @@
 // telegramBot.js - Full Working Version with ALL Exports (Optimized)
+import { loadFromDb } from './dbStore';
 
 // ============================================================
 // 📌 CONFIGURATION
@@ -24,7 +25,7 @@ const GROUP_IDS = {
   'KRA': '-1008888888888',
   'MON': '-1009999999999',
   'ODD': '-1001010101010',
-  'PNP': '-1001370528680',
+  'PNP': '-1004361704022',
   'PNPZ1': '-1003775452642',
   'PNPZ2': '-1004382725579',
   'PRE': '-1001313131313',
@@ -55,16 +56,6 @@ const getBotToken = (unit) => {
 const getApiUrl = (unit) => {
   const token = getBotToken(unit);
   return `${TELEGRAM_API_BASE}${token}`;
-};
-
-// Get data from localStorage
-const getStorageData = (key) => {
-  try {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
-  } catch (e) {
-    return null;
-  }
 };
 
 // Escape HTML for Telegram
@@ -101,163 +92,203 @@ const calculateDaysDiff = (dateString) => {
 };
 
 // ============================================================
-// 📌 GET UNIT DATA FROM LOCALSTORAGE - STOCKOUT MODULES
+// 📌 GET UNIT DATA FROM DATABASE - STOCKOUT MODULES
 // ============================================================
 
-export const getUnitData = (unit) => {
-  // ─── MODULE 1: STOCKOUT YET CONFIRM ───
-  const stockoutData = getStorageData('kpi_stockout_data') || [];
-  const stockoutTargets = getStorageData('kpi_stockout_targets') || {};
-  const stockoutHistory = getStorageData('kpi_stockout_completionHistory') || [];
+export const getUnitData = async (unit) => {
+  try {
+    // ─── MODULE 1: STOCKOUT YET CONFIRM ───
+    const stockoutData = await loadFromDb('kpi_stockout_data', []);
+    const stockoutTargets = await loadFromDb('kpi_stockout_targets', {});
+    const stockoutHistory = await loadFromDb('kpi_stockout_completionHistory', []);
 
-  // ─── MODULE 2: NO CREATE HAND OVER ───
-  const nocreateData = getStorageData('kpi_nocreate_data') || [];
-  const nocreateTargets = getStorageData('kpi_nocreate_targets') || {};
-  const nocreateHistory = getStorageData('kpi_nocreate_completionHistory') || [];
-  const nocreateConfirmed = getStorageData('kpi_nocreate_confirmedStatus') || {};
+    // ─── MODULE 2: NO CREATE HAND OVER ───
+    const nocreateData = await loadFromDb('kpi_nocreate_data', []);
+    const nocreateTargets = await loadFromDb('kpi_nocreate_targets', {});
+    const nocreateHistory = await loadFromDb('kpi_nocreate_completionHistory', []);
+    const nocreateConfirmed = await loadFromDb('kpi_nocreate_confirmedStatus', {});
 
-  // ─── MODULE 3: STOCK OUT NOTE - NOT CONFIRMED ───
-  const notconfirmedData = getStorageData('kpi_notconfirmed_data') || [];
-  const notconfirmedTargets = getStorageData('kpi_notconfirmed_targets') || {};
-  const notconfirmedHistory = getStorageData('kpi_notconfirmed_completionHistory') || [];
-  const notconfirmedConfirmed = getStorageData('kpi_notconfirmed_confirmedStatus') || {};
+    // ─── MODULE 3: STOCK OUT NOTE - NOT CONFIRMED ───
+    const notconfirmedData = await loadFromDb('kpi_notconfirmed_data', []);
+    const notconfirmedTargets = await loadFromDb('kpi_notconfirmed_targets', {});
+    const notconfirmedHistory = await loadFromDb('kpi_notconfirmed_completionHistory', []);
+    const notconfirmedConfirmed = await loadFromDb('kpi_notconfirmed_confirmedStatus', {});
 
-  // ─── FILTER BY UNIT ───
-  const unitStockout = stockoutData.filter(item => item.unit === unit);
-  const unitNocreate = nocreateData.filter(item => item.unit === unit);
-  const unitNotconfirmed = notconfirmedData.filter(item => item.unit === unit);
+    // ─── FILTER BY UNIT ───
+    const unitStockout = stockoutData.filter(item => item.unit === unit);
+    const unitNocreate = nocreateData.filter(item => item.unit === unit);
+    const unitNotconfirmed = notconfirmedData.filter(item => item.unit === unit);
 
-  // ─── CALCULATE MODULE 1: STOCKOUT YET CONFIRM ───
-  // Calculate Morning & Evening Targets
-  const m1MorningConfig = stockoutTargets[unit]?.morning || 0;
-  const m1EveningConfig = stockoutTargets[unit]?.evening || 0;
-  
-  // If no target configured, use total count as morning target
-  const m1Morning = m1MorningConfig > 0 ? m1MorningConfig : unitStockout.length;
-  // Evening target = morning target × 2 (if not configured)
-  const m1Evening = m1EveningConfig > 0 ? m1EveningConfig : (m1Morning * 2);
-  // Main target = evening target (or morning if evening is 0)
-  const m1Target = m1Evening > 0 ? m1Evening : m1Morning;
-  
-  const m1Total = unitStockout.length;
-  const m1Completed = stockoutHistory.filter(c => c.unit === unit).length;
-  const m1Remain = m1Target > 0 ? Math.max(0, m1Target - m1Completed) : m1Total;
-  const m1Ratio = m1Target > 0 ? parseFloat(((m1Completed / m1Target) * 100).toFixed(2)) : (m1Remain === 0 && m1Completed === 0 ? 100 : 0);
+    // ─── CALCULATE MODULE 1: STOCKOUT YET CONFIRM ───
+    const m1MorningConfig = stockoutTargets[unit]?.morning || 0;
+    const m1EveningConfig = stockoutTargets[unit]?.evening || 0;
+    const m1Morning = m1MorningConfig > 0 ? m1MorningConfig : unitStockout.length;
+    const m1Evening = m1EveningConfig > 0 ? m1EveningConfig : (m1Morning * 2);
+    const m1Target = m1Evening > 0 ? m1Evening : m1Morning;
+    const m1Total = unitStockout.length;
+    const m1Completed = stockoutHistory.filter(c => c.unit === unit).length;
+    const m1Remain = m1Target > 0 ? Math.max(0, m1Target - m1Completed) : m1Total;
+    const m1Ratio = m1Target > 0 ? parseFloat(((m1Completed / m1Target) * 100).toFixed(2)) : (m1Remain === 0 && m1Completed === 0 ? 100 : 0);
 
-  // Get remaining items with days diff
-  const m1RemainingItems = unitStockout
-    .filter(item => !stockoutHistory.some(c => c.exportNo === item.exportNo || c.code === item.exportNo))
-    .map(item => ({
-      exportCode: item.exportCode || item.code || '-',
-      exportNo: item.exportNo || '-',
-      groupReceiver: item.groupReceiver || '-',
-      daysDiff: item.daysDiff || calculateDaysDiff(item.realExport || item.date),
-      warehouse: item.stockReceiver || item.warehouse || '-',
-      creator: item.creator || '-'
-    }));
+    const m1RemainingItems = unitStockout
+      .filter(item => !stockoutHistory.some(c => c.exportNo === item.exportNo || c.code === item.exportNo))
+      .map(item => ({
+        exportCode: item.exportCode || item.code || '-',
+        exportNo: item.exportNo || '-',
+        groupReceiver: item.groupReceiver || '-',
+        daysDiff: item.daysDiff || calculateDaysDiff(item.realExport || item.date),
+        warehouse: item.stockReceiver || item.warehouse || '-',
+        creator: item.creator || '-'
+      }));
 
-  // ─── CALCULATE MODULE 2: NO CREATE HAND OVER ───
-  const m2Target = nocreateTargets[unit]?.target || 0;
-  const m2Total = unitNocreate.length;
-  
-  let m2Completed = nocreateHistory.filter(c => c.unit === unit).length;
-  Object.entries(nocreateConfirmed).forEach(([id, confirmed]) => {
-    if (confirmed) {
-      const item = nocreateData.find(d => d.id === parseInt(id));
-      if (item && item.unit === unit) m2Completed++;
-    }
-  });
-  const m2Remain = m2Target > 0 ? Math.max(0, m2Target - m2Completed) : m2Total;
-  const m2Ratio = m2Target > 0 ? parseFloat(((m2Completed / m2Target) * 100).toFixed(2)) : (m2Remain === 0 && m2Completed === 0 ? 100 : 0);
+    // ─── CALCULATE MODULE 2: NO CREATE HAND OVER ───
+    const m2Target = nocreateTargets[unit]?.target || 0;
+    const m2Total = unitNocreate.length;
+    let m2Completed = nocreateHistory.filter(c => c.unit === unit).length;
+    Object.entries(nocreateConfirmed).forEach(([id, confirmed]) => {
+      if (confirmed) {
+        const item = nocreateData.find(d => d.id === parseInt(id));
+        if (item && item.unit === unit) m2Completed++;
+      }
+    });
+    const m2Remain = m2Target > 0 ? Math.max(0, m2Target - m2Completed) : m2Total;
+    const m2Ratio = m2Target > 0 ? parseFloat(((m2Completed / m2Target) * 100).toFixed(2)) : (m2Remain === 0 && m2Completed === 0 ? 100 : 0);
 
-  const m2RemainingItems = unitNocreate
-    .filter(item => !nocreateHistory.some(c => c.code === item.code) && !nocreateConfirmed[item.id])
-    .map(item => ({
-      code: item.code || '-',
-      recipient: item.recipient || '-',
-      creator: item.creator || '-',
-      daysDiff: item.daysDiff || calculateDaysDiff(item.date),
-      warehouse: item.warehouse || '-'
-    }));
+    const m2RemainingItems = unitNocreate
+      .filter(item => !nocreateHistory.some(c => c.code === item.code) && !nocreateConfirmed[item.id])
+      .map(item => ({
+        code: item.code || '-',
+        recipient: item.recipient || '-',
+        creator: item.creator || '-',
+        daysDiff: item.daysDiff || calculateDaysDiff(item.date),
+        warehouse: item.warehouse || '-'
+      }));
 
-  // ─── CALCULATE MODULE 3: STOCK OUT NOTE - NOT CONFIRMED ───
-  const m3Target = notconfirmedTargets[unit]?.target || 0;
-  const m3Total = unitNotconfirmed.length;
-  
-  let m3Completed = notconfirmedHistory.filter(c => c.unit === unit).length;
-  Object.entries(notconfirmedConfirmed).forEach(([id, confirmed]) => {
-    if (confirmed) {
-      const item = notconfirmedData.find(d => d.id === parseInt(id));
-      if (item && item.unit === unit) m3Completed++;
-    }
-  });
-  const m3Remain = m3Target > 0 ? Math.max(0, m3Target - m3Completed) : m3Total;
-  const m3Ratio = m3Target > 0 ? parseFloat(((m3Completed / m3Target) * 100).toFixed(2)) : (m3Remain === 0 && m3Completed === 0 ? 100 : 0);
+    // ─── CALCULATE MODULE 3: STOCK OUT NOTE - NOT CONFIRMED ───
+    const m3Target = notconfirmedTargets[unit]?.target || 0;
+    const m3Total = unitNotconfirmed.length;
+    let m3Completed = notconfirmedHistory.filter(c => c.unit === unit).length;
+    Object.entries(notconfirmedConfirmed).forEach(([id, confirmed]) => {
+      if (confirmed) {
+        const item = notconfirmedData.find(d => d.id === parseInt(id));
+        if (item && item.unit === unit) m3Completed++;
+      }
+    });
+    const m3Remain = m3Target > 0 ? Math.max(0, m3Target - m3Completed) : m3Total;
+    const m3Ratio = m3Target > 0 ? parseFloat(((m3Completed / m3Target) * 100).toFixed(2)) : (m3Remain === 0 && m3Completed === 0 ? 100 : 0);
 
-  const m3RemainingItems = unitNotconfirmed
-    .filter(item => !notconfirmedHistory.some(c => c.code === item.code) && !notconfirmedConfirmed[item.id])
-    .map(item => ({
-      code: item.code || '-',
-      unitConfirm: item.unitConfirm || '-',
-      daysDiff: item.daysDiff || calculateDaysDiff(item.date),
-      warehouse: item.handoverUnit || item.unitConfirm || '-',
-      creator: item.creator || '-'
-    }));
+    const m3RemainingItems = unitNotconfirmed
+      .filter(item => !notconfirmedHistory.some(c => c.code === item.code) && !notconfirmedConfirmed[item.id])
+      .map(item => ({
+        code: item.code || '-',
+        unitConfirm: item.unitConfirm || '-',
+        daysDiff: item.daysDiff || calculateDaysDiff(item.date),
+        warehouse: item.handoverUnit || item.unitConfirm || '-',
+        creator: item.creator || '-'
+      }));
 
-  // ─── TOTALS ───
-  const totalTarget = m1Target + m2Target + m3Target;
-  const totalRemain = m1Remain + m2Remain + m3Remain;
-  const totalResult = m1Completed + m2Completed + m3Completed;
-  const totalInSystem = m1Total + m2Total + m3Total;
-  const totalRatio = totalTarget > 0 
-    ? parseFloat(((totalResult / totalTarget) * 100).toFixed(2)) 
-    : (totalRemain === 0 && totalResult === 0 ? 100 : 0);
+    // ─── TOTALS ───
+    const totalTarget = m1Target + m2Target + m3Target;
+    const totalRemain = m1Remain + m2Remain + m3Remain;
+    const totalResult = m1Completed + m2Completed + m3Completed;
+    const totalInSystem = m1Total + m2Total + m3Total;
+    const totalRatio = totalTarget > 0 
+      ? parseFloat(((totalResult / totalTarget) * 100).toFixed(2)) 
+      : (totalRemain === 0 && totalResult === 0 ? 100 : 0);
 
-  return {
-    // Module 1: Stockout Yet Confirm
-    m1Target,
-    m1Morning,
-    m1Evening,
-    m1Result: m1Completed,
-    m1Remain,
-    m1InSystem: m1Total,
-    m1Ratio,
-    m1Items: m1RemainingItems,
+    return {
+      m1Target,
+      m1Morning,
+      m1Evening,
+      m1Result: m1Completed,
+      m1Remain,
+      m1InSystem: m1Total,
+      m1Ratio,
+      m1Items: m1RemainingItems,
+      m2Target,
+      m2Result: m2Completed,
+      m2Remain,
+      m2InSystem: m2Total,
+      m2Ratio,
+      m2Items: m2RemainingItems,
+      m3Target,
+      m3Result: m3Completed,
+      m3Remain,
+      m3InSystem: m3Total,
+      m3Ratio,
+      m3Items: m3RemainingItems,
+      totalTarget,
+      totalRemain,
+      totalResult,
+      totalInSystem,
+      totalRatio,
+      targetMorning: m1Morning,
+      targetEvening: m1Evening,
+      remain: totalRemain,
+      result: totalResult,
+      ratio: totalRatio,
+      inSystem: totalInSystem,
+      stockoutYetConfirm: m1RemainingItems,
+      noCreateHandOver: m2RemainingItems,
+      stockOutNoteNotConfirmed: m3RemainingItems
+    };
+  } catch (error) {
+    console.error('Error getting unit data:', error);
+    return {
+      m1Target: 0,
+      m1Morning: 0,
+      m1Evening: 0,
+      m1Result: 0,
+      m1Remain: 0,
+      m1InSystem: 0,
+      m1Ratio: 0,
+      m1Items: [],
+      m2Target: 0,
+      m2Result: 0,
+      m2Remain: 0,
+      m2InSystem: 0,
+      m2Ratio: 0,
+      m2Items: [],
+      m3Target: 0,
+      m3Result: 0,
+      m3Remain: 0,
+      m3InSystem: 0,
+      m3Ratio: 0,
+      m3Items: [],
+      totalTarget: 0,
+      totalRemain: 0,
+      totalResult: 0,
+      totalInSystem: 0,
+      totalRatio: 0,
+      targetMorning: 0,
+      targetEvening: 0,
+      remain: 0,
+      result: 0,
+      ratio: 0,
+      inSystem: 0,
+      stockoutYetConfirm: [],
+      noCreateHandOver: [],
+      stockOutNoteNotConfirmed: []
+    };
+  }
+};
 
-    // Module 2: No Create Hand Over
-    m2Target,
-    m2Result: m2Completed,
-    m2Remain,
-    m2InSystem: m2Total,
-    m2Ratio,
-    m2Items: m2RemainingItems,
+// ============================================================
+// 📌 GET BACKEND BASE URL
+// ============================================================
 
-    // Module 3: Stock Out Note - Not Confirmed
-    m3Target,
-    m3Result: m3Completed,
-    m3Remain,
-    m3InSystem: m3Total,
-    m3Ratio,
-    m3Items: m3RemainingItems,
-
-    // Totals
-    totalTarget,
-    totalRemain,
-    totalResult,
-    totalInSystem,
-    totalRatio,
-    targetMorning: m1Morning,
-    targetEvening: m1Evening,
-    remain: totalRemain,
-    result: totalResult,
-    ratio: totalRatio,
-    inSystem: totalInSystem,
-
-    // All remaining items (for detailed list)
-    stockoutYetConfirm: m1RemainingItems,
-    noCreateHandOver: m2RemainingItems,
-    stockOutNoteNotConfirmed: m3RemainingItems
-  };
+const getBackendBaseUrl = () => {
+  const host = window.location.hostname || 'localhost';
+  const isLocal = host === 'localhost' || 
+                  host === '127.0.0.1' || 
+                  host.startsWith('192.168.') || 
+                  host.startsWith('10.') || 
+                  host.startsWith('172.') || 
+                  host.endsWith('.local');
+  if (isLocal) {
+    return `http://${host}:8000/api`;
+  }
+  return 'https://gis-kpi-backend.onrender.com/api';
 };
 
 // ============================================================
@@ -269,12 +300,13 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+  // Get data from parameter or from database
   let unitData = data;
   if (data && data.units && data.units[unit]) {
     unitData = data.units[unit];
   } else if (!data || data.totalTarget === undefined) {
-    const localData = getUnitData(unit);
-    if (localData) unitData = localData;
+    // If data not provided, return error message
+    return `⚠️ No data available for ${unit}. Please sync data first.`;
   }
 
   const m1Target = unitData.m1Target || 0;
@@ -329,11 +361,16 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   if (m1Items.length > 0) {
     message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
     m1Items.forEach((item, index) => {
-      const fullExportNo = (item.exportCode && item.exportCode !== '-' ? item.exportCode : '') + (item.exportNo && item.exportNo !== '-' ? item.exportNo : '') || '-';
+      const exportCode = item.exportCode || '-';
+      const exportNo   = item.exportNo   || '-';
+      const stockReceiver = item.stockReceiver || item.warehouse || '-';
+      const groupReceiver = item.groupReceiver || '-';
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(fullExportNo)}\n`;
-      message += `│ └─Group Receiver: ${escapeHtml(item.groupReceiver)}\n`;
-      message += `│ └─ Q'ty Day: ${item.daysDiff || 0}\n`;
+      message += `│ ${index + 1}. Export Code: ${escapeHtml(exportCode)}\n`;
+      message += `│    Export No: ${escapeHtml(exportNo)}\n`;
+      message += `│    Stock Receiver: ${escapeHtml(stockReceiver)}\n`;
+      message += `│    Group Receiver: ${escapeHtml(groupReceiver)}\n`;
+      message += `│    Days: ${item.daysDiff || 0} days\n`;
       message += `└─────────────────────────┘\n`;
     });
   } else {
@@ -376,10 +413,10 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
     m3Items.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.code)}\n`;
-      message += `│ └─ Handover Unit: ${escapeHtml(item.warehouse)}\n`;
-      message += `│ └─ Unit Confirm: ${escapeHtml(item.unitConfirm)}\n`;
-      message += `│ └─ Q'ty of Day: ${item.daysDiff || 0}\n`;
+      message += `│ ${index + 1}. Code: ${escapeHtml(item.code || '-')}\n`;
+      message += `│    Handover Unit: ${escapeHtml(item.warehouse || '-')}\n`;
+      message += `│    Unit Confirm: ${escapeHtml(item.unitConfirm || '-')}\n`;
+      message += `│    Days: ${item.daysDiff || 0} days\n`;
       message += `└─────────────────────────┘\n`;
     });
   } else {
@@ -408,6 +445,8 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   let unitData = data;
   if (data && data.units && data.units[unit]) {
     unitData = data.units[unit];
+  } else if (!data || data.totalTarget === undefined) {
+    return `⚠️ No data available for ${unit}. Please sync data first.`;
   }
 
   const targetMorning = unitData.targetMorning || 0;
@@ -426,7 +465,7 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   message += `📅 <b>DATE</b>   : ${date}\n`;
   message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
-  message += `📈 <b>KPI SUMMARY CA</b>\n`;
+  message += `📈 <b>KPI SUMMARY RESTOCK</b>\n`;
   message += `┌─────────────────────────┐\n`;
   message += `│ 🌅 Target ព្រឹក: ${targetMorning}\n`;
   message += `│ 🌙 Target ល្ងាច: ${targetEvening}\n`;
@@ -437,7 +476,7 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   message += `└─────────────────────────┘\n\n`;
 
   // Restock Out (EXPORT CA)
-  message += `<b>EXPORT CA✅</b>\n`;
+  message += `<b>RESTOCK OUT</b>\n`;
   if (unsignedOutItems.length > 0) {
     unsignedOutItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
@@ -453,7 +492,7 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   message += `\n`;
 
   // Restock In (IMPORT CA)
-  message += `<b>IMPORT CA✅</b>\n`;
+  message += `<b>RESTOCK IN</b>\n`;
   if (unsignedInItems.length > 0) {
     unsignedInItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
@@ -472,7 +511,7 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   if (customNote && customNote.trim()) {
     message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
   }
-  message += `<i>Report generated from Dashboard CA</i>`;
+  message += `<i>Report generated from Restock Dashboard</i>`;
 
   return message;
 };
@@ -489,6 +528,8 @@ const formatCAMessage = (unit, data, customNote = '') => {
   let unitData = data;
   if (data && data.units && data.units[unit]) {
     unitData = data.units[unit];
+  } else if (!data || data.totalTarget === undefined) {
+    return `⚠️ No data available for ${unit}. Please sync data first.`;
   }
 
   const targetMorning = unitData.targetMorning || 0;
@@ -522,11 +563,10 @@ const formatCAMessage = (unit, data, customNote = '') => {
   if (unsignedOutItems.length > 0) {
     unsignedOutItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.code || item.exportNoteCode || '-')}\n`;
-      message += `│ └─ Q'ty Day: ${item.daysDiff || 0} days\n`;
-      message += `│    🏠 ${escapeHtml(item.warehouse || item.exportWarehouse || '-')}\n`;
-      message += `│    📌 ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
-      message += `│    👤 ${escapeHtml(item.creator || item.createRequester || '-')}\n`;
+      message += `│ ${index + 1}. Export Note Code: ${escapeHtml(item.code || item.exportNoteCode || '-')}\n`;
+      message += `│    Unit Entering: ${escapeHtml(item.unitEntering || '-')}\n`;
+      message += `│    Status CA: ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
+      message += `│    Days: ${item.daysDiff || 0} days\n`;
       message += `└─────────────────────────┘\n`;
     });
   } else {
@@ -539,11 +579,10 @@ const formatCAMessage = (unit, data, customNote = '') => {
   if (unsignedInItems.length > 0) {
     unsignedInItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.code || item.codeReceipt || '-')}\n`;
-      message += `│ └─ Q'ty Day: ${item.daysDiff || 0} days\n`;
-      message += `│    🏠 ${escapeHtml(item.warehouse || '-')}\n`;
-      message += `│    📌 ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
-      message += `│    👤 ${escapeHtml(item.creator || '-')}\n`;
+      message += `│ ${index + 1}. Receipt Code: ${escapeHtml(item.code || item.codeReceipt || '-')}\n`;
+      message += `│    Warehouse: ${escapeHtml(item.warehouse || '-')}\n`;
+      message += `│    Status CA: ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
+      message += `│    Days: ${item.daysDiff || 0} days\n`;
       message += `└─────────────────────────┘\n`;
     });
   } else {
@@ -564,7 +603,7 @@ const formatCAMessage = (unit, data, customNote = '') => {
 // 📌 SEND MESSAGE TO TELEGRAM - DIRECT (NO PENDING)
 // ============================================================
 
-const sendMessageToTelegram = async (unit, message, signal = null) => {
+const sendSingleMessageToTelegram = async (unit, message, signal = null) => {
   const startTime = Date.now();
   
   try {
@@ -652,6 +691,66 @@ const sendMessageToTelegram = async (unit, message, signal = null) => {
   }
 };
 
+const sendMessageToTelegram = async (unit, message, signal = null) => {
+  // Telegram character limit is 4096. We split at 3900 to leave safety margin.
+  if (message.length <= 3900) {
+    return await sendSingleMessageToTelegram(unit, message, signal);
+  }
+
+  console.log(`✂️ Message is too long (${message.length} chars). Splitting into parts...`);
+  
+  // Split by the item card delimiter
+  const separator = '┌─────────────────────────┐';
+  const parts = message.split(separator);
+  const messagesToSend = [];
+  
+  // parts[0] contains the header/summary info
+  let currentMessage = parts[0];
+
+  for (let i = 1; i < parts.length; i++) {
+    const itemCard = separator + parts[i];
+    // If adding this item exceeds the target chunk size, commit the current chunk
+    if (currentMessage.length + itemCard.length > 3900) {
+      if (currentMessage.trim()) {
+        messagesToSend.push(currentMessage);
+      }
+      currentMessage = `📍 <b>BRANCH ${unit} (Continued)</b>\n\n` + itemCard;
+    } else {
+      currentMessage += itemCard;
+    }
+  }
+
+  if (currentMessage.trim()) {
+    messagesToSend.push(currentMessage);
+  }
+
+  let lastResult = { success: false, error: 'No parts to send' };
+  const startTime = Date.now();
+
+  for (let i = 0; i < messagesToSend.length; i++) {
+    let partMsg = messagesToSend[i];
+    if (messagesToSend.length > 1) {
+      partMsg += `\n\n📄 <b>Part ${i + 1}/${messagesToSend.length}</b>`;
+    }
+
+    lastResult = await sendSingleMessageToTelegram(unit, partMsg, signal);
+    if (!lastResult.success) {
+      return lastResult; // Fail early if any part fails
+    }
+
+    // Rate-limiting safety delay between parts
+    if (i < messagesToSend.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  return {
+    success: true,
+    result: lastResult.result,
+    duration: Date.now() - startTime
+  };
+};
+
 // ============================================================
 // 📌 EXPORT: STOCKOUT FUNCTIONS - SEQUENTIAL (NO PENDING)
 // ============================================================
@@ -706,11 +805,8 @@ export const sendToAllTelegram = async (data, onProgress, customNote = '', signa
         });
       }
 
-      // Get data for this unit
-      const unitData = getUnitData(unit);
-      
-      // Send to Telegram
-      const result = await sendToTelegram(unit, unitData, customNote, signal);
+      // Send to Telegram - pass data directly
+      const result = await sendToTelegram(unit, data, customNote, signal);
 
       completedCount++;
       results.push({ unit, ...result });
@@ -1034,7 +1130,7 @@ export const getBotInfo = async (unit) => {
 // ============================================================
 
 export const sendTestMessage = async (unit) => {
-  const testData = getUnitData(unit);
+  const testData = await getUnitData(unit);
   return await sendToTelegram(unit, testData);
 };
 
@@ -1045,20 +1141,6 @@ export const sendTestToAll = async (onProgress) => {
 // ============================================================
 // 📌 EXPORT: NOTE TEMPLATES DATABASE API
 // ============================================================
-
-const getBackendBaseUrl = () => {
-  const host = window.location.hostname || 'localhost';
-  const isLocal = host === 'localhost' || 
-                  host === '127.0.0.1' || 
-                  host.startsWith('192.168.') || 
-                  host.startsWith('10.') || 
-                  host.startsWith('172.') || 
-                  host.endsWith('.local');
-  if (isLocal) {
-    return `http://${host}:8000/api`;
-  }
-  return 'https://gis-kpi-backend.onrender.com/api';
-};
 
 export const getSavedTemplates = async () => {
   try {
