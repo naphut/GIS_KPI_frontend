@@ -317,6 +317,9 @@ const Sidebar = ({ onSelect, selected }) => {
         <div className="mt-1.5 text-[8px] text-gray-400">
           © 2026 KPI Pro Management
         </div>
+        <div className="mt-1 text-[8px] font-semibold text-gray-500">
+          Developed by RET NAPHUT 06/15/2026
+        </div>
       </div>
 
       <style>{`

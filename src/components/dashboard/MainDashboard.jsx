@@ -202,6 +202,9 @@ const MainDashboard = ({ onNavigate }) => {
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
             <div>
               <div className="flex items-center gap-3 flex-wrap">
+                <span className="bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-indigo-500/30">
+                  v3.0.1
+                </span>
                 <span className="bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-500/30">
                   🏢 Enterprise Portal
                 </span>
@@ -213,7 +216,7 @@ const MainDashboard = ({ onNavigate }) => {
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-2 sm:mt-3 text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300 flex items-center gap-2 flex-wrap">
-                📊 GIS Asset Management Portal <span className="text-xs sm:text-sm font-semibold bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded border border-indigo-500/20 shrink-0">v3.0.1</span>
+                📊 GIS Asset Management Portal
               </h1>
               <p className="text-slate-300 mt-1.5 sm:mt-2 max-w-xl text-xs sm:text-sm leading-relaxed">
                 Centralized monitoring system for Confirmed Hand Overs, System Signings, and Warehousing Restock Assets.
@@ -380,6 +383,8 @@ const MainDashboard = ({ onNavigate }) => {
         {/* ─── FOOTER ─── */}
         <div className="mt-8 sm:mt-12 text-center text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 border-t pt-4 sm:pt-6 border-gray-200 dark:border-gray-700">
           <span>© 2026 GIS Asset Management System</span>
+          <span className="mx-2 sm:mx-3">•</span>
+          <span className="font-semibold text-gray-500 dark:text-gray-400">Developed by RET NAPHUT 06/15/2026</span>
           <span className="mx-2 sm:mx-3">•</span>
           <span>Version 3.0.1</span>
           <span className="mx-2 sm:mx-3">•</span>

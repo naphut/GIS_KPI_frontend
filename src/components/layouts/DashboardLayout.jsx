@@ -71,7 +71,7 @@ const DashboardLayout = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div key={selectedMenuItem} className="flex-1 overflow-y-auto animate-fadeIn">
         {renderContent()}
       </div>
     </div>

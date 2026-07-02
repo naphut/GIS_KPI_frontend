@@ -1428,12 +1428,12 @@ const NO_CREATE_HAND_OVER = () => {
         {/* ─── FOOTER ─── */}
         <div className="bg-gray-50 px-6 py-3 border-t text-sm text-gray-500 flex justify-between flex-wrap gap-2">
           <span>📋 Total GIS: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
-          <div className="flex gap-3">
+          {/* <div className="flex gap-3">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>GIS Recipient</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-300"></span>Confirmed</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-300"></span>Not Confirmed</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&gt;{alarmThreshold}d)</span>
-          </div>
+          </div> */}
         </div>
       </div>
 

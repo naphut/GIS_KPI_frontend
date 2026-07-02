@@ -1065,7 +1065,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
 
   if (isEmbedded) {
     return (
-      <div className="w-full bg-gray-50 min-h-screen">
+      <div key={selectedComponent} className="w-full bg-gray-50 min-h-screen animate-fadeIn">
         {renderComponent()}
         {renderProgressModal()}
       </div>
@@ -1077,7 +1077,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       <Sidebar onSelect={setSelectedComponent} selected={selectedComponent} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Navbar />
-        <main className="flex-1 overflow-y-auto bg-gray-50">
+        <main key={selectedComponent} className="flex-1 overflow-y-auto bg-gray-50 animate-fadeIn">
           {renderComponent()}
           {renderProgressModal()}
         </main>
