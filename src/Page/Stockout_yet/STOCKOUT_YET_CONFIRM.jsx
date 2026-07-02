@@ -309,6 +309,12 @@ const STOCKOUT_YET_CONFIRM = () => {
         item.groupReceiver.toUpperCase().includes('GIS_MOD')) {
       return true;
     }
+    // Exclude if not a GIS item (neither stockReceiver has GIS nor groupReceiver has GIS/unit)
+    const isStockReceiverGIS = item.stockReceiver && item.stockReceiver.includes('GIS');
+    const isGroupReceiverGIS = item.groupReceiver && (item.groupReceiver.includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null);
+    if (!isStockReceiverGIS && !isGroupReceiverGIS) {
+      return true;
+    }
     return false;
   };
 
@@ -833,7 +839,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     
     if (filterGIS) {
       filtered = filtered.filter(item => 
-        (item.stockReceiver && (item.stockReceiver.includes('GIS') || getUnitFromGroupReceiver(item.stockReceiver) !== null)) || 
+        (item.stockReceiver && item.stockReceiver.includes('GIS')) || 
         (item.groupReceiver && (item.groupReceiver.includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null))
       );
     }
@@ -1403,7 +1409,8 @@ const STOCKOUT_YET_CONFIRM = () => {
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-blue-100 mt-1 text-sm">🎯 Unit from Group Receiver | 🚫 Auto-filters GPON &amp; GIS_MOD</p>
+              <p className="text-blue-100 mt-1 text-sm">TEAM STEP 1</p>
+              <p className="text-blue-100 mt-1 text-sm">**តាមដានសម្ភារៈដែលបាន Request ហើយត្រូវបាន Export ពីស្តុក METFONE មកកាន់ស្តុក GIS។**</p>
             </div>
             <div className="flex gap-2">
               <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-sm transition-colors">🗑️ Clear All</button>
@@ -1511,7 +1518,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                     </td>
                     <td className="px-2 py-1.5 text-xs whitespace-normal break-words">
                       <div onClick={() => startEdit(item.id, 'stockReceiver', item.stockReceiver)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">
-                        {(item.stockReceiver?.includes('GIS') || getUnitFromGroupReceiver(item.stockReceiver) !== null) ? (
+                        {item.stockReceiver?.includes('GIS') ? (
                           <span className="text-emerald-600 font-medium">{item.stockReceiver}</span>
                         ) : item.stockReceiver || '-'}
                       </div>
@@ -1622,7 +1629,7 @@ const STOCKOUT_YET_CONFIRM = () => {
         {/* ─── FOOTER ─── */}
         <div className="bg-gray-50 px-6 py-3 border-t text-sm text-gray-500 flex justify-between flex-wrap gap-2">
           <span>📋 In System: <strong>{data.length}</strong> rows | GIS: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
-          <span>🎯 Unit from Group Receiver | 🚫 Excluded: GPON (Construction) | GIS_MOD (Group Receiver)</span>
+          {/* <span>🎯 Unit from Group Receiver | 🚫 Excluded: GPON (Construction) | GIS_MOD (Group Receiver)</span> */}
         </div>
       </div>
 

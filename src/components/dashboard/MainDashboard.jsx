@@ -118,7 +118,7 @@ const MainDashboard = ({ onNavigate }) => {
       id: 'stockout_group',
       title: '📋 CONFIRMED HAND OVER',
       subtitle: 'CONFIRMED HAND OVER ON SYSTEM',
-      description: 'Track and verify hand over tasks across provinces. Monitor morning and evening targets, and send automated reports directly to Telegram groups.',
+      description: 'តាមដាន និងផ្ទៀងផ្ទាត់ការប្រគល់ភារកិច្ចរវាងបណ្តាខេត្ត។ ត្រួតពិនិត្យគោលដៅការងារពេលព្រឹក និងពេលល្ងាច ហើយផ្ញើរបាយការណ៍ដោយស្វ័យប្រវត្តិទៅកាន់ក្រុម Telegram។',
       icon: '📋',
       color: 'from-amber-500 to-orange-600',
       shadow: 'hover:shadow-orange-500/20',
@@ -161,7 +161,11 @@ const MainDashboard = ({ onNavigate }) => {
       id: 'restock_group',
       title: '🔄 RESTOCK IN & RESTOCK OUT',
       subtitle: 'RESTOCK IN CA / RESTOCK OUT',
-      description: 'Analyze restock inventory flows. Review performance metrics, active units, and ensure seamless transfer of stock between different distribution warehouses.',
+      description: (
+        <span>
+          តាមដាន និងគ្រប់គ្រងដំណើរការ <strong>Recall to Stock</strong> របស់ METFONE ព្រមទាំងតាមដានស្ថានភាពនៃសម្ភារៈដែលបានស្នើសុំ (Request) សម្រាប់យកទៅប្រើប្រាស់ ដើម្បីធានាថាការចែកចាយ និងការគ្រប់គ្រងស្តុកប្រព្រឹត្តទៅបានត្រឹមត្រូវ មានប្រសិទ្ធភាព និងទាន់ពេលវេលា។
+        </span>
+      ),
       icon: '🔄',
       color: 'from-emerald-500 to-teal-600',
       shadow: 'hover:shadow-emerald-500/20',
@@ -208,8 +212,8 @@ const MainDashboard = ({ onNavigate }) => {
                   {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-2 sm:mt-3 text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300">
-                📊 GIS Asset Management Portal
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-2 sm:mt-3 text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300 flex items-center gap-2 flex-wrap">
+                📊 GIS Asset Management Portal <span className="text-xs sm:text-sm font-semibold bg-indigo-500/30 text-indigo-200 px-2 py-0.5 rounded border border-indigo-500/20 shrink-0">v3.0.1</span>
               </h1>
               <p className="text-slate-300 mt-1.5 sm:mt-2 max-w-xl text-xs sm:text-sm leading-relaxed">
                 Centralized monitoring system for Confirmed Hand Overs, System Signings, and Warehousing Restock Assets.
@@ -377,7 +381,7 @@ const MainDashboard = ({ onNavigate }) => {
         <div className="mt-8 sm:mt-12 text-center text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 border-t pt-4 sm:pt-6 border-gray-200 dark:border-gray-700">
           <span>© 2026 GIS Asset Management System</span>
           <span className="mx-2 sm:mx-3">•</span>
-          <span>Version 3.0.0</span>
+          <span>Version 3.0.1</span>
           <span className="mx-2 sm:mx-3">•</span>
           <span>🟢 All systems operational</span>
         </div>

@@ -1508,7 +1508,7 @@ export const Restock_out = () => {
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-blue-100 mt-1 text-sm">Smart Import | Auto-filter GIS + Command not created</p>
+              <p className="text-blue-100 mt-1 text-sm">**Request Restock Out → ដំណើរការស្នើសុំសម្ភារៈសម្រាប់ប្រើប្រាស់**</p>
             </div>
             <div className="flex gap-2">
               <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-sm transition-colors">🗑️ Clear All</button>
@@ -1751,13 +1751,13 @@ export const Restock_out = () => {
         {/* ─── FOOTER ─── */}
         <div className="bg-gray-50 px-6 py-3 border-t text-sm text-gray-500 flex justify-between flex-wrap gap-2">
           <span>📋 Total Valid Records: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
-          <div className="flex gap-3 flex-wrap">
+          {/* <div className="flex gap-3 flex-wrap">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>GIS Request</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&gt;{alarmThreshold}d)</span>
             <span className="flex items-center gap-1 text-gray-400">|</span>
             <span className="flex items-center gap-1"><span className="text-amber-600">✍️</span> Is signing</span>
             <span className="flex items-center gap-1"><span className="text-gray-600">📝</span> Unsigned</span>
-          </div>
+          </div> */}
         </div>
       </div>
 

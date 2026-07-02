@@ -857,13 +857,13 @@ const Dashboard_Request = () => {
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <span>📊</span> Restock Dashboard
+                <span>📊</span> **របាយការណ៍ជូនដំណឹងអំពីប្រតិបត្តិការ Recall និង Request Stock Out ដែលមិនទាន់បានបិទដំណើរការក្នុងប្រព័ន្ធ។**
               </h1>
               <span className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/30">
                 🟢 Live • {currentTime.toLocaleTimeString()}
               </span>
             </div>
-            <p className="text-indigo-100 mt-1 text-sm">Real-time performance monitoring for Stock In &amp; Stock Out</p>
+            <p className="text-indigo-100 mt-1 text-sm">Recall And &amp; Request Stock Out</p>
           </div>
           <button 
             onClick={exportToExcel}

@@ -387,9 +387,15 @@ const Import_CA = () => {
   };
 
   const getStatusCABadge = (statusCA) => {
+    if (statusCA === 'Unsigned') {
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold bg-rose-600 text-white animate-pulse border border-rose-700 shadow-sm">
+          🚨 Unsigned
+        </span>
+      );
+    }
     const config = {
       'Is signing': { icon: '✍️', bg: 'bg-amber-100', text: 'text-amber-800' },
-      'Unsigned': { icon: '📝', bg: 'bg-gray-100', text: 'text-gray-800' },
     };
     const c = config[statusCA] || { icon: '❓', bg: 'bg-gray-100', text: 'text-gray-500' };
     return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>{c.icon} {statusCA}</span>;
@@ -914,7 +920,7 @@ const Import_CA = () => {
   }, [filteredData, currentPage, pageSize]);
 
   const alarmItems = useMemo(() => {
-    return filteredData.filter(item => item.daysDiff > alarmThreshold && !dismissedItems.has(item.id));
+    return filteredData.filter(item => (item.daysDiff > alarmThreshold || item.statusCA === 'Unsigned') && !dismissedItems.has(item.id));
   }, [filteredData, alarmThreshold, dismissedItems]);
 
   const [alarmSearchTerm, setAlarmSearchTerm] = useState('');
@@ -1391,7 +1397,7 @@ const Import_CA = () => {
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-blue-100 mt-1 text-sm">Smart Import | Auto-filter GIS | Only Unsigned/Is signing | Auto-extract Unit</p>
+              <p className="text-blue-100 mt-1 text-sm">**របាយការណ៍បញ្ជីបង្កាន់ដៃ Stock In ដែលមិនទាន់បានចុះហត្ថលេខា "CA" ក្នុងប្រព័ន្ធ។**</p>
             </div>
             <div className="flex gap-2">
               <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all">🗑️ Clear All</button>
@@ -1469,7 +1475,7 @@ const Import_CA = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedData.map((item) => {
-                const isAlarm = item.daysDiff > alarmThreshold && !dismissedItems.has(item.id);
+                const isAlarm = (item.daysDiff > alarmThreshold || item.statusCA === 'Unsigned') && !dismissedItems.has(item.id);
                 return (
                   <tr key={item.id} className={`${isAlarm ? 'bg-rose-50' : ''} ${selectedRows.has(item.id) ? 'bg-blue-50' : ''} hover:bg-gray-50 transition-colors`}>
                     <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" /></td>
@@ -1609,7 +1615,7 @@ const Import_CA = () => {
         {/* ─── FOOTER ─── */}
         <div className="bg-gray-50 px-6 py-3.5 border-t border-gray-100 text-xs text-gray-500 flex justify-between flex-wrap gap-2 font-medium">
           <span>📋 Total GIS (Unsigned/Is signing): <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
-          <div className="flex gap-3 flex-wrap">
+          {/* <div className="flex gap-3 flex-wrap">
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>GIS Warehouse</span>
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&gt;{alarmThreshold}d)</span>
             <span className="flex items-center gap-1 text-gray-300">|</span>
@@ -1617,7 +1623,7 @@ const Import_CA = () => {
             <span className="flex items-center gap-1"><span className="text-gray-500 font-bold">📝</span> Unsigned</span>
             <span className="flex items-center gap-1 text-gray-300">|</span>
             <span className="flex items-center gap-1 text-rose-500 font-bold"><span>🚫</span> Signed (Filtered out)</span>
-          </div>
+          </div> */}
         </div>
       </div>
 

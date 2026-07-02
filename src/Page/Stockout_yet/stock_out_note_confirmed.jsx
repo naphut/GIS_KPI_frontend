@@ -1194,7 +1194,8 @@ const StockOutNoteConfirmed = () => {
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-rose-100 mt-1 text-sm">Auto filter: GIS + Not confirmed | Click "Mark Confirm" to complete</p>
+              <p className="text-rose-100 mt-1 text-sm">TEAM STEP 3</p>
+              <p className="text-rose-100 mt-1 text-sm">**តាមដានសម្ភារៈដែលបានបង្កើតការប្រគល់ (Create Hand Over) រួចហើយ ប៉ុន្តែក្រុមការងារមិនទាន់បានទទួល និងបញ្ជាក់ (Confirm) នៅឡើយ។**</p>
             </div>
             <div className="flex gap-2">
               <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-sm transition-colors">🗑️ Clear All</button>
@@ -1398,11 +1399,11 @@ const StockOutNoteConfirmed = () => {
         {/* ─── FOOTER ─── */}
         <div className="bg-gray-50 px-6 py-3 border-t text-sm text-gray-500 flex justify-between flex-wrap gap-2">
           <span>📋 Total GIS Not Confirmed: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
-          <div className="flex gap-3">
+          {/* <div className="flex gap-3">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>GIS Unit</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-300"></span>Confirmed</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&gt;{alarmThreshold}d)</span>
-          </div>
+          </div> */}
         </div>
       </div>
 

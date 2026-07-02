@@ -21,7 +21,19 @@ const getStorageData = (key) => {
   }
 };
 
-
+const getYearFromDate = (dateString) => {
+  if (!dateString) return 0;
+  const parts = dateString.split(/[/\s:-]+/);
+  if (parts.length < 3) return 0;
+  let yearStr = parts[2];
+  if (parts[0].length === 4) {
+    yearStr = parts[0];
+  }
+  let year = parseInt(yearStr);
+  if (isNaN(year)) return 0;
+  if (year < 100) year += 2000;
+  return year;
+};
 
 const NO_CREATE_HAND_OVER = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -32,7 +44,10 @@ const NO_CREATE_HAND_OVER = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const [data, setData] = useState(() => getStorageData(STORAGE_KEYS.DATA) || []);
+  const [data, setData] = useState(() => {
+    const localData = getStorageData(STORAGE_KEYS.DATA) || [];
+    return localData.filter(item => getYearFromDate(item.date) >= 2025);
+  });
   const [completionHistory, setCompletionHistory] = useState(() => getStorageData(STORAGE_KEYS.COMPLETION) || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAlarmModal, setShowAlarmModal] = useState(false);
@@ -60,7 +75,8 @@ const NO_CREATE_HAND_OVER = () => {
   useEffect(() => {
     const fetchDbData = async () => {
       const dbData = await loadFromDb(STORAGE_KEYS.DATA, []);
-      setData(dbData);
+      const filtered = dbData.filter(item => getYearFromDate(item.date) >= 2025);
+      setData(filtered);
       
       const dbCompletion = await loadFromDb(STORAGE_KEYS.COMPLETION, []);
       setCompletionHistory(dbCompletion);
@@ -317,7 +333,8 @@ const NO_CREATE_HAND_OVER = () => {
 
   const processImport = (newRawData) => {
     const gisData = newRawData.filter(item => 
-      item.recipient && (item.recipient.toUpperCase().includes('GIS') || getUnitFromRecipient(item.recipient) !== 'OTHER')
+      item.recipient && (item.recipient.toUpperCase().includes('GIS') || getUnitFromRecipient(item.recipient) !== 'OTHER') &&
+      getYearFromDate(item.date) >= 2025
     );
 
     if (gisData.length === 0) {
@@ -517,7 +534,8 @@ const NO_CREATE_HAND_OVER = () => {
       }
       return item;
     });
-    setData(updatedData);
+    const filtered = updatedData.filter(item => getYearFromDate(item.date) >= 2025);
+    setData(filtered);
   };
 
   const clearAllData = () => {
@@ -1167,7 +1185,8 @@ const NO_CREATE_HAND_OVER = () => {
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-blue-100 mt-1 text-sm">Smart Import | Auto-create targets | Click "Mark Confirm" to complete</p>
+              <p className="text-blue-100 mt-1 text-sm">ASSET STEP :2</p>
+              <p className="text-blue-100 mt-1 text-sm">**តាមដានសម្ភារៈដែលបានទទួលពីស្តុក METFONE រួចហើយ ប៉ុន្តែមិនទាន់បានបង្កើតការប្រគល់ (Create Hand Over) ទៅកាន់ក្រុមការងារ។**</p>
             </div>
             <div className="flex gap-2">
               <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-sm transition-colors">🗑️ Clear All</button>

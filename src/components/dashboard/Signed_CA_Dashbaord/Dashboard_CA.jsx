@@ -700,13 +700,13 @@ const Dashboard_CA = () => {
           <div>
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <span>📊</span> DASHBOARD CA
+                <span>📊</span> **របាយការណ៍ជូនដំណឹងអំពីបង្កាន់ដៃដែលមិនទាន់បានបញ្ជាក់ (Confirm) និងមិនទាន់បានចុះហត្ថលេខា "CA" ក្នុងប្រព័ន្ធនៅឡើយ។**
               </h1>
               <span className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/30">
                 🟢 Live • {currentTime.toLocaleTimeString()}
               </span>
             </div>
-            <p className="text-blue-100 mt-1 text-sm">Stock Out &amp; Stock In Signing Status Overview</p>
+            <p className="text-blue-100 mt-1 text-sm">Stock Out In Signing /Unsigned &amp; Stock In Signing/Unsigned Status Overview</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
