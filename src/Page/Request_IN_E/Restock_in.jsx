@@ -428,13 +428,23 @@ export const Restock_in = () => {
 
   const autoCreateTargetForUnit = (unit, dataCount) => {
     const newTarget = Math.max(dataCount, 1);
+    const currentHour = new Date().getHours();
+    const isMorning = currentHour < 12;
+    const period = isMorning ? 'morning' : 'evening';
+
     setTargets(prev => ({
       ...prev,
-      [unit]: { ...prev[unit], target: newTarget, lastUpdated: new Date().toISOString() }
+      [unit]: {
+        ...prev[unit],
+        [period]: newTarget,
+        lastUpdated: new Date().toISOString()
+      }
     }));
+
     setTargetHistory(prev => [{
       id: Date.now(),
       unit: unit,
+      period: period,
       oldTarget: null,
       newTarget: newTarget,
       changedAt: new Date().toISOString(),
@@ -444,24 +454,29 @@ export const Restock_in = () => {
     return newTarget;
   };
 
-  const updateTargetWithHistory = (unit, newTargetValue) => {
-    const oldTarget = targets[unit]?.target || 0;
+  const updateTargetWithHistory = (unit, period, newTargetValue) => {
+    const oldTarget = targets[unit]?.[period] || 0;
     const newTarget = parseInt(newTargetValue) || 0;
     if (oldTarget === newTarget) return;
     setTargets(prev => ({
       ...prev,
-      [unit]: { ...prev[unit], target: newTarget, lastUpdated: new Date().toISOString() }
+      [unit]: {
+        ...prev[unit],
+        [period]: newTarget,
+        lastUpdated: new Date().toISOString()
+      }
     }));
     setTargetHistory(prev => [{
       id: Date.now(),
       unit: unit,
+      period: period,
       oldTarget: oldTarget,
       newTarget: newTarget,
       changedAt: new Date().toISOString(),
       changedBy: 'User',
-      reason: 'Manual target adjustment'
+      reason: `Manual target adjustment for ${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}`
     }, ...prev]);
-    showNotification(`📊 Target for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
+    showNotification(`📊 Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
   };
 
   const processImport = async (newRawData) => {
@@ -597,10 +612,16 @@ export const Restock_in = () => {
     });
     
     const kpiData = [];
-    let grandTarget = 0, grandRemain = 0, grandResult = 0, grandTotalRecords = 0;
+    let grandTargetMorning = 0;
+    let grandTargetEvening = 0;
+    let grandRemain = 0;
+    let grandResult = 0;
+    let grandTotalRecords = 0;
     
     VALID_UNITS.forEach(unit => {
-      const target = targets[unit]?.target || 0;
+      const morningTarget = targets[unit]?.morning || 0;
+      const eveningTarget = targets[unit]?.evening || 0;
+      const target = eveningTarget > 0 ? eveningTarget : morningTarget;
       const currentCount = unitGroups[unit]?.count || 0;
       const completedCount = completedByUnit[unit] || 0;
       const result = completedCount;
@@ -619,11 +640,13 @@ export const Restock_in = () => {
       }
       
       kpiData.push({
-        unit, target, remain, result, ratio: Math.min(100, ratio), total: currentCount,
-        status, hasData: currentCount > 0 || result > 0, isNew: !targets[unit] && currentCount > 0
+        unit, morningTarget, eveningTarget, target, remain, result, ratio: Math.min(100, ratio), total: currentCount,
+        status, hasData: currentCount > 0 || result > 0, isNew: !targets[unit] && currentCount > 0,
+        hasChange: morningTarget !== eveningTarget && eveningTarget > 0
       });
       
-      grandTarget += target;
+      grandTargetMorning += morningTarget;
+      grandTargetEvening += eveningTarget;
       grandRemain += remain;
       grandResult += result;
       grandTotalRecords += currentCount;
@@ -639,7 +662,8 @@ export const Restock_in = () => {
         case 'ratio': aVal = a.ratio; bVal = b.ratio; break;
         case 'remain': aVal = a.remain; bVal = b.remain; break;
         case 'result': aVal = a.result; bVal = b.result; break;
-        case 'target': aVal = a.target; bVal = b.target; break;
+        case 'morning': aVal = a.morningTarget; bVal = b.morningTarget; break;
+        case 'evening': aVal = a.eveningTarget; bVal = b.eveningTarget; break;
         default: aVal = a.unit; bVal = b.unit;
       }
       return kpiSortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
@@ -649,8 +673,11 @@ export const Restock_in = () => {
       data: filteredData,
       allData: kpiData,
       summary: {
-        target: grandTarget, remain: grandRemain, result: grandResult,
-        ratio: grandTarget > 0 ? (grandResult / grandTarget) * 100 : 0,
+        targetMorning: grandTargetMorning,
+        targetEvening: grandTargetEvening,
+        remain: grandRemain,
+        result: grandResult,
+        ratio: grandTargetEvening > 0 ? (grandResult / grandTargetEvening) * 100 : 0,
         totalRecords: grandTotalRecords,
         activeUnits: kpiData.filter(item => item.hasData).length,
         completedUnits: kpiData.filter(item => item.hasData && item.remain === 0 && item.target > 0).length
@@ -770,8 +797,8 @@ export const Restock_in = () => {
     }
   };
 
-  const updateTarget = (unit, newTarget) => {
-    updateTargetWithHistory(unit, newTarget);
+  const updateTarget = (unit, period, newTarget) => {
+    updateTargetWithHistory(unit, period, newTarget);
     setEditingTarget(null);
   };
 
@@ -841,12 +868,13 @@ export const Restock_in = () => {
 
   const exportKPItoExcel = () => {
     const exportData = calculateKPIData.allData.map(item => ({
-      'Unit': item.unit,
-      'Target': item.target,
+      'Unit': item.unit, 
+      'Target ព្រឹក': item.morningTarget, 
+      'Target ល្ងាច': item.eveningTarget, 
       'Remain': item.remain,
-      'Result': item.result,
+      'Result': item.result, 
       'Ratio (%)': item.ratio.toFixed(1),
-      'In System': item.total,
+      'In System': item.total, 
       'Status': item.status
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -1082,34 +1110,34 @@ export const Restock_in = () => {
           <div className="p-6 overflow-y-auto flex-1 bg-white">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-md">
-                <div className="text-xs opacity-90 font-medium">Total Target</div>
-                <div className="text-2xl font-black mt-1">{calculateKPIData.summary.target}</div>
+                <div className="text-xs opacity-90 font-medium">Target ព្រឹក</div>
+                <div className="text-2xl font-black mt-1">{calculateKPIData.summary.targetMorning}</div>
               </div>
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-md">
-                <div className="text-xs opacity-90 font-medium">Result</div>
-                <div className="text-2xl font-black mt-1">{calculateKPIData.summary.result}</div>
+              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-4 text-white shadow-md">
+                <div className="text-xs opacity-90 font-medium">Target ល្ងាច</div>
+                <div className="text-2xl font-black mt-1">{calculateKPIData.summary.targetEvening}</div>
               </div>
               <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-md">
                 <div className="text-xs opacity-90 font-medium">Remaining</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.remain}</div>
               </div>
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-md">
+                <div className="text-xs opacity-90 font-medium">Result</div>
+                <div className="text-2xl font-black mt-1">{calculateKPIData.summary.result}</div>
+              </div>
               <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-md">
-                <div className="text-xs opacity-90 font-medium">Achievement</div>
+                <div className="text-xs opacity-90 font-medium">Ratio</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.ratio.toFixed(1)}%</div>
               </div>
               <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-4 text-white shadow-md">
                 <div className="text-xs opacity-90 font-medium">In System</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.totalRecords}</div>
               </div>
-              <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-4 text-white shadow-md">
-                <div className="text-xs opacity-90 font-medium">Active Units</div>
-                <div className="text-2xl font-black mt-1">{calculateKPIData.summary.activeUnits} / {calculateKPIData.summary.completedUnits} ✅</div>
-              </div>
             </div>
 
             <div className="mb-6">
               <div className="flex justify-between text-sm text-gray-600 mb-1.5 font-medium">
-                <span>Overall Progress</span>
+                <span>Overall Progress (based on Evening Target)</span>
                 <span className="font-bold text-gray-800">{calculateKPIData.summary.ratio.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden shadow-inner">
@@ -1131,8 +1159,11 @@ export const Restock_in = () => {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('unit')}>
                         Unit {kpiSortBy === 'unit' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('target')}>
-                        Target {kpiSortBy === 'target' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('morning')}>
+                        ព្រឹក {kpiSortBy === 'morning' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('evening')}>
+                        ល្ងាច {kpiSortBy === 'evening' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('remain')}>
                         Remain {kpiSortBy === 'remain' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
@@ -1150,16 +1181,24 @@ export const Restock_in = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {calculateKPIData.data.map((item) => (
-                      <tr key={item.unit} className={`hover:bg-gray-50/80 transition-colors ${item.isNew ? 'bg-amber-50/50' : ''}`}>
+                      <tr key={item.unit} className={`hover:bg-gray-50/80 transition-colors ${item.hasChange ? 'bg-amber-50/50' : ''}`}>
                         <td className="px-4 py-3 text-sm font-semibold text-gray-800">
                           {item.unit}
+                          {item.hasChange && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">📊 Changed</span>}
                           {item.isNew && <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">🆕 New</span>}
                         </td>
                         <td className="px-4 py-3 text-sm text-right">
-                          {editingTarget === item.unit ? (
-                            <input type="number" defaultValue={item.target} autoFocus onBlur={(e) => { updateTarget(item.unit, e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border border-gray-300 rounded-lg text-sm font-semibold bg-white text-gray-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                          {editingTarget === `${item.unit}-morning` ? (
+                            <input type="number" defaultValue={item.morningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'morning', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border border-gray-300 rounded-lg text-sm font-semibold bg-white text-gray-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
                           ) : (
-                            <span className="cursor-pointer hover:bg-gray-100 px-2.5 py-1 rounded-lg transition-colors text-gray-700 font-semibold" onClick={() => setEditingTarget(item.unit)}>{item.target || '-'}</span>
+                            <span className="cursor-pointer hover:bg-gray-100 px-2.5 py-1 rounded-lg transition-colors text-gray-700 font-semibold" onClick={() => setEditingTarget(`${item.unit}-morning`)}>{item.morningTarget || '-'}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right">
+                          {editingTarget === `${item.unit}-evening` ? (
+                            <input type="number" defaultValue={item.eveningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'evening', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border border-gray-300 rounded-lg text-sm font-semibold bg-white text-gray-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                          ) : (
+                            <span className={`cursor-pointer hover:bg-gray-100 px-2.5 py-1 rounded-lg transition-colors text-gray-700 font-semibold ${item.hasChange ? 'font-bold text-purple-600' : ''}`} onClick={() => setEditingTarget(`${item.unit}-evening`)}>{item.eveningTarget || '-'}</span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-sm text-right"><span className={`font-semibold ${item.remain > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{item.remain}</span></td>
@@ -1185,7 +1224,8 @@ export const Restock_in = () => {
                   <tfoot className="bg-gray-50 font-bold border-t-2 border-gray-200">
                     <tr>
                       <td className="px-4 py-3 text-sm text-gray-800">TOTAL</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-800">{calculateKPIData.summary.target}</td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-800">{calculateKPIData.summary.targetMorning}</td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-800">{calculateKPIData.summary.targetEvening}</td>
                       <td className="px-4 py-3 text-sm text-right text-amber-600">{calculateKPIData.summary.remain}</td>
                       <td className="px-4 py-3 text-sm text-right text-emerald-600">{calculateKPIData.summary.result}</td>
                       <td className="px-4 py-3 text-sm text-right text-gray-800">{calculateKPIData.summary.ratio.toFixed(1)}%</td>

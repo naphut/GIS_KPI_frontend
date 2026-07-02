@@ -142,7 +142,11 @@ export const getUnitData = async (unit) => {
       }));
 
     // ─── CALCULATE MODULE 2: NO CREATE HAND OVER ───
-    const m2Target = nocreateTargets[unit]?.target || 0;
+    const m2MorningConfig = nocreateTargets[unit]?.morning || 0;
+    const m2EveningConfig = nocreateTargets[unit]?.evening || 0;
+    const m2Morning = m2MorningConfig > 0 ? m2MorningConfig : unitNocreate.length;
+    const m2Evening = m2EveningConfig > 0 ? m2EveningConfig : (m2Morning * 2);
+    const m2Target = m2Evening > 0 ? m2Evening : m2Morning;
     const m2Total = unitNocreate.length;
     let m2Completed = nocreateHistory.filter(c => c.unit === unit).length;
     Object.entries(nocreateConfirmed).forEach(([id, confirmed]) => {
@@ -165,7 +169,11 @@ export const getUnitData = async (unit) => {
       }));
 
     // ─── CALCULATE MODULE 3: STOCK OUT NOTE - NOT CONFIRMED ───
-    const m3Target = notconfirmedTargets[unit]?.target || 0;
+    const m3MorningConfig = notconfirmedTargets[unit]?.morning || 0;
+    const m3EveningConfig = notconfirmedTargets[unit]?.evening || 0;
+    const m3Morning = m3MorningConfig > 0 ? m3MorningConfig : unitNotconfirmed.length;
+    const m3Evening = m3EveningConfig > 0 ? m3EveningConfig : (m3Morning * 2);
+    const m3Target = m3Evening > 0 ? m3Evening : m3Morning;
     const m3Total = unitNotconfirmed.length;
     let m3Completed = notconfirmedHistory.filter(c => c.unit === unit).length;
     Object.entries(notconfirmedConfirmed).forEach(([id, confirmed]) => {
@@ -206,12 +214,16 @@ export const getUnitData = async (unit) => {
       m1Ratio,
       m1Items: m1RemainingItems,
       m2Target,
+      m2Morning,
+      m2Evening,
       m2Result: m2Completed,
       m2Remain,
       m2InSystem: m2Total,
       m2Ratio,
       m2Items: m2RemainingItems,
       m3Target,
+      m3Morning,
+      m3Evening,
       m3Result: m3Completed,
       m3Remain,
       m3InSystem: m3Total,
@@ -222,8 +234,8 @@ export const getUnitData = async (unit) => {
       totalResult,
       totalInSystem,
       totalRatio,
-      targetMorning: m1Morning,
-      targetEvening: m1Evening,
+      targetMorning: m1Morning + m2Morning + m3Morning,
+      targetEvening: m1Evening + m2Evening + m3Evening,
       remain: totalRemain,
       result: totalResult,
       ratio: totalRatio,
@@ -310,8 +322,6 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   }
 
   const m1Target = unitData.m1Target || 0;
-  const m1Morning = unitData.m1Morning || 0;
-  const m1Evening = unitData.m1Evening || 0;
   const m1Result = unitData.m1Result || 0;
   const m1Remain = unitData.m1Remain || 0;
   const m1Ratio = unitData.m1Ratio || 0;
@@ -333,6 +343,8 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   const totalRemain = unitData.totalRemain || 0;
   const totalRatio = unitData.totalRatio || 0;
   const totalInSystem = unitData.totalInSystem || 0;
+  const targetMorning = unitData.targetMorning || 0;
+  const targetEvening = unitData.targetEvening || 0;
 
   let message = `📊 <b>📋 CONFIRMED HAND OVER REPORT</b>\n`;
   message += `📍 <b>BRANCH</b> : ${unit}\n`;
@@ -342,8 +354,8 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
 
   message += `📈 <b>📊 OVERALL KPI SUMMARY</b>\n`;
   message += `┌─────────────────────────┐\n`;
-  message += `│ 🌅 Target ព្រឹក  : ${m1Morning}\n`;
-  message += `│ 🌙 Target ល្ងាច : ${m1Evening}\n`;
+  message += `│ 🌅 Target ព្រឹក  : ${targetMorning}\n`;
+  message += `│ 🌙 Target ល្ងាច : ${targetEvening}\n`;
   message += `│ ✅ Result       : ${totalResult}\n`;
   message += `│ 📋 Remain      : ${totalRemain}\n`;
   message += `│ 📊 Ratio       : ${typeof totalRatio === 'number' ? totalRatio.toFixed(1) : totalRatio}%\n`;
