@@ -216,7 +216,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   // Columns
   const columns = [
     { key: 'no', label: '#', width: 'w-12' },
-    { key: 'exportCode', label: 'Export Code', width: 'w-32' },
+    { key: 'exportCode', label: 'Warehouse Stock out', width: 'w-32' },
     { key: 'exportNo', label: 'Export No', width: 'w-32' },
     { key: 'realExport', label: 'Date', width: 'w-24' },
     { key: 'stockReceiver', label: 'Stock Receiver', width: 'w-40' },
@@ -229,17 +229,24 @@ const STOCKOUT_YET_CONFIRM = () => {
   // Helper functions
   const calculateDaysDiff = (dateString) => {
     if (!dateString) return 0;
-    const parts = dateString.split(/[/\s:]+/);
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    let year = parseInt(parts[2], 10);
-    if (year < 100) year += 2000;
+    const parts = dateString.split(/[/\s:-]+/);
+    if (parts.length < 3) return 0;
+    let day, month, year;
+    if (parts[0].length === 4) {
+      year = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10) - 1;
+      day = parseInt(parts[2], 10);
+    } else {
+      day = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10) - 1;
+      year = parseInt(parts[2], 10);
+      if (year < 100) year += 2000;
+    }
     const exportDate = new Date(year, month, day);
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
     const diffTime = currentDate - exportDate;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+    return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
   };
 
   const playAlarmSound = () => {
@@ -614,6 +621,9 @@ const STOCKOUT_YET_CONFIRM = () => {
       const hasHeaderWord = headerCells.some(cell => {
         const clean = cell.replace(/[^a-z0-9]/g, ' ');
         return clean.includes('code') || 
+               clean.includes('warehouse') || 
+               clean.includes('stock out') || 
+               clean.includes('stockout') || 
                clean.includes('no') || 
                clean.includes('date') || 
                clean.includes('receiver');
@@ -626,7 +636,7 @@ const STOCKOUT_YET_CONFIRM = () => {
           
           if (clean.includes('no') && (clean.includes('seq') || clean === 'no')) return;
           
-          if (clean.includes('code')) {
+          if (clean.includes('code') || clean.includes('warehouse') || clean.includes('stock out') || clean.includes('stockout')) {
             exportCodeIdx = idx;
           } else if (clean.includes('export') && (clean.includes('no') || clean.includes('num'))) {
             exportNoIdx = idx;
@@ -768,7 +778,7 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   const exportToExcel = () => {
     const exportData = data.map(item => ({
-      'No': item.no, 'Export Code': item.exportCode, 'Export No': item.exportNo,
+      'No': item.no, 'Warehouse Stock out': item.exportCode, 'Export No': item.exportNo,
       'Date': item.realExport, 'Stock Receiver': item.stockReceiver,
       'Group Receiver': item.groupReceiver, 'Construction Receiver': item.constructionReceiver,
       'Unit': item.unit, "Days": item.daysDiff,

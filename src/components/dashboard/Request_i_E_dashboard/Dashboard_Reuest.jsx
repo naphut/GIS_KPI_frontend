@@ -117,7 +117,12 @@ const Dashboard_Request = () => {
       setRestockOutTargets(dbOutTargets);
 
       const dbRestockTargets = await loadFromDb('kpi_restock_targets', null);
-      if (dbRestockTargets) setRestockTargets(dbRestockTargets);
+      if (dbRestockTargets) {
+        setRestockTargets({
+          restock_in: { morning: 0, evening: 0, ...dbRestockTargets.restock_in },
+          restock_out: { morning: 0, evening: 0, ...dbRestockTargets.restock_out }
+        });
+      }
     };
     fetchDbData();
   }, []);
@@ -171,18 +176,34 @@ const Dashboard_Request = () => {
     };
   });
 
-  const [editMorningRestockIn, setEditMorningRestockIn] = useState(restockTargets.restock_in.morning);
-  const [editEveningRestockIn, setEditEveningRestockIn] = useState(restockTargets.restock_in.evening);
-  const [editMorningRestockOut, setEditMorningRestockOut] = useState(restockTargets.restock_out.morning);
-  const [editEveningRestockOut, setEditEveningRestockOut] = useState(restockTargets.restock_out.evening);
+  const sumInMorning = useMemo(() => {
+    return Object.values(targets).reduce((sum, t) => sum + (t?.morning || 0), 0);
+  }, [targets]);
+
+  const sumInEvening = useMemo(() => {
+    return Object.values(targets).reduce((sum, t) => sum + (t?.evening || 0), 0);
+  }, [targets]);
+
+  const sumOutMorning = useMemo(() => {
+    return Object.values(restockOutTargets).reduce((sum, t) => sum + (t?.morning || 0), 0);
+  }, [restockOutTargets]);
+
+  const sumOutEvening = useMemo(() => {
+    return Object.values(restockOutTargets).reduce((sum, t) => sum + (t?.evening || 0), 0);
+  }, [restockOutTargets]);
+
+  const [editMorningRestockIn, setEditMorningRestockIn] = useState(restockTargets.restock_in?.morning || sumInMorning);
+  const [editEveningRestockIn, setEditEveningRestockIn] = useState(restockTargets.restock_in?.evening || sumInEvening);
+  const [editMorningRestockOut, setEditMorningRestockOut] = useState(restockTargets.restock_out?.morning || sumOutMorning);
+  const [editEveningRestockOut, setEditEveningRestockOut] = useState(restockTargets.restock_out?.evening || sumOutEvening);
 
   // Sync inputs if targets state changes
   useEffect(() => {
-    setEditMorningRestockIn(restockTargets.restock_in.morning);
-    setEditEveningRestockIn(restockTargets.restock_in.evening);
-    setEditMorningRestockOut(restockTargets.restock_out.morning);
-    setEditEveningRestockOut(restockTargets.restock_out.evening);
-  }, [restockTargets]);
+    setEditMorningRestockIn(restockTargets.restock_in?.morning || sumInMorning);
+    setEditEveningRestockIn(restockTargets.restock_in?.evening || sumInEvening);
+    setEditMorningRestockOut(restockTargets.restock_out?.morning || sumOutMorning);
+    setEditEveningRestockOut(restockTargets.restock_out?.evening || sumOutEvening);
+  }, [restockTargets, sumInMorning, sumInEvening, sumOutMorning, sumOutEvening]);
 
   const handleUpdateRestockIn = () => {
     const updated = {
@@ -220,16 +241,7 @@ const Dashboard_Request = () => {
     }));
   }, [data, completionHistory, confirmedStatus]);
 
-  // Process Restock Out data with units
-  const processedRestockOutData = useMemo(() => {
-    return restockOutData.map(item => ({
-      ...item,
-      unit: item.unit || getUnitFromRequestCode(item.requestExportCode),
-      daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.createDate),
-      isCompleted: restockOutHistory.some(h => h.requestExportCode === item.requestExportCode) || 
-                    restockOutConfirmed[item.id]
-    }));
-  }, [restockOutData, restockOutHistory, restockOutConfirmed]);
+
 
   // KPI Calculations
   const kpiData = useMemo(() => {
@@ -358,49 +370,79 @@ const Dashboard_Request = () => {
   }, [processedData, selectedUnit, timeRange]);
 
   const filteredKPI = useMemo(() => {
+    // 1. Collect active items
+    let activeIn = data;
+    let activeOut = restockOutData;
+    
+    // 2. Filter active items by selectedUnit
+    if (selectedUnit !== 'all') {
+      activeIn = activeIn.filter(item => (item.unit || getUnitFromRequestCode(item.importRequestCode)) === selectedUnit);
+      activeOut = activeOut.filter(item => (item.unit || getUnitFromRequestCode(item.requestExportCode)) === selectedUnit);
+    }
+    
+    // 3. Filter completed items from history by selectedUnit
+    let completedIn = completionHistory;
+    let completedOut = restockOutHistory;
+    if (selectedUnit !== 'all') {
+      completedIn = completedIn.filter(h => h.unit === selectedUnit);
+      completedOut = completedOut.filter(h => h.unit === selectedUnit);
+    }
+    
+    // 4. Calculate stats
+    // A. Restock In
+    const inUnsigned = activeIn.filter(item => !confirmedStatus[item.id]).length;
+    const inConfirmedCount = activeIn.filter(item => confirmedStatus[item.id]).length;
+    const inResult = completedIn.length + inConfirmedCount;
+    const inTotal = inResult + inUnsigned;
+    
+    // B. Restock Out
+    const outUnsigned = activeOut.filter(item => !restockOutConfirmed[item.id]).length;
+    const outConfirmedCount = activeOut.filter(item => restockOutConfirmed[item.id]).length;
+    const outResult = completedOut.length + outConfirmedCount;
+    const outTotal = outResult + outUnsigned;
+    
+    // C. Alarms
+    const inAlarms = activeIn.filter(item => item.daysDiff > 4 && !confirmedStatus[item.id]).length;
+    const outAlarms = activeOut.filter(item => {
+      const days = calculateDaysDiff(item.createDate);
+      return days > 4 && !restockOutConfirmed[item.id];
+    }).length;
+    const totalAlarms = inAlarms + outAlarms;
+    
+    const totalRequests = inTotal + outTotal;
+    const totalCompleted = inResult + outResult;
+    const totalPending = inUnsigned + outUnsigned;
+    
+    // Set up unitStats for active units in the filtered view
     const unitStats = {};
-    let totalRequests = 0;
-    let totalCompleted = 0;
-    let totalPending = 0;
-    let totalAlarms = 0;
-
-    filteredData.forEach(item => {
-      if (!item.unit || !VALID_UNITS.includes(item.unit)) return;
+    const allUnits = getAllUnits();
+    allUnits.forEach(u => {
+      const uInUnsigned = activeIn.filter(item => (item.unit || getUnitFromRequestCode(item.importRequestCode)) === u && !confirmedStatus[item.id]).length;
+      const uInConfirmed = activeIn.filter(item => (item.unit || getUnitFromRequestCode(item.importRequestCode)) === u && confirmedStatus[item.id]).length;
+      const uInResult = completedIn.filter(h => h.unit === u).length + uInConfirmed;
       
-      const unit = item.unit;
-      const isCompleted = item.isCompleted;
-
-      if (!unitStats[unit]) {
-        unitStats[unit] = {
-          total: 0,
-          completed: 0,
-          pending: 0,
-          alarmCount: 0
+      const uOutUnsigned = activeOut.filter(item => (item.unit || getUnitFromRequestCode(item.requestExportCode)) === u && !restockOutConfirmed[item.id]).length;
+      const uOutConfirmed = activeOut.filter(item => (item.unit || getUnitFromRequestCode(item.requestExportCode)) === u && restockOutConfirmed[item.id]).length;
+      const uOutResult = completedOut.filter(h => h.unit === u).length + uOutConfirmed;
+      
+      const uTotal = uInUnsigned + uInResult + uOutUnsigned + uOutResult;
+      if (uTotal > 0) {
+        unitStats[u] = {
+          total: uTotal,
+          completed: uInResult + uOutResult,
+          pending: uInUnsigned + uOutUnsigned,
+          alarmCount: activeIn.filter(item => (item.unit || getUnitFromRequestCode(item.importRequestCode)) === u && item.daysDiff > 4 && !confirmedStatus[item.id]).length +
+                      activeOut.filter(item => {
+                        const uCode = item.unit || getUnitFromRequestCode(item.requestExportCode);
+                        const days = calculateDaysDiff(item.createDate);
+                        return uCode === u && days > 4 && !restockOutConfirmed[item.id];
+                      }).length
         };
       }
-      unitStats[unit].total++;
-      if (isCompleted) unitStats[unit].completed++;
-      else unitStats[unit].pending++;
-      if (item.daysDiff > 4) unitStats[unit].alarmCount++;
-
-      totalRequests++;
-      if (isCompleted) totalCompleted++;
-      else totalPending++;
-      if (item.daysDiff > 4) totalAlarms++;
     });
-
-    Object.keys(unitStats).forEach(unit => {
-      const target = targets[unit]?.target || 0;
-      unitStats[unit].target = target;
-      unitStats[unit].progress = target > 0 ? (unitStats[unit].completed / target) * 100 : 0;
-    });
-
-    const sortedUnits = Object.entries(unitStats)
-      .sort((a, b) => b[1].total - a[1].total);
-
+    
     return {
       unitStats,
-      sortedUnits,
       summary: {
         totalRequests,
         totalCompleted,
@@ -409,7 +451,9 @@ const Dashboard_Request = () => {
         completionRate: totalRequests > 0 ? (totalCompleted / totalRequests) * 100 : 0
       }
     };
-  }, [filteredData, targets]);
+  }, [data, restockOutData, completionHistory, restockOutHistory, confirmedStatus, restockOutConfirmed, selectedUnit]);
+
+
 
   const getAlarmColor = (count) => {
     if (count === 0) return 'text-emerald-600';
@@ -460,38 +504,41 @@ const Dashboard_Request = () => {
 
   // Restock In metrics calculation
   const restockInResult = useMemo(() => {
-    return data.filter(item => 
-      completionHistory.some(h => h.importRequestCode === item.importRequestCode) || 
-      confirmedStatus[item.id]
-    ).length;
+    const confirmedCount = data.filter(item => confirmedStatus[item.id]).length;
+    return completionHistory.length + confirmedCount;
   }, [data, completionHistory, confirmedStatus]);
 
-  const restockInInSystem = data.length;
-  const restockInTarget = restockTargets.restock_in.evening > 0 ? restockTargets.restock_in.evening : restockTargets.restock_in.morning;
-  const restockInRemain = restockInTarget > 0 ? Math.max(0, restockInTarget - restockInResult) : Math.max(0, restockInInSystem - restockInResult);
-  const restockInRatio = restockInTarget > 0 ? ((restockInResult / restockInTarget) * 100).toFixed(2) : '0.00';
+  const restockInInSystem = data.length + completionHistory.length;
+  const isMorning = new Date().getHours() < 12;
+  const restockInMorning = restockTargets.restock_in?.morning || sumInMorning;
+  const restockInEvening = restockTargets.restock_in?.evening || sumInEvening;
+  const restockInTarget = isMorning ? restockInMorning : (restockInEvening > 0 ? restockInEvening : restockInMorning);
+  const restockInConfirmedCount = useMemo(() => data.filter(item => confirmedStatus[item.id]).length, [data, confirmedStatus]);
+  const restockInRemain = restockInTarget > 0 ? Math.max(0, restockInTarget - restockInResult) : (data.length - restockInConfirmedCount);
+  const restockInRatio = restockInTarget > 0 ? ((restockInResult / restockInTarget) * 100).toFixed(2) : (restockInRemain === 0 ? '100.00' : '0.00');
 
   // Restock Out metrics calculation
   const restockOutResult = useMemo(() => {
-    return restockOutData.filter(item => 
-      restockOutHistory.some(h => h.importRequestCode === item.importRequestCode) || 
-      restockOutConfirmed[item.id]
-    ).length;
+    const confirmedCount = restockOutData.filter(item => restockOutConfirmed[item.id]).length;
+    return restockOutHistory.length + confirmedCount;
   }, [restockOutData, restockOutHistory, restockOutConfirmed]);
 
-  const restockOutInSystem = restockOutData.length;
-  const restockOutTarget = restockTargets.restock_out.evening > 0 ? restockTargets.restock_out.evening : restockTargets.restock_out.morning;
-  const restockOutRemain = restockOutTarget > 0 ? Math.max(0, restockOutTarget - restockOutResult) : Math.max(0, restockOutInSystem - restockOutResult);
-  const restockOutRatio = restockOutTarget > 0 ? ((restockOutResult / restockOutTarget) * 100).toFixed(2) : '0.00';
+  const restockOutInSystem = restockOutData.length + restockOutHistory.length;
+  const restockOutMorning = restockTargets.restock_out?.morning || sumOutMorning;
+  const restockOutEvening = restockTargets.restock_out?.evening || sumOutEvening;
+  const restockOutTarget = isMorning ? restockOutMorning : (restockOutEvening > 0 ? restockOutEvening : restockOutMorning);
+  const restockOutConfirmedCount = useMemo(() => restockOutData.filter(item => restockOutConfirmed[item.id]).length, [restockOutData, restockOutConfirmed]);
+  const restockOutRemain = restockOutTarget > 0 ? Math.max(0, restockOutTarget - restockOutResult) : (restockOutData.length - restockOutConfirmedCount);
+  const restockOutRatio = restockOutTarget > 0 ? ((restockOutResult / restockOutTarget) * 100).toFixed(2) : (restockOutRemain === 0 ? '100.00' : '0.00');
 
   // Combined totals
-  const totalRestockMorning = restockTargets.restock_in.morning + restockTargets.restock_out.morning;
-  const totalRestockEvening = restockTargets.restock_in.evening + restockTargets.restock_out.evening;
+  const totalRestockMorning = restockInMorning + restockOutMorning;
+  const totalRestockEvening = restockInEvening + restockOutEvening;
   const totalRestockResult = restockInResult + restockOutResult;
   const totalRestockInSystem = restockInInSystem + restockOutInSystem;
-  const totalRestockTarget = (restockTargets.restock_in.evening > 0 ? restockTargets.restock_in.evening : restockTargets.restock_in.morning) + (restockTargets.restock_out.evening > 0 ? restockTargets.restock_out.evening : restockTargets.restock_out.morning);
-  const totalRestockRemain = totalRestockTarget > 0 ? Math.max(0, totalRestockTarget - totalRestockResult) : (totalRestockInSystem - totalRestockResult);
-  const totalRestockRatio = totalRestockTarget > 0 ? ((totalRestockResult / totalRestockTarget) * 100).toFixed(2) : '0.00';
+  const totalRestockTarget = restockInTarget + restockOutTarget;
+  const totalRestockRemain = totalRestockTarget > 0 ? Math.max(0, totalRestockTarget - totalRestockResult) : (data.length - restockInConfirmedCount + restockOutData.length - restockOutConfirmedCount);
+  const totalRestockRatio = totalRestockTarget > 0 ? ((totalRestockResult / totalRestockTarget) * 100).toFixed(2) : (totalRestockRemain === 0 ? '100.00' : '0.00');
 
   const getReportData = () => {
     const allUnits = getAllUnits();
@@ -499,33 +546,52 @@ const Dashboard_Request = () => {
     const unitsMap = {};
     
     allUnits.forEach(unit => {
-      const inItems = processedData.filter(item => item.unit === unit);
-      const inInSystem = inItems.length;
-      const inResult = inItems.filter(item => item.isCompleted).length;
-      const inUnsigned = inItems.filter(item => !item.isCompleted).length;
-      const inTarget = targets[unit]?.target || 0;
+      const inUnsigned = data.filter(item => {
+        const u = item.unit || getUnitFromRequestCode(item.importRequestCode);
+        return u === unit && !confirmedStatus[item.id];
+      }).length;
+      const inConfirmedCount = data.filter(item => {
+        const u = item.unit || getUnitFromRequestCode(item.importRequestCode);
+        return u === unit && confirmedStatus[item.id];
+      }).length;
+      const inResult = completionHistory.filter(h => h.unit === unit).length + inConfirmedCount;
+      const inInSystem = inResult + inUnsigned;
+      const inMorning = targets[unit]?.morning || 0;
+      const inEvening = targets[unit]?.evening || 0;
+      const inTarget = isMorning ? inMorning : (inEvening > 0 ? inEvening : inMorning);
       const inRemain = inTarget > 0 ? Math.max(0, inTarget - inResult) : inUnsigned;
-      const inRatio = inTarget > 0 ? parseFloat(((inResult / inTarget) * 100).toFixed(2)) : (inRemain === 0 && inResult === 0 ? 100 : 0);
+      const inRatio = inTarget > 0 ? parseFloat(((inResult / inTarget) * 100).toFixed(2)) : (inRemain === 0 ? 100 : 0);
       
-      const outItems = processedRestockOutData.filter(item => item.unit === unit);
-      const outInSystem = outItems.length;
-      const outResult = outItems.filter(item => item.isCompleted).length;
-      const outUnsigned = outItems.filter(item => !item.isCompleted).length;
-      const outTarget = restockOutTargets[unit]?.target || 0;
+      const outUnsigned = restockOutData.filter(item => {
+        const u = item.unit || getUnitFromRequestCode(item.requestExportCode);
+        return u === unit && !restockOutConfirmed[item.id];
+      }).length;
+      const outConfirmedCount = restockOutData.filter(item => {
+        const u = item.unit || getUnitFromRequestCode(item.requestExportCode);
+        return u === unit && restockOutConfirmed[item.id];
+      }).length;
+      const outResult = restockOutHistory.filter(h => h.unit === unit).length + outConfirmedCount;
+      const outInSystem = outResult + outUnsigned;
+      const outMorning = restockOutTargets[unit]?.morning || 0;
+      const outEvening = restockOutTargets[unit]?.evening || 0;
+      const outTarget = isMorning ? outMorning : (outEvening > 0 ? outEvening : outMorning);
       const outRemain = outTarget > 0 ? Math.max(0, outTarget - outResult) : outUnsigned;
-      const outRatio = outTarget > 0 ? parseFloat(((outResult / outTarget) * 100).toFixed(2)) : (outRemain === 0 && outResult === 0 ? 100 : 0);
+      const outRatio = outTarget > 0 ? parseFloat(((outResult / outTarget) * 100).toFixed(2)) : (outRemain === 0 ? 100 : 0);
       
-      const targetMorning = inTarget;
-      const targetEvening = outTarget;
-      const unitTotalTarget = targetMorning + targetEvening;
+      const targetMorning = inMorning + outMorning;
+      const targetEvening = inEvening + outEvening;
+      const unitTotalTarget = inTarget + outTarget;
       const unitTotalResult = inResult + outResult;
       const unitTotalUnsigned = inUnsigned + outUnsigned;
       const unitTotalRemain = unitTotalTarget > 0 ? Math.max(0, unitTotalTarget - unitTotalResult) : unitTotalUnsigned;
       const unitTotalInSystem = inInSystem + outInSystem;
-      const unitTotalRatio = unitTotalTarget > 0 ? parseFloat(((unitTotalResult / unitTotalTarget) * 100).toFixed(2)) : (unitTotalRemain === 0 && unitTotalResult === 0 ? 100 : 0);
+      const unitTotalRatio = unitTotalTarget > 0 ? parseFloat(((unitTotalResult / unitTotalTarget) * 100).toFixed(2)) : (unitTotalRemain === 0 ? 100 : 0);
       
-      const unsignedInItemsList = inItems
-        .filter(item => !item.isCompleted)
+      const unsignedInItemsList = data
+        .filter(item => {
+          const u = item.unit || getUnitFromRequestCode(item.importRequestCode);
+          return u === unit && !confirmedStatus[item.id];
+        })
         .map(item => ({
           code: item.importRequestCode || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate),
@@ -533,8 +599,11 @@ const Dashboard_Request = () => {
           creator: item.creator || '-'
         }));
 
-      const unsignedOutItemsList = outItems
-        .filter(item => !item.isCompleted)
+      const unsignedOutItemsList = restockOutData
+        .filter(item => {
+          const u = item.unit || getUnitFromRequestCode(item.requestExportCode);
+          return u === unit && !restockOutConfirmed[item.id];
+        })
         .map(item => ({
           code: item.requestExportCode || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.createDate),

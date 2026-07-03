@@ -328,7 +328,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       const data = JSON.parse(localStorage.getItem('kpi_nocreate_data') || '[]');
       const completionHistory = JSON.parse(localStorage.getItem('kpi_nocreate_completionHistory') || '[]');
       const confirmedStatus = JSON.parse(localStorage.getItem('kpi_nocreate_confirmedStatus') || '{}');
-      const remaining = data.filter(item => !completionHistory.some(c => c.code === item.code) && !confirmedStatus[item.id]);
+      const remaining = data.filter(item => !completionHistory.some(c => c.code === item.code) && !confirmedStatus[item.code]);
       return unitFilter ? remaining.filter(item => item.unit === unitFilter) : remaining;
     };
 
@@ -336,7 +336,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       const data = JSON.parse(localStorage.getItem('kpi_notconfirmed_data') || '[]');
       const completionHistory = JSON.parse(localStorage.getItem('kpi_notconfirmed_completionHistory') || '[]');
       const confirmedStatus = JSON.parse(localStorage.getItem('kpi_notconfirmed_confirmedStatus') || '{}');
-      const remaining = data.filter(item => !completionHistory.some(c => c.code === item.code) && !confirmedStatus[item.id]);
+      const remaining = data.filter(item => !completionHistory.some(c => c.code === item.code) && !confirmedStatus[item.code]);
       return unitFilter ? remaining.filter(item => item.unit === unitFilter) : remaining;
     };
 
@@ -358,33 +358,39 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     const nocreateConfirmed = JSON.parse(localStorage.getItem('kpi_nocreate_confirmedStatus') || '{}');
     const notconfirmedConfirmed = JSON.parse(localStorage.getItem('kpi_notconfirmed_confirmedStatus') || '{}');
 
+    const isMorning = new Date().getHours() < 12;
+
     allUnits.forEach(unit => {
       // Stockout stats
       const m1Morning = stockoutTargets[unit]?.morning || 0;
       const m1Evening = stockoutTargets[unit]?.evening || 0;
-      const m1Target = m1Evening > 0 ? m1Evening : m1Morning;
+      const m1Target = isMorning ? m1Morning : (m1Evening > 0 ? m1Evening : m1Morning);
       const m1Count = stockoutData.filter(i => i.unit === unit).length;
       const m1Result = stockoutHistory.filter(c => c.unit === unit).length;
       const m1Remain = m1Target > 0 ? Math.max(0, m1Target - m1Result) : m1Count;
 
       // Nocreate stats
-      const m2Target = nocreateTargets[unit]?.target || 0;
+      const m2Morning = nocreateTargets[unit]?.morning || 0;
+      const m2Evening = nocreateTargets[unit]?.evening || 0;
+      const m2Target = isMorning ? m2Morning : (m2Evening > 0 ? m2Evening : m2Morning);
       const m2Count = nocreateData.filter(i => i.unit === unit).length;
       const m2Result = nocreateHistory.filter(c => c.unit === unit).length + 
-                       Object.entries(nocreateConfirmed).filter(([id, confirmed]) => {
+                       Object.entries(nocreateConfirmed).filter(([code, confirmed]) => {
                          if (!confirmed) return false;
-                         const item = nocreateData.find(d => d.id === parseInt(id));
+                         const item = nocreateData.find(d => d.code === code);
                          return item && item.unit === unit;
                        }).length;
       const m2Remain = m2Target > 0 ? Math.max(0, m2Target - m2Result) : m2Count;
 
       // Notconfirmed stats
-      const m3Target = notconfirmedTargets[unit]?.target || 0;
+      const m3Morning = notconfirmedTargets[unit]?.morning || 0;
+      const m3Evening = notconfirmedTargets[unit]?.evening || 0;
+      const m3Target = isMorning ? m3Morning : (m3Evening > 0 ? m3Evening : m3Morning);
       const m3Count = notconfirmedData.filter(i => i.unit === unit).length;
       const m3Result = notconfirmedHistory.filter(c => c.unit === unit).length + 
-                       Object.entries(notconfirmedConfirmed).filter(([id, confirmed]) => {
+                       Object.entries(notconfirmedConfirmed).filter(([code, confirmed]) => {
                          if (!confirmed) return false;
-                         const item = notconfirmedData.find(d => d.id === parseInt(id));
+                         const item = notconfirmedData.find(d => d.code === code);
                          return item && item.unit === unit;
                        }).length;
       const m3Remain = m3Target > 0 ? Math.max(0, m3Target - m3Result) : m3Count;

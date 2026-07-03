@@ -58,7 +58,14 @@ const Import_CA = () => {
   useEffect(() => {
     const fetchDbData = async () => {
       const dbData = await loadFromDb(STORAGE_KEYS.DATA, []);
-      setData(dbData);
+      const filtered = dbData.filter(item => {
+        const sCA = (item.statusCA || '').toUpperCase().trim();
+        return sCA.includes('UNSIGNED') || 
+               sCA.includes('IS SIGNING') || 
+               sCA.includes('TRÌNH KÝ') || 
+               sCA.includes('TRINH KY');
+      });
+      setData(filtered);
       
       const dbCompletion = await loadFromDb(STORAGE_KEYS.COMPLETION, []);
       setCompletionHistory(dbCompletion);
@@ -387,18 +394,22 @@ const Import_CA = () => {
   };
 
   const getStatusCABadge = (statusCA) => {
-    if (statusCA === 'Unsigned') {
+    const s = (statusCA || '').toUpperCase();
+    if (s.includes('UNSIGNED') || s.includes('CHƯA') || s.includes('CHUA')) {
       return (
         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold bg-rose-600 text-white animate-pulse border border-rose-700 shadow-sm">
-          🚨 Unsigned
+          🚨 {statusCA}
         </span>
       );
     }
-    const config = {
-      'Is signing': { icon: '✍️', bg: 'bg-amber-100', text: 'text-amber-800' },
-    };
-    const c = config[statusCA] || { icon: '❓', bg: 'bg-gray-100', text: 'text-gray-500' };
-    return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>{c.icon} {statusCA}</span>;
+    if (s.includes('IS SIGNING') || s.includes('ISSIGNING') || s.includes('ĐANG') || s.includes('DANG')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+          ✍️ {statusCA}
+        </span>
+      );
+    }
+    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">❓ {statusCA}</span>;
   };
 
   const getStatusBadge = (status) => {
@@ -532,8 +543,12 @@ const Import_CA = () => {
     }
     const gisData = newRawData.filter(item => {
       const isGIS = item.warehouse && item.warehouse.toUpperCase().includes('GIS');
-      const isNotSigned = item.statusCA !== 'Signed' && item.statusCA !== 'Signing';
-      return isGIS && isNotSigned;
+      const sCA = (item.statusCA || '').toUpperCase().trim();
+      const isValidStatus = sCA.includes('UNSIGNED') || 
+                            sCA.includes('IS SIGNING') || 
+                            sCA.includes('TRÌNH KÝ') || 
+                            sCA.includes('TRINH KY');
+      return isGIS && isValidStatus;
     });
 
     if (gisData.length === 0) {
@@ -645,18 +660,19 @@ const Import_CA = () => {
     let grandRemain = 0;
     let grandResult = 0;
     let grandTotalRecords = 0;
+    const isMorning = new Date().getHours() < 12;
     
     allUnits.forEach(unit => {
       const morningTarget = targets[unit]?.morning || 0;
       const eveningTarget = targets[unit]?.evening || 0;
-      const target = eveningTarget > 0 ? eveningTarget : morningTarget;
+      const target = isMorning ? morningTarget : (eveningTarget > 0 ? eveningTarget : morningTarget);
       const currentCount = unitGroups[unit]?.count || 0;
       const completedCount = completedByUnit[unit] || 0;
       const result = completedCount;
       const remain = target > 0 ? Math.max(0, target - result) : currentCount;
       let ratio = 0;
       if (target > 0) ratio = (result / target) * 100;
-      else if (currentCount === 0 && result === 0) ratio = 100;
+      else if (remain === 0 && result === 0) ratio = 100;
       
       let status = 'No Data';
       if (currentCount > 0 || result > 0 || target > 0) {
@@ -692,6 +708,7 @@ const Import_CA = () => {
         case 'result': aVal = a.result; bVal = b.result; break;
         case 'morning': aVal = a.morningTarget; bVal = b.morningTarget; break;
         case 'evening': aVal = a.eveningTarget; bVal = b.eveningTarget; break;
+        case 'total': aVal = a.total; bVal = b.total; break;
         default: aVal = a.unit; bVal = b.unit;
       }
       return kpiSortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
@@ -948,7 +965,7 @@ const Import_CA = () => {
   }, [filteredData, currentPage, pageSize]);
 
   const alarmItems = useMemo(() => {
-    return filteredData.filter(item => (item.daysDiff > alarmThreshold || item.statusCA === 'Unsigned') && !dismissedItems.has(item.id));
+    return filteredData.filter(item => (item.daysDiff > alarmThreshold || (item.statusCA && (item.statusCA.toUpperCase().includes('UNSIGNED') || item.statusCA.toUpperCase().includes('CHƯA') || item.statusCA.toUpperCase().includes('CHUA')))) && !dismissedItems.has(item.id));
   }, [filteredData, alarmThreshold, dismissedItems]);
 
   const [alarmSearchTerm, setAlarmSearchTerm] = useState('');
@@ -1185,7 +1202,9 @@ const Import_CA = () => {
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('ratio')}>
                         Ratio {kpiSortBy === 'ratio' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">In System</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('total')}>
+                        In System {kpiSortBy === 'total' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>
@@ -1515,7 +1534,7 @@ const Import_CA = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedData.map((item) => {
-                const isAlarm = (item.daysDiff > alarmThreshold || item.statusCA === 'Unsigned') && !dismissedItems.has(item.id);
+                const isAlarm = (item.daysDiff > alarmThreshold || (item.statusCA && (item.statusCA.toUpperCase().includes('UNSIGNED') || item.statusCA.toUpperCase().includes('CHƯA') || item.statusCA.toUpperCase().includes('CHUA')))) && !dismissedItems.has(item.id);
                 return (
                   <tr key={item.id} className={`${isAlarm ? 'bg-rose-50' : ''} ${selectedRows.has(item.id) ? 'bg-blue-50' : ''} hover:bg-gray-50 transition-colors`}>
                     <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" /></td>

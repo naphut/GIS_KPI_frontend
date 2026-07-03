@@ -35,6 +35,61 @@ const getYearFromDate = (dateString) => {
   return year;
 };
 
+const allUnits = [
+  'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
+  'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
+  'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
+];
+
+const getUnitFromRecipient = (recipient) => {
+  if (!recipient) return 'OTHER';
+  
+  // Normalize: convert to uppercase and remove all spaces
+  const normalized = recipient.toUpperCase().replace(/\s+/g, '');
+  
+  // 1. PNP Planning Department check
+  if (normalized.includes('PNP_PLA_PLANNING') || normalized.includes('PNP_PLANNING')) {
+    return 'PNP';
+  }
+  
+  // 2. KAN Planning Department check
+  if (normalized.includes('KAN_PLA_PLANNING') || normalized.includes('KAN_PLANNING')) {
+    return 'KAN';
+  }
+  
+  // 3. PNP FBC checks (PNPZ1 / PNPZ2)
+  if (normalized.includes('PNP_FBC') || normalized.includes('PNP_FBCO') || normalized.includes('PNPFBC')) {
+    const pnpz1Codes = ['FBC01', 'FBC03', 'FBC05', 'FBCO5', 'FBC06', 'FBC07', 'FBC10', 'FBC13', 'FBC14'];
+    const pnpz2Codes = ['FBC02', 'FBC04', 'FBC08', 'FBC09', 'FBC12'];
+    
+    if (pnpz1Codes.some(code => normalized.includes(code))) {
+      return 'PNPZ1';
+    }
+    if (pnpz2Codes.some(code => normalized.includes(code))) {
+      return 'PNPZ2';
+    }
+    // Fallback default for any other PNP FBC to PNPZ1
+    return 'PNPZ1';
+  }
+  
+  // 4. KAN FBC check (KANZ1)
+  if (normalized.includes('KAN_FBC') || normalized.includes('KANFBC')) {
+    return 'KANZ1';
+  }
+  
+  // 5. Standard fallback matching logic
+  for (const unit of allUnits) {
+    if (normalized.includes(`GIS_${unit}_`) || normalized.includes(`_${unit}_`) || normalized.startsWith(unit) || normalized.includes(`GIS_${unit}`)) {
+      return unit;
+    }
+  }
+  
+  if (normalized.includes('KANZ')) return 'KANZ1';
+  if (normalized.includes('PNPZ')) return 'PNPZ1';
+  
+  return 'OTHER';
+};
+
 const NO_CREATE_HAND_OVER = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const isLoaded = useRef(false);
@@ -75,7 +130,10 @@ const NO_CREATE_HAND_OVER = () => {
   useEffect(() => {
     const fetchDbData = async () => {
       const dbData = await loadFromDb(STORAGE_KEYS.DATA, []);
-      const filtered = dbData.filter(item => getYearFromDate(item.date) >= 2025);
+      const filtered = dbData.filter(item => 
+        getYearFromDate(item.date) >= 2025 &&
+        item.recipient && item.recipient.toUpperCase().includes('GIS')
+      );
       setData(filtered);
       
       const dbCompletion = await loadFromDb(STORAGE_KEYS.COMPLETION, []);
@@ -126,12 +184,7 @@ const NO_CREATE_HAND_OVER = () => {
     }
   }, [confirmedStatus]);
 
-  // Complete list of all possible Units
-  const allUnits = useMemo(() => [
-    'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
-    'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
-    'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
-  ], []);
+
 
   // Columns
   const columns = [
@@ -162,77 +215,22 @@ const NO_CREATE_HAND_OVER = () => {
     return diffDays;
   };
 
-  const getUnitFromRecipient = (recipient) => {
-    if (!recipient) return 'OTHER';
-    
-    // Normalize: convert to uppercase and remove all spaces
-    const normalized = recipient.toUpperCase().replace(/\s+/g, '');
-    
-    // 1. PNP Planning Department check
-    if (normalized.includes('PNP_PLA_PLANNING') || normalized.includes('PNP_PLANNING')) {
-      return 'PNP';
-    }
-    
-    // 2. KAN Planning Department check
-    if (normalized.includes('KAN_PLA_PLANNING') || normalized.includes('KAN_PLANNING')) {
-      return 'KAN';
-    }
-    
-    // 3. PNP FBC checks (PNPZ1 / PNPZ2)
-    if (normalized.includes('PNP_FBC') || normalized.includes('PNP_FBCO') || normalized.includes('PNPFBC')) {
-      const pnpz1Codes = ['FBC01', 'FBC03', 'FBC05', 'FBCO5', 'FBC06', 'FBC07', 'FBC10', 'FBC13', 'FBC14'];
-      const pnpz2Codes = ['FBC02', 'FBC04', 'FBC08', 'FBC09', 'FBC12'];
-      
-      if (pnpz1Codes.some(code => normalized.includes(code))) {
-        return 'PNPZ1';
-      }
-      if (pnpz2Codes.some(code => normalized.includes(code))) {
-        return 'PNPZ2';
-      }
-      // Fallback default for any other PNP FBC to PNPZ1
-      return 'PNPZ1';
-    }
-    
-    // 4. KAN FBC check (KANZ1)
-    if (normalized.includes('KAN_FBC') || normalized.includes('KANFBC')) {
-      return 'KANZ1';
-    }
-    
-    // 5. Standard fallback matching logic
-    const parts = normalized.split('_');
-    if (parts.length >= 2 && parts[0] === 'GIS') {
-      const unitCode = parts[1];
-      const validUnits = ['BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
-        'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
-        'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'];
-      if (validUnits.includes(unitCode)) return unitCode;
-      if (unitCode === 'KANZ') return 'KANZ1';
-      if (unitCode === 'PNPZ') return 'PNPZ1';
-    }
-    
-    return 'OTHER';
-  };
 
-  const isConfirmed = (itemId, code) => {
-    return completionHistory.some(h => h.code === code) || confirmedStatus[itemId];
+
+  const isConfirmed = (id, code) => {
+    return completionHistory.some(h => h.code === code) || !!confirmedStatus[code];
   };
 
   const toggleConfirm = (id, code, unit) => {
-    if (confirmedStatus[id]) {
+    if (confirmedStatus[code]) {
       setConfirmedStatus(prev => {
         const newStatus = { ...prev };
-        delete newStatus[id];
+        delete newStatus[code];
         return newStatus;
       });
       showNotification(`❌ ${code} marked as NOT CONFIRMED`, 'warning');
     } else {
-      setConfirmedStatus(prev => ({ ...prev, [id]: true }));
-      const newCompletion = {
-        code: code,
-        completedAt: new Date().toISOString(),
-        unit: unit
-      };
-      setCompletionHistory(prev => [...prev, newCompletion]);
+      setConfirmedStatus(prev => ({ ...prev, [code]: true }));
       showNotification(`✅ ${code} marked as CONFIRMED! +1 Result`, 'success');
       playAlarmSound();
     }
@@ -348,7 +346,7 @@ const NO_CREATE_HAND_OVER = () => {
 
   const processImport = (newRawData) => {
     const gisData = newRawData.filter(item => 
-      item.recipient && (item.recipient.toUpperCase().includes('GIS') || getUnitFromRecipient(item.recipient) !== 'OTHER') &&
+      item.recipient && item.recipient.toUpperCase().includes('GIS') &&
       getYearFromDate(item.date) >= 2025
     );
 
@@ -400,6 +398,11 @@ const NO_CREATE_HAND_OVER = () => {
         return { code: code, completedAt: new Date().toISOString(), unit: foundItem?.unit || 'UNKNOWN' };
       });
       setCompletionHistory(prev => [...newCompletions, ...prev]);
+      setConfirmedStatus(prev => {
+        const newStatus = { ...prev };
+        completedCodesArray.forEach(code => delete newStatus[code]);
+        return newStatus;
+      });
       completedCodesArray.forEach(code => {
         showNotification(`✅ COMPLETED: ${code} has been cleared! +1 Result`, 'success');
       });
@@ -431,9 +434,9 @@ const NO_CREATE_HAND_OVER = () => {
       }
     });
     
-    Object.entries(confirmedStatus).forEach(([id, isConfirmed]) => {
+    Object.entries(confirmedStatus).forEach(([code, isConfirmed]) => {
       if (isConfirmed) {
-        const item = data.find(d => d.id === parseInt(id));
+        const item = data.find(d => d.code === code);
         if (item && item.unit !== 'OTHER') {
           completedByUnit[item.unit] = (completedByUnit[item.unit] || 0) + 1;
         }
@@ -493,6 +496,7 @@ const NO_CREATE_HAND_OVER = () => {
         case 'result': aVal = a.result; bVal = b.result; break;
         case 'morning': aVal = a.morningTarget; bVal = b.morningTarget; break;
         case 'evening': aVal = a.eveningTarget; bVal = b.eveningTarget; break;
+        case 'total': aVal = a.total; bVal = b.total; break;
         default: aVal = a.unit; bVal = b.unit;
       }
       return kpiSortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
@@ -512,7 +516,7 @@ const NO_CREATE_HAND_OVER = () => {
         completedUnits: kpiData.filter(item => item.hasData && item.remain === 0 && item.target > 0).length
       }
     };
-  }, [data, targets, completionHistory, confirmedStatus, allUnits, kpiViewMode, kpiSortBy, kpiSortOrder]);
+  }, [data, targets, completionHistory, confirmedStatus, kpiViewMode, kpiSortBy, kpiSortOrder]);
 
   const parsePastedData = (text) => {
     const rows = text.split(/\r?\n/);
@@ -704,7 +708,7 @@ const NO_CREATE_HAND_OVER = () => {
   const filteredData = useMemo(() => {
     let filtered = data;
     filtered = filtered.filter(item => 
-      item.recipient && (item.recipient.toUpperCase().includes('GIS') || getUnitFromRecipient(item.recipient) !== 'OTHER')
+      item.recipient && item.recipient.toUpperCase().includes('GIS')
     );
     if (searchTerm) {
       filtered = filtered.filter(item =>
@@ -829,7 +833,7 @@ const NO_CREATE_HAND_OVER = () => {
   };
 
   const getRecipientBadge = (recipient) => {
-    if (recipient && (recipient.toUpperCase().includes('GIS') || getUnitFromRecipient(recipient) !== 'OTHER')) {
+    if (recipient && recipient.toUpperCase().includes('GIS')) {
       return <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">{recipient}</span>;
     }
     return <span className="text-gray-600">{recipient}</span>;
@@ -973,13 +977,13 @@ const NO_CREATE_HAND_OVER = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('unit')}>Unit {kpiSortBy === 'unit' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('morning')}>ព្រឹក {kpiSortBy === 'morning' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('evening')}>ល្ងាច {kpiSortBy === 'evening' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('remain')}>Remain</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('result')}>Result</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('ratio')}>Ratio</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium">In System</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('unit')}>Unit {kpiSortBy === 'unit' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('morning')}>ព្រឹក {kpiSortBy === 'morning' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('evening')}>ល្ងាច {kpiSortBy === 'evening' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('remain')}>Remain {kpiSortBy === 'remain' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('result')}>Result {kpiSortBy === 'result' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('ratio')}>Ratio {kpiSortBy === 'ratio' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('total')}>In System {kpiSortBy === 'total' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
                       <th className="px-4 py-3 text-center text-xs font-medium">Status</th>
                       <th className="px-4 py-3 text-center text-xs font-medium">Action</th>
                     </tr>

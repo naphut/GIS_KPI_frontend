@@ -119,12 +119,14 @@ export const getUnitData = async (unit) => {
     const unitNocreate = nocreateData.filter(item => item.unit === unit);
     const unitNotconfirmed = notconfirmedData.filter(item => item.unit === unit);
 
+    const isMorning = new Date().getHours() < 12;
+
     // ─── CALCULATE MODULE 1: STOCKOUT YET CONFIRM ───
     const m1MorningConfig = stockoutTargets[unit]?.morning || 0;
     const m1EveningConfig = stockoutTargets[unit]?.evening || 0;
     const m1Morning = m1MorningConfig > 0 ? m1MorningConfig : unitStockout.length;
     const m1Evening = m1EveningConfig > 0 ? m1EveningConfig : (m1Morning * 2);
-    const m1Target = m1Evening > 0 ? m1Evening : m1Morning;
+    const m1Target = isMorning ? m1Morning : (m1Evening > 0 ? m1Evening : m1Morning);
     const m1Total = unitStockout.length;
     const m1Completed = stockoutHistory.filter(c => c.unit === unit).length;
     const m1Remain = m1Target > 0 ? Math.max(0, m1Target - m1Completed) : m1Total;
@@ -146,12 +148,12 @@ export const getUnitData = async (unit) => {
     const m2EveningConfig = nocreateTargets[unit]?.evening || 0;
     const m2Morning = m2MorningConfig > 0 ? m2MorningConfig : unitNocreate.length;
     const m2Evening = m2EveningConfig > 0 ? m2EveningConfig : (m2Morning * 2);
-    const m2Target = m2Evening > 0 ? m2Evening : m2Morning;
+    const m2Target = isMorning ? m2Morning : (m2Evening > 0 ? m2Evening : m2Morning);
     const m2Total = unitNocreate.length;
     let m2Completed = nocreateHistory.filter(c => c.unit === unit).length;
-    Object.entries(nocreateConfirmed).forEach(([id, confirmed]) => {
+    Object.entries(nocreateConfirmed).forEach(([code, confirmed]) => {
       if (confirmed) {
-        const item = nocreateData.find(d => d.id === parseInt(id));
+        const item = nocreateData.find(d => d.code === code);
         if (item && item.unit === unit) m2Completed++;
       }
     });
@@ -159,7 +161,7 @@ export const getUnitData = async (unit) => {
     const m2Ratio = m2Target > 0 ? parseFloat(((m2Completed / m2Target) * 100).toFixed(2)) : (m2Remain === 0 && m2Completed === 0 ? 100 : 0);
 
     const m2RemainingItems = unitNocreate
-      .filter(item => !nocreateHistory.some(c => c.code === item.code) && !nocreateConfirmed[item.id])
+      .filter(item => !nocreateHistory.some(c => c.code === item.code) && !nocreateConfirmed[item.code])
       .map(item => ({
         code: item.code || '-',
         recipient: item.recipient || '-',
@@ -173,12 +175,12 @@ export const getUnitData = async (unit) => {
     const m3EveningConfig = notconfirmedTargets[unit]?.evening || 0;
     const m3Morning = m3MorningConfig > 0 ? m3MorningConfig : unitNotconfirmed.length;
     const m3Evening = m3EveningConfig > 0 ? m3EveningConfig : (m3Morning * 2);
-    const m3Target = m3Evening > 0 ? m3Evening : m3Morning;
+    const m3Target = isMorning ? m3Morning : (m3Evening > 0 ? m3Evening : m3Morning);
     const m3Total = unitNotconfirmed.length;
     let m3Completed = notconfirmedHistory.filter(c => c.unit === unit).length;
-    Object.entries(notconfirmedConfirmed).forEach(([id, confirmed]) => {
+    Object.entries(notconfirmedConfirmed).forEach(([code, confirmed]) => {
       if (confirmed) {
-        const item = notconfirmedData.find(d => d.id === parseInt(id));
+        const item = notconfirmedData.find(d => d.code === code);
         if (item && item.unit === unit) m3Completed++;
       }
     });
@@ -186,7 +188,7 @@ export const getUnitData = async (unit) => {
     const m3Ratio = m3Target > 0 ? parseFloat(((m3Completed / m3Target) * 100).toFixed(2)) : (m3Remain === 0 && m3Completed === 0 ? 100 : 0);
 
     const m3RemainingItems = unitNotconfirmed
-      .filter(item => !notconfirmedHistory.some(c => c.code === item.code) && !notconfirmedConfirmed[item.id])
+      .filter(item => !notconfirmedHistory.some(c => c.code === item.code) && !notconfirmedConfirmed[item.code])
       .map(item => ({
         code: item.code || '-',
         unitConfirm: item.unitConfirm || '-',
@@ -378,7 +380,7 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
       const stockReceiver = item.stockReceiver || item.warehouse || '-';
       const groupReceiver = item.groupReceiver || '-';
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. Export Code: ${escapeHtml(exportCode)}\n`;
+      message += `│ ${index + 1}. Warehouse Stock out: ${escapeHtml(exportCode)}\n`;
       message += `│    Export No: ${escapeHtml(exportNo)}\n`;
       message += `│    Stock Receiver: ${escapeHtml(stockReceiver)}\n`;
       message += `│    Group Receiver: ${escapeHtml(groupReceiver)}\n`;
@@ -488,8 +490,17 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   message += `└─────────────────────────┘\n\n`;
 
   // Restock Out (EXPORT CA)
+  const restockOut = unitData.restockOut || { target: 0, result: 0, remain: 0, ratio: 0 };
+  const rOutRatio = typeof restockOut.ratio === 'number' ? restockOut.ratio : parseFloat(restockOut.ratio || 0);
   message += `<b>RESTOCK OUT</b>\n`;
+  message += `┌─────────────────────────┐\n`;
+  message += `│ 🎯 Target    : ${restockOut.target}\n`;
+  message += `│ ✅ Result    : ${restockOut.result}\n`;
+  message += `│ 📋 Remain    : ${restockOut.remain}\n`;
+  message += `│ 📊 Ratio     : ${rOutRatio.toFixed(1)}%\n`;
+  message += `└─────────────────────────┘\n`;
   if (unsignedOutItems.length > 0) {
+    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
     unsignedOutItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. ${escapeHtml(item.code || '-')}\n`;
@@ -504,8 +515,17 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   message += `\n`;
 
   // Restock In (IMPORT CA)
+  const restockIn = unitData.restockIn || { target: 0, result: 0, remain: 0, ratio: 0 };
+  const rInRatio = typeof restockIn.ratio === 'number' ? restockIn.ratio : parseFloat(restockIn.ratio || 0);
   message += `<b>RESTOCK IN</b>\n`;
+  message += `┌─────────────────────────┐\n`;
+  message += `│ 🎯 Target    : ${restockIn.target}\n`;
+  message += `│ ✅ Result    : ${restockIn.result}\n`;
+  message += `│ 📋 Remain    : ${restockIn.remain}\n`;
+  message += `│ 📊 Ratio     : ${rInRatio.toFixed(1)}%\n`;
+  message += `└─────────────────────────┘\n`;
   if (unsignedInItems.length > 0) {
+    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
     unsignedInItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. ${escapeHtml(item.code || '-')}\n`;
@@ -571,11 +591,22 @@ const formatCAMessage = (unit, data, customNote = '') => {
   message += `└─────────────────────────┘\n\n`;
 
   // Export CA
+  const stockOut = unitData.stockOut || { target: 0, result: 0, remain: 0, ratio: 0 };
+  const sOutRatio = typeof stockOut.ratio === 'number' ? stockOut.ratio : parseFloat(stockOut.ratio || 0);
+  const sOutTarget = stockOut.target || 0;
+  const sOutRemain = stockOut.remain || 0;
   message += `<b>EXPORT CA✅</b>\n`;
+  message += `┌─────────────────────────┐\n`;
+  message += `│ 🎯 Target    : ${sOutTarget}\n`;
+  message += `│ ✅ Result    : ${stockOut.result}\n`;
+  message += `│ 📋 Remain    : ${sOutRemain}\n`;
+  message += `│ 📊 Ratio     : ${sOutRatio.toFixed(1)}%\n`;
+  message += `└─────────────────────────┘\n`;
   if (unsignedOutItems.length > 0) {
+    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
     unsignedOutItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. Export Note Code: ${escapeHtml(item.code || item.exportNoteCode || '-')}\n`;
+      message += `│ ${index + 1}. Export Note Code: ${escapeHtml(item.code || item.exportNoteCode || '-')} \n`;
       message += `│    Unit Entering: ${escapeHtml(item.unitEntering || '-')}\n`;
       message += `│    Status CA: ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
       message += `│    Days: ${item.daysDiff || 0} days\n`;
@@ -587,8 +618,19 @@ const formatCAMessage = (unit, data, customNote = '') => {
   message += `\n`;
 
   // Import CA
+  const stockIn = unitData.stockIn || { target: 0, result: 0, remain: 0, ratio: 0 };
+  const sInRatio = typeof stockIn.ratio === 'number' ? stockIn.ratio : parseFloat(stockIn.ratio || 0);
+  const sInTarget = stockIn.target || 0;
+  const sInRemain = stockIn.remain || 0;
   message += `<b>IMPORT CA✅</b>\n`;
+  message += `┌─────────────────────────┐\n`;
+  message += `│ 🎯 Target    : ${sInTarget}\n`;
+  message += `│ ✅ Result    : ${stockIn.result}\n`;
+  message += `│ 📋 Remain    : ${sInRemain}\n`;
+  message += `│ 📊 Ratio     : ${sInRatio.toFixed(1)}%\n`;
+  message += `└─────────────────────────┘\n`;
   if (unsignedInItems.length > 0) {
+    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
     unsignedInItems.forEach((item, index) => {
       message += `┌─────────────────────────┐\n`;
       message += `│ ${index + 1}. Receipt Code: ${escapeHtml(item.code || item.codeReceipt || '-')}\n`;

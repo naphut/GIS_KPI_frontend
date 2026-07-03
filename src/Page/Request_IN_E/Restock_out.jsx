@@ -457,12 +457,22 @@ export const Restock_out = () => {
 
   // Helper functions
   const getStatusCABadge = (statusCA) => {
-    const config = {
-      'Is signing': { icon: '✍️', bg: 'bg-amber-100', text: 'text-amber-800' },
-      'Unsigned': { icon: '📝', bg: 'bg-gray-100', text: 'text-gray-800' },
-    };
-    const c = config[statusCA] || { icon: '❓', bg: 'bg-gray-100', text: 'text-gray-500' };
-    return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>{c.icon} {statusCA}</span>;
+    const s = (statusCA || '').toUpperCase();
+    if (s.includes('UNSIGNED') || s.includes('CHƯា') || s.includes('CHUA') || s.includes('CHƯA')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold bg-rose-600 text-white animate-pulse border border-rose-700 shadow-sm">
+          🚨 {statusCA}
+        </span>
+      );
+    }
+    if (s.includes('IS SIGNING') || s.includes('ISSIGNING') || s.includes('ĐANG') || s.includes('DANG')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+          ✍️ {statusCA}
+        </span>
+      );
+    }
+    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">❓ {statusCA}</span>;
   };
 
   const getStatusBadge = (status) => {
@@ -786,6 +796,7 @@ export const Restock_out = () => {
         case 'result': aVal = a.result; bVal = b.result; break;
         case 'morning': aVal = a.morningTarget; bVal = b.morningTarget; break;
         case 'evening': aVal = a.eveningTarget; bVal = b.eveningTarget; break;
+        case 'total': aVal = a.total; bVal = b.total; break;
         default: aVal = a.unit; bVal = b.unit;
       }
       return kpiSortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
@@ -1297,7 +1308,9 @@ export const Restock_out = () => {
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('ratio')}>
                         Ratio {kpiSortBy === 'ratio' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">In System</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('total')}>
+                        In System {kpiSortBy === 'total' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>

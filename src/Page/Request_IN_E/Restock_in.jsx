@@ -286,7 +286,11 @@ export const Restock_in = () => {
   useEffect(() => {
     const fetchDbData = async () => {
       const dbData = await loadFromDb(STORAGE_KEYS.DATA, []);
-      setData(dbData);
+      const filtered = dbData.filter(item => {
+        const sCA = (item.statusCA || '').toUpperCase().trim();
+        return sCA.includes('UNSIGNED') || sCA.includes('CHƯA') || sCA.includes('CHUA');
+      });
+      setData(filtered);
       
       const dbCompletion = await loadFromDb(STORAGE_KEYS.COMPLETION, []);
       setCompletionHistory(dbCompletion);
@@ -356,12 +360,22 @@ export const Restock_in = () => {
 
   // Helper functions
   const getStatusCABadge = (statusCA) => {
-    const config = {
-      'Is signing': { icon: '✍️', bg: 'bg-amber-100', text: 'text-amber-800' },
-      'Unsigned': { icon: '📝', bg: 'bg-gray-100', text: 'text-gray-800' },
-    };
-    const c = config[statusCA] || { icon: '❓', bg: 'bg-gray-100', text: 'text-gray-500' };
-    return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>{c.icon} {statusCA}</span>;
+    const s = (statusCA || '').toUpperCase();
+    if (s.includes('UNSIGNED') || s.includes('CHƯA') || s.includes('CHUA')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold bg-rose-600 text-white animate-pulse border border-rose-700 shadow-sm">
+          🚨 {statusCA}
+        </span>
+      );
+    }
+    if (s.includes('IS SIGNING') || s.includes('ISSIGNING') || s.includes('ĐANG') || s.includes('DANG')) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+          ✍️ {statusCA}
+        </span>
+      );
+    }
+    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">❓ {statusCA}</span>;
   };
 
   const getWarehouseBadge = (warehouse) => {
@@ -490,7 +504,8 @@ export const Restock_in = () => {
     
     const filteredData = newRawData.filter(item => {
       const isGIS = item.importRequestCode && item.importRequestCode.toUpperCase().includes('GIS');
-      const isUnsigned = item.statusCA === 'Unsigned';
+      const sCA = (item.statusCA || '').toUpperCase().trim();
+      const isUnsigned = sCA.includes('UNSIGNED') || sCA.includes('CHƯA') || sCA.includes('CHUA');
       const unit = getUnit(item.importRequestCode, item.unitRequests, item.unitReceive);
       const isValidUnit = unit !== null && VALID_UNITS.includes(unit);
       
@@ -664,6 +679,7 @@ export const Restock_in = () => {
         case 'result': aVal = a.result; bVal = b.result; break;
         case 'morning': aVal = a.morningTarget; bVal = b.morningTarget; break;
         case 'evening': aVal = a.eveningTarget; bVal = b.eveningTarget; break;
+        case 'total': aVal = a.total; bVal = b.total; break;
         default: aVal = a.unit; bVal = b.unit;
       }
       return kpiSortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
@@ -1174,7 +1190,9 @@ export const Restock_in = () => {
                       <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('ratio')}>
                         Ratio {kpiSortBy === 'ratio' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">In System</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('total')}>
+                        In System {kpiSortBy === 'total' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
+                      </th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
                     </tr>

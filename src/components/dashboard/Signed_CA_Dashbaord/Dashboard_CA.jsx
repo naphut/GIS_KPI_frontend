@@ -87,6 +87,12 @@ const Dashboard_CA = () => {
     };
   });
 
+  const [exportCaTargets, setExportCaTargets] = useState(() => getStorageData('export_ca_targets') || {});
+  const [importCaTargets, setImportCaTargets] = useState(() => getStorageData('import_ca_targets') || {});
+
+  const [exportCompletionHistory, setExportCompletionHistory] = useState(() => getStorageData('export_ca_completionHistory') || []);
+  const [importCompletionHistory, setImportCompletionHistory] = useState(() => getStorageData('import_ca_completionHistory') || []);
+
   // Load data from DB on mount
   useEffect(() => {
     const fetchDbData = async () => {
@@ -111,27 +117,57 @@ const Dashboard_CA = () => {
       const dbStockIn = await loadFromDb(STORAGE_KEYS.IMPORT_CA_DATA, defaultStockIn);
       setStockInData(dbStockIn);
 
-      const dbTargets = await loadFromDb(STORAGE_KEYS.KPI_TARGETS, {
-        stock_out: { morning: 0, evening: 0 },
-        stock_in: { morning: 0, evening: 0 }
-      });
-      setTargets(dbTargets);
+      const dbTargets = await loadFromDb(STORAGE_KEYS.KPI_TARGETS, null);
+      if (dbTargets) {
+        setTargets({
+          stock_out: { morning: 0, evening: 0, ...dbTargets.stock_out },
+          stock_in: { morning: 0, evening: 0, ...dbTargets.stock_in }
+        });
+      }
+
+      const dbExportCaTargets = await loadFromDb('export_ca_targets', {});
+      setExportCaTargets(dbExportCaTargets);
+
+      const dbImportCaTargets = await loadFromDb('import_ca_targets', {});
+      setImportCaTargets(dbImportCaTargets);
+
+      const dbExportCompletion = await loadFromDb('export_ca_completionHistory', []);
+      setExportCompletionHistory(dbExportCompletion);
+
+      const dbImportCompletion = await loadFromDb('import_ca_completionHistory', []);
+      setImportCompletionHistory(dbImportCompletion);
     };
     fetchDbData();
   }, []);
 
-  const [editMorningStockOut, setEditMorningStockOut] = useState(targets.stock_out.morning);
-  const [editEveningStockOut, setEditEveningStockOut] = useState(targets.stock_out.evening);
-  const [editMorningStockIn, setEditMorningStockIn] = useState(targets.stock_in.morning);
-  const [editEveningStockIn, setEditEveningStockIn] = useState(targets.stock_in.evening);
+  const sumExportMorning = useMemo(() => {
+    return Object.values(exportCaTargets).reduce((sum, t) => sum + (t?.morning || 0), 0);
+  }, [exportCaTargets]);
+
+  const sumExportEvening = useMemo(() => {
+    return Object.values(exportCaTargets).reduce((sum, t) => sum + (t?.evening || 0), 0);
+  }, [exportCaTargets]);
+
+  const sumImportMorning = useMemo(() => {
+    return Object.values(importCaTargets).reduce((sum, t) => sum + (t?.morning || 0), 0);
+  }, [importCaTargets]);
+
+  const sumImportEvening = useMemo(() => {
+    return Object.values(importCaTargets).reduce((sum, t) => sum + (t?.evening || 0), 0);
+  }, [importCaTargets]);
+
+  const [editMorningStockOut, setEditMorningStockOut] = useState(targets.stock_out?.morning || sumExportMorning);
+  const [editEveningStockOut, setEditEveningStockOut] = useState(targets.stock_out?.evening || sumExportEvening);
+  const [editMorningStockIn, setEditMorningStockIn] = useState(targets.stock_in?.morning || sumImportMorning);
+  const [editEveningStockIn, setEditEveningStockIn] = useState(targets.stock_in?.evening || sumImportEvening);
 
   // Sync inputs if targets state changes
   useEffect(() => {
-    setEditMorningStockOut(targets.stock_out.morning);
-    setEditEveningStockOut(targets.stock_out.evening);
-    setEditMorningStockIn(targets.stock_in.morning);
-    setEditEveningStockIn(targets.stock_in.evening);
-  }, [targets]);
+    setEditMorningStockOut(targets.stock_out?.morning || sumExportMorning);
+    setEditEveningStockOut(targets.stock_out?.evening || sumExportEvening);
+    setEditMorningStockIn(targets.stock_in?.morning || sumImportMorning);
+    setEditEveningStockIn(targets.stock_in?.evening || sumImportEvening);
+  }, [targets, sumExportMorning, sumExportEvening, sumImportMorning, sumImportEvening]);
 
   const handleUpdateStockOut = () => {
     const updated = {
@@ -262,32 +298,37 @@ const Dashboard_CA = () => {
   };
 
   // Calculations for Performance Table
-  const stockOutResult = stockOutSigning.length;
-  const stockOutInSystem = stockOutSigning.length + stockOutUnsigned.length;
-  const stockOutTarget = targets.stock_out.evening > 0 ? targets.stock_out.evening : targets.stock_out.morning;
-  const stockOutRemain = stockOutTarget > 0 ? Math.max(0, stockOutTarget - stockOutResult) : stockOutUnsigned.length;
-  const stockOutRatio = stockOutTarget > 0 ? ((stockOutResult / stockOutTarget) * 100).toFixed(2) : '0.00';
+  const stockOutResult = exportCompletionHistory.length;
+  const stockOutInSystem = stockOutData.length + exportCompletionHistory.length;
+  const isMorning = new Date().getHours() < 12;
+  const stockOutMorning = targets.stock_out?.morning || sumExportMorning;
+  const stockOutEvening = targets.stock_out?.evening || sumExportEvening;
+  const stockOutTarget = isMorning ? stockOutMorning : (stockOutEvening > 0 ? stockOutEvening : stockOutMorning);
+  const stockOutRemain = stockOutTarget > 0 ? Math.max(0, stockOutTarget - stockOutResult) : stockOutData.length;
+  const stockOutRatio = stockOutTarget > 0 ? ((stockOutResult / stockOutTarget) * 100).toFixed(2) : (stockOutRemain === 0 ? '100.00' : '0.00');
 
-  const stockInResult = stockInSigning.length;
-  const stockInInSystem = stockInSigning.length + stockInUnsigned.length;
-  const stockInTarget = targets.stock_in.evening > 0 ? targets.stock_in.evening : targets.stock_in.morning;
-  const stockInRemain = stockInTarget > 0 ? Math.max(0, stockInTarget - stockInResult) : stockInUnsigned.length;
-  const stockInRatio = stockInTarget > 0 ? ((stockInResult / stockInTarget) * 100).toFixed(2) : '0.00';
+  const stockInResult = importCompletionHistory.length;
+  const stockInInSystem = stockInData.length + importCompletionHistory.length;
+  const stockInMorning = targets.stock_in?.morning || sumImportMorning;
+  const stockInEvening = targets.stock_in?.evening || sumImportEvening;
+  const stockInTarget = isMorning ? stockInMorning : (stockInEvening > 0 ? stockInEvening : stockInMorning);
+  const stockInRemain = stockInTarget > 0 ? Math.max(0, stockInTarget - stockInResult) : stockInData.length;
+  const stockInRatio = stockInTarget > 0 ? ((stockInResult / stockInTarget) * 100).toFixed(2) : (stockInRemain === 0 ? '100.00' : '0.00');
 
-  const totalMorning = targets.stock_out.morning + targets.stock_in.morning;
-  const totalEvening = targets.stock_out.evening + targets.stock_in.evening;
+  const totalMorning = stockOutMorning + stockInMorning;
+  const totalEvening = stockOutEvening + stockInEvening;
   const totalResult = stockOutResult + stockInResult;
   const totalInSystem = stockOutInSystem + stockInInSystem;
-  const totalTarget = (targets.stock_out.evening > 0 ? targets.stock_out.evening : targets.stock_out.morning) + (targets.stock_in.evening > 0 ? targets.stock_in.evening : targets.stock_in.morning);
-  const totalRemain = totalTarget > 0 ? Math.max(0, totalTarget - totalResult) : (stockOutUnsigned.length + stockInUnsigned.length);
-  const totalRatio = totalTarget > 0 ? ((totalResult / totalTarget) * 100).toFixed(2) : '0.00';
+  const totalTarget = stockOutTarget + stockInTarget;
+  const totalRemain = totalTarget > 0 ? Math.max(0, totalTarget - totalResult) : (stockOutData.length + stockInData.length);
+  const totalRatio = totalTarget > 0 ? ((totalResult / totalTarget) * 100).toFixed(2) : (totalRemain === 0 ? '100.00' : '0.00');
 
   const getReportData = () => {
     const allUnitsList = getAllUnits();
     const unitsMap = {};
     
-    const exportTargets = getStorageData('export_ca_targets') || {};
-    const importTargets = getStorageData('import_ca_targets') || {};
+    const exportTargets = exportCaTargets;
+    const importTargets = importCaTargets;
 
     const calculateDaysDiff = (dateString) => {
       if (!dateString) return 0;
@@ -312,36 +353,33 @@ const Dashboard_CA = () => {
     };
 
     allUnitsList.forEach(unit => {
-      const exportTarget = exportTargets[unit]?.target || 0;
-      const importTarget = importTargets[unit]?.target || 0;
-      
-      const targetMorning = importTarget;
-      const targetEvening = exportTarget;
-      const totalUnitTarget = targetMorning + targetEvening;
+      const exportMorning = exportTargets[unit]?.morning || 0;
+      const exportEvening = exportTargets[unit]?.evening || 0;
+      const exportTarget = isMorning ? exportMorning : (exportEvening > 0 ? exportEvening : exportMorning);
+
+      const importMorning = importTargets[unit]?.morning || 0;
+      const importEvening = importTargets[unit]?.evening || 0;
+      const importTarget = isMorning ? importMorning : (importEvening > 0 ? importEvening : importMorning);
+
+      const targetMorning = importMorning + exportMorning;
+      const targetEvening = importEvening + exportEvening;
+      const totalUnitTarget = importTarget + exportTarget;
 
       const outItems = stockOutData.filter(item => item.unit === unit);
-      const outTotal = outItems.length;
-      const outResult = outItems.filter(item => {
-        const s = (item.statusCA || '').toLowerCase();
-        return s.includes('signing') || s.includes('is signing');
-      }).length;
-      const outUnsigned = outItems.filter(item => {
-        const s = (item.statusCA || '').toLowerCase();
-        return s.includes('unsigned') || !item.statusCA;
-      }).length;
-      const outRatio = outTotal > 0 ? parseFloat(((outResult / outTotal) * 100).toFixed(2)) : 100;
+      const outUnsigned = outItems.length;
+      const outResult = exportCompletionHistory.filter(h => h.unit === unit).length;
+      const outTotal = outResult + outUnsigned;
+      const outRatio = exportTarget > 0 
+        ? parseFloat(((outResult / exportTarget) * 100).toFixed(2)) 
+        : (outUnsigned === 0 && outResult === 0 ? 100 : 0);
       
       const inItems = stockInData.filter(item => item.unit === unit);
-      const inTotal = inItems.length;
-      const inResult = inItems.filter(item => {
-        const s = (item.statusCA || '').toLowerCase();
-        return s.includes('signing') || s.includes('is signing');
-      }).length;
-      const inUnsigned = inItems.filter(item => {
-        const s = (item.statusCA || '').toLowerCase();
-        return s.includes('unsigned') || !item.statusCA;
-      }).length;
-      const inRatio = inTotal > 0 ? parseFloat(((inResult / inTotal) * 100).toFixed(2)) : 100;
+      const inUnsigned = inItems.length;
+      const inResult = importCompletionHistory.filter(h => h.unit === unit).length;
+      const inTotal = inResult + inUnsigned;
+      const inRatio = importTarget > 0 
+        ? parseFloat(((inResult / importTarget) * 100).toFixed(2)) 
+        : (inUnsigned === 0 && inResult === 0 ? 100 : 0);
       
       const overallTotal = outTotal + inTotal;
       const overallResult = outResult + inResult;
@@ -353,7 +391,7 @@ const Dashboard_CA = () => {
       
       const ratio = totalUnitTarget > 0 
         ? parseFloat(((overallResult / totalUnitTarget) * 100).toFixed(2)) 
-        : (overallUnsigned === 0 && overallResult === 0 ? 100 : 0);
+        : (remain === 0 ? 100 : 0);
       
       const unsignedOutItemsList = outItems
         .filter(item => {
@@ -390,15 +428,19 @@ const Dashboard_CA = () => {
         ratio,
         inSystem: overallTotal,
         stockOut: {
+          target: exportTarget,
           total: outTotal,
           result: outResult,
           unsigned: outUnsigned,
+          remain: exportTarget > 0 ? Math.max(0, exportTarget - outResult) : outUnsigned,
           ratio: outRatio
         },
         stockIn: {
+          target: importTarget,
           total: inTotal,
           result: inResult,
           unsigned: inUnsigned,
+          remain: importTarget > 0 ? Math.max(0, importTarget - inResult) : inUnsigned,
           ratio: inRatio
         },
         overall: {
