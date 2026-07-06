@@ -38,7 +38,7 @@ const GROUP_IDS = {
   'STU': '-4037945549',
   'SVA': '-4076297232',
   'TAK': '-1002222222223',
-  'THO': '-1002323232323',
+  'THO': '-4075992457',
 };
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
