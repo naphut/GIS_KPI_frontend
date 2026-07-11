@@ -14,31 +14,31 @@ const DEFAULT_TOKEN = '8571996109:AAHiDszOTGk4uEnb0iPKcnNXlGoTSE7K740';
 
 // Group IDs for each province
 const GROUP_IDS = {
-  'BAN': '-4064404599',
-  'BAT': '-4040029628',
-  'CHA': '-4049172108',
-  'CHH': '-4051031281',
-  'KAM': '-4095493891',
-  'KAN': '-972214275',
-  'KANZ1': '-4660884501',
-  'KOH': '-4040314167',
-  'KRA': '-4043528749',
-  'MON': '-4098682856',
-  'ODD': '-916660446',
-  'PNP': '-908517536',
-  'PNPZ1': '-1002524347910',
-  'PNPZ2': '-1002766967718',
-'PRE': '-4041390598',
-  'PRH': '-4012609247',
-  'PUR': '-4056509295',
-  'ROT': '-4085028170',
-  'SIE': '-4033369254',
-  'SIH': '-4011071980',
-  'SPE': '-4022650547',
-  'STU': '-4037945549',
-  'SVA': '-4076297232',
-  'TAK': '-1002222222223',
-  'THO': '-4075992457',
+  BAN: "-1003815749201",
+  BAT: "-1004928617538",
+  CHA: "-1002154876394",
+  CHH: "-1006739281540",
+  KAM: "-1005481736291",
+  KAN: "-1001847263950",
+  KANZ1: "-1009154376284",
+  KOH: "-1003278516492",
+  KRA: "-1007845219360",
+  MON: "-1004692185731",
+  ODD: "-1008516372945",
+  PNP: "-1002389476158",
+  PNPZ1: "-1006924158730",
+  PNPZ2: "-1004137892651",
+  PRE: "-1001578263948",
+  PRH: "-1007264915382",
+  PUR: "-1003849157260",
+  ROT: "-1005972384619",
+  SIE: "-1008437612954",
+  SIH: "-1002169547381",
+  SPE: "-1007358194620",
+  STU: "-1009514826375",
+  SVA: "-1004726391580",
+  TAK: "-1006841952734",
+  THO: "-1003297486159",
 };
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
@@ -352,7 +352,7 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   message += `📍 <b>BRANCH</b> : ${unit}\n`;
   message += `🕐 <b>TIME</b>   : ${time}\n`;
   message += `📅 <b>DATE</b>   : ${date}\n`;
-  message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
   message += `📈 <b>📊 OVERALL KPI SUMMARY</b>\n`;
   message += `┌─────────────────────────┐\n`;
@@ -362,79 +362,89 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   message += `│ 📋 Remain      : ${totalRemain}\n`;
   message += `│ 📊 Ratio       : ${typeof totalRatio === 'number' ? totalRatio.toFixed(1) : totalRatio}%\n`;
   message += `│ 📦 In System   : ${totalInSystem}\n`;
-  message += `└─────────────────────────┘\n\n`;
+  message += `└─────────────────────────┘\n`;
 
   // Module 1
-  message += `<b>📦 1. STOCKOUT YET CONFIRM</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🎯 Target    : ${m1Target}\n`;
-  message += `│ ✅ Result    : ${m1Result}\n`;
-  message += `│ 📋 Remain    : ${m1Remain}\n`;
-  message += `│ 📊 Ratio     : ${typeof m1Ratio === 'number' ? m1Ratio.toFixed(1) : m1Ratio}%\n`;
-  message += `└─────────────────────────┘\n`;
+  message += `<b>📦 1. STOCKOUT YET CONFIRM│ ${m1Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m1Items.length > 0) {
-    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    m1Items.forEach((item, index) => {
-      const exportCode = item.exportCode || '-';
-      const exportNo   = item.exportNo   || '-';
-      const stockReceiver = item.stockReceiver || item.warehouse || '-';
-      const groupReceiver = item.groupReceiver || '-';
+    // Group by Group Receiver + Stock Receiver
+    const m1Groups = {};
+    m1Items.forEach(item => {
+      const stockRec = item.stockReceiver || item.warehouse || '-';
+      const groupRec = item.groupReceiver || '-';
+      const key = `${groupRec}_${stockRec}`;
+      if (!m1Groups[key]) {
+        m1Groups[key] = {
+          groupReceiver: groupRec,
+          stockReceiver: stockRec,
+          items: []
+        };
+      }
+      m1Groups[key].items.push(item);
+    });
+
+    Object.values(m1Groups).forEach(group => {
+      message += `📋 Group Receiver: ${escapeHtml(group.groupReceiver)}\n`;
+      message += `│    Stock Receiver: -${escapeHtml(group.stockReceiver)}\n`;
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. Warehouse Stock out: ${escapeHtml(exportCode)}\n`;
-      message += `│    Export No: ${escapeHtml(exportNo)}\n`;
-      message += `│    Stock Receiver: ${escapeHtml(stockReceiver)}\n`;
-      message += `│    Group Receiver: ${escapeHtml(groupReceiver)}\n`;
-      message += `│    Days: ${item.daysDiff || 0} days\n`;
+      group.items.forEach(item => {
+        const exportNo = item.exportNo || '-';
+        const days = item.daysDiff || 0;
+        message += `│    Export No: ${escapeHtml(exportNo)}\n`;
+        message += `│   └─  Days: ${days} days\n`;
+      });
       message += `└─────────────────────────┘\n`;
     });
-  } else {
-    message += `\n┌─────────────────────────┐\n│ ✅ All completed!\n└─────────────────────────┘\n`;
   }
   message += `\n`;
 
   // Module 2
-  message += `<b>📝 2. NO CREATE HAND OVER</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🎯 Target    : ${m2Target}\n`;
-  message += `│ ✅ Result    : ${m2Result}\n`;
-  message += `│ 📋 Remain    : ${m2Remain}\n`;
-  message += `│ 📊 Ratio     : ${typeof m2Ratio === 'number' ? m2Ratio.toFixed(1) : m2Ratio}%\n`;
-  message += `└─────────────────────────┘\n`;
+  message += `<b>📝 2. NO CREATE HAND OVER│ ${m2Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m2Items.length > 0) {
-    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    m2Items.forEach((item, index) => {
+    // Group by Recipient
+    const m2Groups = {};
+    m2Items.forEach(item => {
+      const key = item.recipient || '-';
+      if (!m2Groups[key]) {
+        m2Groups[key] = [];
+      }
+      m2Groups[key].push(item);
+    });
+
+    Object.entries(m2Groups).forEach(([recipient, items]) => {
+      message += `Recipient: ${escapeHtml(recipient)}\n`;
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.code)}\n`;
-      message += `│ └─Recipient: ${escapeHtml(item.recipient)}\n`;
-      message += `│ └─ Creator: ${escapeHtml(item.creator)}\n`;
-      message += `│ └─ Q'ty of Day: ${item.daysDiff || 0}\n`;
+      items.forEach((item, index) => {
+        message += `│ ${index + 1}. ${escapeHtml(item.code || '-')}\n`;
+        message += `│ └─ Q'ty of Day: ${item.daysDiff || 0}\n`;
+      });
       message += `└─────────────────────────┘\n`;
     });
-  } else {
-    message += `\n┌─────────────────────────┐\n│ ✅ All completed!\n└─────────────────────────┘\n`;
   }
   message += `\n`;
 
   // Module 3
-  message += `<b>⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🎯 Target    : ${m3Target}\n`;
-  message += `│ ✅ Result    : ${m3Result}\n`;
-  message += `│ 📋 Remain    : ${m3Remain}\n`;
-  message += `│ 📊 Ratio     : ${typeof m3Ratio === 'number' ? m3Ratio.toFixed(1) : m3Ratio}%\n`;
-  message += `└─────────────────────────┘\n`;
+  message += `<b>⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED│ ${m3Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m3Items.length > 0) {
-    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    m3Items.forEach((item, index) => {
+    // Group by Handover Unit
+    const m3Groups = {};
+    m3Items.forEach(item => {
+      const key = item.warehouse || '-';
+      if (!m3Groups[key]) {
+        m3Groups[key] = [];
+      }
+      m3Groups[key].push(item);
+    });
+
+    Object.entries(m3Groups).forEach(([warehouse, items]) => {
+      message += `Handover Unit: ${escapeHtml(warehouse)}\n`;
       message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. Code: ${escapeHtml(item.code || '-')}\n`;
-      message += `│    Handover Unit: ${escapeHtml(item.warehouse || '-')}\n`;
-      message += `│    Unit Confirm: ${escapeHtml(item.unitConfirm || '-')}\n`;
-      message += `│    Days: ${item.daysDiff || 0} days\n`;
+      items.forEach((item, index) => {
+        message += `│ ${index + 1}. Code: ${escapeHtml(item.code || '-')}\n`;
+        message += `│    └─ Days: ${item.daysDiff || 0} days\n`;
+      });
       message += `└─────────────────────────┘\n`;
     });
-  } else {
-    message += `\n┌─────────────────────────┐\n│ ✅ All completed!\n└─────────────────────────┘\n`;
   }
   message += `\n`;
 
