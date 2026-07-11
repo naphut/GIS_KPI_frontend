@@ -415,15 +415,15 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     // Group by Unit confirm handover
     const m3Groups = {};
     m3Items.forEach(item => {
-      const key = item.warehouse || '-';
+      const key = item.unitConfirm || item.warehouse || '-';
       if (!m3Groups[key]) {
         m3Groups[key] = [];
       }
       m3Groups[key].push(item);
     });
 
-    Object.entries(m3Groups).forEach(([warehouse, items]) => {
-      message += `Unit confirm handover: ${escapeHtml(warehouse)}\n`;
+    Object.entries(m3Groups).forEach(([unitConfirm, items]) => {
+      message += `Unit confirm handover: ${escapeHtml(unitConfirm)}\n`;
       message += `┌─────────────────────────┐\n`;
       items.forEach((item, index) => {
         message += `│ ${index + 1}. Code: ${escapeHtml(item.code || '-')}\n`;
