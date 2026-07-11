@@ -4,6 +4,7 @@ import Sidebar from '../../common/Sidebar';
 import { 
   sendToTelegram, 
   sendToAllTelegram, 
+  sendPhotoToTelegram,
   getAllUnits,
   getConfiguredUnits,
   hasGroupId,
@@ -17,9 +18,27 @@ import { loadFromDb } from '../../../services/dbStore';
 import STOCKOUT_YET_CONFIRM from '../../../Page/Stockout_yet/STOCKOUT_YET_CONFIRM';
 import STOCK_OUT_NOTE_CONFIRMED from '../../../Page/Stockout_yet/stock_out_note_confirmed';
 
+const loadHtml2Canvas = () => {
+  return new Promise((resolve) => {
+    if (window.html2canvas) {
+      resolve(window.html2canvas);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = () => resolve(window.html2canvas);
+    script.onerror = () => {
+      console.error('Failed to load html2canvas from CDN');
+      resolve(null);
+    };
+    document.head.appendChild(script);
+  });
+};
+
 const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const [selectedComponent, setSelectedComponent] = useState('dashboard');
   const [syncVersion, setSyncVersion] = useState(0);
+  const [captureUnit, setCaptureUnit] = useState(null);
 
   // Sync all dashboard data from database on mount
   useEffect(() => {
@@ -531,7 +550,69 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     
     try {
       const data = getReportData();
-      const result = await sendToTelegram(unit, data, customNote, abortControllerRef.current.signal);
+      
+      // Load html2canvas dynamically and capture screenshot
+      let photoBlob = null;
+      try {
+        setSendProgress(prev => ({ 
+          ...prev, 
+          status: 'sending', 
+          message: `📸 Generating report screenshot for ${unit}...` 
+        }));
+        
+        setCaptureUnit(unit);
+        
+        // Wait for React to render the hidden DOM element
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Load html2canvas script
+        const html2canvas = await loadHtml2Canvas();
+        const element = document.getElementById('telegram-report-capture');
+        
+        if (element && html2canvas) {
+          const canvas = await html2canvas(element, {
+            scale: 2, // Crystal clear quality
+            useCORS: true,
+            backgroundColor: '#f8fafc',
+            logging: false
+          });
+          photoBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        }
+      } catch (err) {
+        console.error('Failed to generate report screenshot:', err);
+      } finally {
+        setCaptureUnit(null);
+      }
+
+      setSendProgress(prev => ({ 
+        ...prev, 
+        status: 'sending', 
+        message: `📤 Uploading screenshot and report to ${unit} Telegram...` 
+      }));
+
+      const now = new Date();
+      const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      let result = { success: false };
+      
+      // If we have a screenshot, send it first
+      if (photoBlob) {
+        const photoCaption = `📊 <b>📋 CONFIRMED HAND OVER REPORT - ${unit}</b>\n🕐 TIME: ${time}\n📅 DATE: ${date}`;
+        const photoResult = await sendPhotoToTelegram(unit, photoBlob, photoCaption, abortControllerRef.current.signal);
+        if (photoResult && photoResult.success) {
+          result = { success: true };
+        } else {
+          console.warn('Telegram photo send failed, trying text-only backup...');
+        }
+      }
+      
+      // Send the full text report
+      const textResult = await sendToTelegram(unit, data, customNote, abortControllerRef.current.signal);
+      
+      if (!photoBlob || (textResult && textResult.success)) {
+        result = textResult;
+      }
       
       if (result && result.success) {
         setSendProgress({
@@ -545,7 +626,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           success: 1,
           failed: 0
         });
-        alert(`✅ Report sent successfully to ${unit} group!`);
+        alert(`✅ Report and screenshot sent successfully to ${unit} group!`);
       } else {
         const isAbort = result?.aborted || abortControllerRef.current.signal.aborted;
         setSendProgress({
@@ -1069,11 +1150,201 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     }
   };
 
+  const renderHiddenCapture = () => {
+    if (!captureUnit) return null;
+    const reportData = getReportData();
+    const captureData = reportData?.units?.[captureUnit];
+    if (!captureData) return null;
+
+    return (
+      <div 
+        id="telegram-report-capture" 
+        style={{ 
+          position: 'absolute', 
+          left: '-9999px', 
+          top: '0', 
+          width: '1200px', 
+          background: '#f8fafc', 
+          padding: '32px', 
+          fontFamily: 'Inter, system-ui, sans-serif',
+          color: '#1e293b'
+        }}
+      >
+        {/* HEADER CARD */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">📍 {captureUnit} BRANCH</h1>
+              <p className="text-blue-100 text-sm mt-1">Confirmed Hand Over Performance Report</p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-blue-200">Generated At</div>
+              <div className="font-semibold">
+                {new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* OVERALL KPI CARDS */}
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="text-xs text-gray-500 font-medium">🌅 Target ព្រឹក | 🌙 Target ល្ងាច</div>
+            <div className="text-lg font-bold text-gray-800 mt-1">
+              {captureData.targetMorning} | {captureData.targetEvening}
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="text-xs text-gray-500 font-medium">✅ Result (Cleared)</div>
+            <div className="text-lg font-bold text-emerald-600 mt-1">{captureData.result}</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="text-xs text-gray-500 font-medium">📋 Remain (Pending)</div>
+            <div className="text-lg font-bold text-amber-600 mt-1">{captureData.remain}</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+            <div className="text-xs text-gray-500 font-medium">📊 Performance Ratio</div>
+            <div className="text-lg font-bold text-indigo-600 mt-1">{captureData.ratio}%</div>
+          </div>
+        </div>
+
+        {/* MODULE 1 TABLE */}
+        {captureData.stockoutYetConfirm && captureData.stockoutYetConfirm.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+            <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
+              <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                <span>📦</span> 1. STOCKOUT YET CONFIRM ({captureData.stockoutYetConfirm.length})
+              </h3>
+            </div>
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-100 text-gray-600 uppercase font-semibold border-b border-gray-200">
+                  <th className="px-4 py-2 text-center w-12 border-b border-gray-200 bg-gray-50">#</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Warehouse Stock out</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Export No</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Stock Receiver</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Group Receiver</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Construction</th>
+                  <th className="px-4 py-2 text-center w-20 border-b border-gray-200 bg-gray-50">Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                {captureData.stockoutYetConfirm.map((item, index) => (
+                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td className="px-4 py-2 text-center text-gray-400 font-medium">{index + 1}</td>
+                    <td className="px-4 py-2 font-medium text-gray-800">{item.exportCode || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.exportNo || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.stockReceiver || item.warehouse || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.groupReceiver || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.constructionReceiver || '-'}</td>
+                    <td className="px-4 py-2 text-center">
+                      <span className={`px-2 py-0.5 rounded font-bold ${item.daysDiff > 4 ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
+                        +{item.daysDiff}d
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* MODULE 2 TABLE */}
+        {captureData.noCreateHandOver && captureData.noCreateHandOver.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+            <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
+              <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                <span>📝</span> 2. NO CREATE HAND OVER ({captureData.noCreateHandOver.length})
+              </h3>
+            </div>
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-100 text-gray-600 uppercase font-semibold border-b border-gray-200">
+                  <th className="px-4 py-2 text-center w-12 border-b border-gray-200 bg-gray-50">#</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Code of Stock-out Note</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Warehouse</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Recipient</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Creator</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Creating Date</th>
+                  <th className="px-4 py-2 text-center w-20 border-b border-gray-200 bg-gray-50">Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                {captureData.noCreateHandOver.map((item, index) => (
+                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td className="px-4 py-2 text-center text-gray-400 font-medium">{index + 1}</td>
+                    <td className="px-4 py-2 font-medium text-gray-800">{item.code || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.warehouse || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.recipient || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.creator || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.date || '-'}</td>
+                    <td className="px-4 py-2 text-center">
+                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">
+                        +{item.daysDiff}d
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* MODULE 3 TABLE */}
+        {captureData.stockOutNoteNotConfirmed && captureData.stockOutNoteNotConfirmed.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+            <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
+              <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                <span>⚠️</span> 3. STOCK OUT NOTE - NOT CONFIRMED ({captureData.stockOutNoteNotConfirmed.length})
+              </h3>
+            </div>
+            <table className="w-full text-xs text-left border-collapse">
+              <thead>
+                <tr className="bg-gray-100 text-gray-600 uppercase font-semibold border-b border-gray-200">
+                  <th className="px-4 py-2 text-center w-12 border-b border-gray-200 bg-gray-50">#</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Code of Handover Minutes</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Type of Handover</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Handover Unit</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Unit Confirm Handover</th>
+                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Handover Date</th>
+                  <th className="px-4 py-2 text-center w-20 border-b border-gray-200 bg-gray-50">Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                {captureData.stockOutNoteNotConfirmed.map((item, index) => (
+                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
+                    <td className="px-4 py-2 text-center text-gray-400 font-medium">{index + 1}</td>
+                    <td className="px-4 py-2 font-medium text-gray-800">{item.code || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.type || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.warehouse || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.unitConfirm || '-'}</td>
+                    <td className="px-4 py-2 text-gray-600">{item.date || '-'}</td>
+                    <td className="px-4 py-2 text-center">
+                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">
+                        +{item.daysDiff}d
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* FOOTER */}
+        <div className="text-center text-[10px] text-gray-400 mt-8 border-t pt-4">
+          Report generated automatically by GIS KPI System. © 2026 GIS Asset Management.
+        </div>
+      </div>
+    );
+  };
+
   if (isEmbedded) {
     return (
       <div key={selectedComponent} className="w-full bg-gray-50 min-h-screen animate-fadeIn">
         {renderComponent()}
         {renderProgressModal()}
+        {renderHiddenCapture()}
       </div>
     );
   }
@@ -1086,6 +1357,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         <main key={selectedComponent} className="flex-1 overflow-y-auto bg-gray-50 animate-fadeIn">
           {renderComponent()}
           {renderProgressModal()}
+          {renderHiddenCapture()}
         </main>
       </div>
     </div>
