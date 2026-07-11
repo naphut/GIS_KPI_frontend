@@ -353,25 +353,34 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   // Module 1
   message += `<b>📦 1. STOCKOUT YET CONFIRM│ ${m1Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m1Items.length > 0) {
-    // Group by Group Receiver + Stock Receiver
+    // Group by Group Receiver (Team) only
     const m1Groups = {};
     m1Items.forEach(item => {
-      const stockRec = item.stockReceiver || item.warehouse || '-';
       const groupRec = item.groupReceiver || '-';
-      const key = `${groupRec}_${stockRec}`;
-      if (!m1Groups[key]) {
-        m1Groups[key] = {
+      if (!m1Groups[groupRec]) {
+        m1Groups[groupRec] = {
           groupReceiver: groupRec,
-          stockReceiver: stockRec,
           items: []
         };
       }
-      m1Groups[key].items.push(item);
+      m1Groups[groupRec].items.push(item);
     });
 
     Object.values(m1Groups).forEach(group => {
+      // Get unique stock receivers for this group (cleaning any leading hyphen)
+      const uniqueStockRecs = [...new Set(group.items.map(item => {
+        let val = item.stockReceiver || item.warehouse || '-';
+        if (val.startsWith('-')) {
+          val = val.substring(1);
+        }
+        return val;
+      }).filter(val => val && val !== '-'))];
+      
+      const stockReceiverStr = uniqueStockRecs.length > 0 ? uniqueStockRecs.join(', ') : '-';
+      const displayStockReceiver = stockReceiverStr === '-' ? '-' : `-${stockReceiverStr}`;
+
       message += `📋 Group Receiver: ${escapeHtml(group.groupReceiver)}\n`;
-      message += `│    Stock Receiver: -${escapeHtml(group.stockReceiver)}\n`;
+      message += `│    Stock Receiver: ${escapeHtml(displayStockReceiver)}\n`;
       message += `┌─────────────────────────┐\n`;
       group.items.forEach(item => {
         const exportNo = item.exportNo || '-';
