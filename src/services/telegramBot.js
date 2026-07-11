@@ -323,22 +323,8 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     return `⚠️ No data available for ${unit}. Please sync data first.`;
   }
 
-  const m1Target = unitData.m1Target || 0;
-  const m1Result = unitData.m1Result || 0;
-  const m1Remain = unitData.m1Remain || 0;
-  const m1Ratio = unitData.m1Ratio || 0;
   const m1Items = unitData.m1Items || [];
-
-  const m2Target = unitData.m2Target || 0;
-  const m2Result = unitData.m2Result || 0;
-  const m2Remain = unitData.m2Remain || 0;
-  const m2Ratio = unitData.m2Ratio || 0;
   const m2Items = unitData.m2Items || [];
-
-  const m3Target = unitData.m3Target || 0;
-  const m3Result = unitData.m3Result || 0;
-  const m3Remain = unitData.m3Remain || 0;
-  const m3Ratio = unitData.m3Ratio || 0;
   const m3Items = unitData.m3Items || [];
 
   const totalResult = unitData.totalResult || 0;
