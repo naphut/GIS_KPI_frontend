@@ -353,34 +353,45 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   // Module 1
   message += `<b>📦 1. STOCKOUT YET CONFIRM│ ${m1Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m1Items.length > 0) {
-    // Group by Group Receiver (Team) only
+    // Group by Normalized Team (SOSxx, FBCxx, etc.)
+    const getNormalizedTeam = (str) => {
+      if (!str || str === '-') return null;
+      const upper = str.toUpperCase().replace(/\s+/g, '');
+      const sosMatch = upper.match(/SOS(?:_?TEAM)?_?(\d+)/);
+      if (sosMatch) return `SOS${sosMatch[1].padStart(2, '0')}`;
+      const fbcMatch = upper.match(/FBC(?:_?TEAM)?_?(\d+)/);
+      if (fbcMatch) return `FBC${fbcMatch[1].padStart(2, '0')}`;
+      return null;
+    };
+
     const m1Groups = {};
     m1Items.forEach(item => {
+      const stockRec = item.stockReceiver || item.warehouse || '-';
       const groupRec = item.groupReceiver || '-';
-      if (!m1Groups[groupRec]) {
-        m1Groups[groupRec] = {
-          groupReceiver: groupRec,
+      
+      const teamKey = getNormalizedTeam(groupRec) || getNormalizedTeam(stockRec) || `${groupRec}_${stockRec}`;
+      
+      if (!m1Groups[teamKey]) {
+        m1Groups[teamKey] = {
+          groupReceiver: groupRec !== '-' ? groupRec : null,
+          stockReceiver: stockRec !== '-' ? stockRec : null,
           items: []
         };
       }
-      m1Groups[groupRec].items.push(item);
+      m1Groups[teamKey].items.push(item);
     });
 
     Object.values(m1Groups).forEach(group => {
-      // Get unique stock receivers for this group (cleaning any leading hyphen)
-      const uniqueStockRecs = [...new Set(group.items.map(item => {
-        let val = item.stockReceiver || item.warehouse || '-';
-        if (val.startsWith('-')) {
-          val = val.substring(1);
+      if (group.groupReceiver) {
+        message += `📋 Group Receiver: ${escapeHtml(group.groupReceiver)}\n`;
+        if (group.stockReceiver) {
+          message += `│    Stock Receiver: -${escapeHtml(group.stockReceiver)}\n`;
         }
-        return val;
-      }).filter(val => val && val !== '-'))];
-      
-      const stockReceiverStr = uniqueStockRecs.length > 0 ? uniqueStockRecs.join(', ') : '-';
-      const displayStockReceiver = stockReceiverStr === '-' ? '-' : `-${stockReceiverStr}`;
-
-      message += `📋 Group Receiver: ${escapeHtml(group.groupReceiver)}\n`;
-      message += `│    Stock Receiver: ${escapeHtml(displayStockReceiver)}\n`;
+      } else if (group.stockReceiver) {
+        message += `📋 Stock Receiver: ${escapeHtml(group.stockReceiver)}\n`;
+      } else {
+        message += `📋 Unassigned Team\n`;
+      }
       message += `┌─────────────────────────┐\n`;
       group.items.forEach(item => {
         const exportNo = item.exportNo || '-';
