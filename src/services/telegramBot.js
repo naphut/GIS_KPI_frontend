@@ -412,7 +412,7 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   // Module 3
   message += `<b>⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED│ ${m3Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m3Items.length > 0) {
-    // Group by Handover Unit
+    // Group by Unit confirm handover
     const m3Groups = {};
     m3Items.forEach(item => {
       const key = item.warehouse || '-';
@@ -423,7 +423,7 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     });
 
     Object.entries(m3Groups).forEach(([warehouse, items]) => {
-      message += `Handover Unit: ${escapeHtml(warehouse)}\n`;
+      message += `Unit confirm handover: ${escapeHtml(warehouse)}\n`;
       message += `┌─────────────────────────┐\n`;
       items.forEach((item, index) => {
         message += `│ ${index + 1}. Code: ${escapeHtml(item.code || '-')}\n`;
