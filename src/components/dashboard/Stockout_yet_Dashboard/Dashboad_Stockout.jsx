@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import Navbar from '../../common/Navbar';
 import Sidebar from '../../common/Sidebar';
 import { 
@@ -18,27 +19,9 @@ import { loadFromDb } from '../../../services/dbStore';
 import STOCKOUT_YET_CONFIRM from '../../../Page/Stockout_yet/STOCKOUT_YET_CONFIRM';
 import STOCK_OUT_NOTE_CONFIRMED from '../../../Page/Stockout_yet/stock_out_note_confirmed';
 
-const loadHtml2Canvas = () => {
-  return new Promise((resolve) => {
-    if (window.html2canvas) {
-      resolve(window.html2canvas);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-    script.onload = () => resolve(window.html2canvas);
-    script.onerror = () => {
-      console.error('Failed to load html2canvas from CDN');
-      resolve(null);
-    };
-    document.head.appendChild(script);
-  });
-};
-
 const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const [selectedComponent, setSelectedComponent] = useState('dashboard');
   const [syncVersion, setSyncVersion] = useState(0);
-  const [captureUnit, setCaptureUnit] = useState(null);
 
   // Sync all dashboard data from database on mount
   useEffect(() => {
@@ -95,6 +78,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [sendResults, setSendResults] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [screenshotUnit, setScreenshotUnit] = useState(null);
+  const [screenshotMode, setScreenshotMode] = useState(false);
 
   // Update time every minute
   useEffect(() => {
@@ -527,6 +512,278 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     }
   };
 
+  // Grouping helper functions for screenshot formatting
+  const getM1Groups = (m1Items) => {
+    const groups = {};
+    m1Items.forEach(item => {
+      const stockRec = item.stockReceiver || item.warehouse || '-';
+      const groupRec = item.groupReceiver || '-';
+      const key = `${groupRec}_${stockRec}`;
+      if (!groups[key]) {
+        groups[key] = {
+          groupReceiver: groupRec,
+          stockReceiver: stockRec,
+          items: []
+        };
+      }
+      groups[key].items.push(item);
+    });
+    return groups;
+  };
+
+  const getM2Groups = (m2Items) => {
+    const groups = {};
+    m2Items.forEach(item => {
+      const key = item.recipient || '-';
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(item);
+    });
+    return groups;
+  };
+
+  const getM3Groups = (m3Items) => {
+    const groups = {};
+    m3Items.forEach(item => {
+      const key = item.unitConfirm || '-';
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(item);
+    });
+    return groups;
+  };
+
+  const getUnitTotals = (unit) => {
+    const data = getReportData();
+    return data.units[unit] || {
+      targetMorning: 0,
+      targetEvening: 0,
+      result: 0,
+      remain: 0,
+      ratio: '0.00',
+      inSystem: 0
+    };
+  };
+
+  const getUnitM1Items = (unit) => {
+    const data = getReportData();
+    return data.units[unit]?.m1Items || [];
+  };
+
+  const getUnitM2Items = (unit) => {
+    const data = getReportData();
+    return data.units[unit]?.m2Items || [];
+  };
+
+  const getUnitM3Items = (unit) => {
+    const data = getReportData();
+    return data.units[unit]?.m3Items || [];
+  };
+
+  // Send single unit screenshot
+  const sendReportToTelegramScreenshot = async (unit) => {
+    if (isSending) return;
+    
+    if (!hasGroupId(unit)) {
+      alert(`⚠️ No group ID configured for ${unit}. Please add it first.`);
+      return;
+    }
+    
+    setIsSending(true);
+    setShowProgressModal(true);
+    setSendProgress({
+      current: 1,
+      total: 1,
+      unit: unit,
+      status: 'sending'
+    });
+    setSendResults(null);
+    
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      setScreenshotUnit(unit);
+      
+      // Wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const element = document.getElementById('telegram-screenshot-report');
+      if (!element) {
+        throw new Error('Screenshot element not found in DOM');
+      }
+      
+      const canvas = await html2canvas(element, {
+        useCORS: true,
+        scale: 2,
+        backgroundColor: '#f8fafc'
+      });
+      
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      
+      const result = await sendPhotoToTelegram(
+        unit, 
+        blob, 
+        `📊 <b>CONFIRMED HAND OVER REPORT - ${unit}</b>\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`, 
+        abortControllerRef.current.signal
+      );
+      
+      if (result && result.success) {
+        setSendProgress({
+          current: 1,
+          total: 1,
+          unit: unit,
+          status: 'success'
+        });
+        setSendResults({
+          total: 1,
+          success: 1,
+          failed: 0
+        });
+        alert(`✅ Screenshot report sent successfully to ${unit} group!`);
+      } else {
+        const isAbort = result?.aborted || abortControllerRef.current.signal.aborted;
+        if (!isAbort) {
+          setSendProgress({
+            current: 1,
+            total: 1,
+            unit: unit,
+            status: 'failed',
+            error: result?.error || 'Failed to send'
+          });
+          setSendResults({
+            total: 1,
+            success: 0,
+            failed: 1
+          });
+          alert(`❌ Failed to send screenshot report: ${result?.error || 'Unknown error'}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error generating screenshot:', error);
+      alert(`❌ Error generating screenshot: ${error.message}`);
+      setSendProgress({
+        current: 1,
+        total: 1,
+        unit: unit,
+        status: 'failed',
+        error: error.message
+      });
+      setSendResults({
+        total: 1,
+        success: 0,
+        failed: 1
+      });
+    } finally {
+      setIsSending(false);
+      setScreenshotUnit(null);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
+    }
+  };
+
+  // Send all screenshots
+  const sendToAllScreenshot = async () => {
+    if (isSending) return;
+    
+    const configured = getConfiguredUnits();
+    if (configured.length === 0) {
+      alert('⚠️ No group IDs configured! Please add group IDs for at least one province.');
+      return;
+    }
+    
+    setIsSending(true);
+    setShowProgressModal(true);
+    setSendProgress({
+      current: 0,
+      total: configured.length,
+      unit: 'Starting...',
+      status: 'sending'
+    });
+    setSendResults(null);
+    
+    abortControllerRef.current = new AbortController();
+    let successCount = 0;
+    let failCount = 0;
+    let completedCount = 0;
+    
+    try {
+      for (const unit of configured) {
+        if (abortControllerRef.current.signal.aborted) {
+          break;
+        }
+        
+        setSendProgress({
+          current: completedCount + 1,
+          total: configured.length,
+          unit: unit,
+          status: 'sending'
+        });
+        
+        try {
+          setScreenshotUnit(unit);
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          const element = document.getElementById('telegram-screenshot-report');
+          if (!element) {
+            throw new Error('Screenshot element not found');
+          }
+          
+          const canvas = await html2canvas(element, {
+            useCORS: true,
+            scale: 2,
+            backgroundColor: '#f8fafc'
+          });
+          
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          
+          const result = await sendPhotoToTelegram(
+            unit,
+            blob,
+            `📊 <b>CONFIRMED HAND OVER REPORT - ${unit}</b>\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`,
+            abortControllerRef.current.signal
+          );
+          
+          if (result && result.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (unitError) {
+          console.error(`Error sending screenshot for ${unit}:`, unitError);
+          failCount++;
+        }
+        
+        completedCount++;
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+      
+      setSendResults({
+        total: configured.length,
+        success: successCount,
+        failed: failCount
+      });
+      
+      setSendProgress({
+        current: configured.length,
+        total: configured.length,
+        unit: 'All completed!',
+        status: failCount === 0 ? 'success' : 'failed'
+      });
+      
+    } catch (error) {
+      console.error('Error during send all screenshots:', error);
+    } finally {
+      setIsSending(false);
+      setScreenshotUnit(null);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setTimeout(() => setShowProgressModal(false), 4000);
+      }
+    }
+  };
+
   // Send to single unit
   const sendReportToTelegram = async (unit) => {
     if (isSending) return;
@@ -550,69 +807,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     
     try {
       const data = getReportData();
-      
-      // Load html2canvas dynamically and capture screenshot
-      let photoBlob = null;
-      try {
-        setSendProgress(prev => ({ 
-          ...prev, 
-          status: 'sending', 
-          message: `📸 Generating report screenshot for ${unit}...` 
-        }));
-        
-        setCaptureUnit(unit);
-        
-        // Wait for React to render the hidden DOM element
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Load html2canvas script
-        const html2canvas = await loadHtml2Canvas();
-        const element = document.getElementById('telegram-report-capture');
-        
-        if (element && html2canvas) {
-          const canvas = await html2canvas(element, {
-            scale: 2, // Crystal clear quality
-            useCORS: true,
-            backgroundColor: '#f8fafc',
-            logging: false
-          });
-          photoBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-        }
-      } catch (err) {
-        console.error('Failed to generate report screenshot:', err);
-      } finally {
-        setCaptureUnit(null);
-      }
-
-      setSendProgress(prev => ({ 
-        ...prev, 
-        status: 'sending', 
-        message: `📤 Uploading screenshot and report to ${unit} Telegram...` 
-      }));
-
-      const now = new Date();
-      const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-      let result = { success: false };
-      
-      // If we have a screenshot, send it first
-      if (photoBlob) {
-        const photoCaption = `📊 <b>📋 CONFIRMED HAND OVER REPORT - ${unit}</b>\n🕐 TIME: ${time}\n📅 DATE: ${date}`;
-        const photoResult = await sendPhotoToTelegram(unit, photoBlob, photoCaption, abortControllerRef.current.signal);
-        if (photoResult && photoResult.success) {
-          result = { success: true };
-        } else {
-          console.warn('Telegram photo send failed, trying text-only backup...');
-        }
-      }
-      
-      // Send the full text report
-      const textResult = await sendToTelegram(unit, data, customNote, abortControllerRef.current.signal);
-      
-      if (!photoBlob || (textResult && textResult.success)) {
-        result = textResult;
-      }
+      const result = await sendToTelegram(unit, data, customNote, abortControllerRef.current.signal);
       
       if (result && result.success) {
         setSendProgress({
@@ -626,7 +821,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           success: 1,
           failed: 0
         });
-        alert(`✅ Report and screenshot sent successfully to ${unit} group!`);
+        alert(`✅ Report sent successfully to ${unit} group!`);
       } else {
         const isAbort = result?.aborted || abortControllerRef.current.signal.aborted;
         setSendProgress({
@@ -837,6 +1032,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-3">
+                  {/* Send All Text */}
                   <button
                     onClick={sendToAll}
                     disabled={isSending || configuredCount === 0}
@@ -845,20 +1041,51 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                         ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-200'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
-                    title={configuredCount === 0 ? 'No provinces configured' : 'Send to all configured provinces'}
+                    title={configuredCount === 0 ? 'No provinces configured' : 'Send text report to all configured provinces'}
                   >
                     <span>📤</span>
                     Send All ({configuredCount})
-                    {isSending && <span className="ml-1 animate-spin">⏳</span>}
+                  </button>
+
+                  {/* Send All Screenshot */}
+                  <button
+                    onClick={sendToAllScreenshot}
+                    disabled={isSending || configuredCount === 0}
+                    className={`px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md disabled:opacity-50 font-semibold text-sm ${
+                      configuredCount > 0
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 shadow-amber-200'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                    title={configuredCount === 0 ? 'No provinces configured' : 'Send screenshot report to all configured provinces'}
+                  >
+                    <span>📸</span>
+                    Send All ({configuredCount}) Screenshot
                   </button>
                   
+                  {/* Send to Unit Text */}
                   <button
-                    onClick={() => setShowUnitSelector(!showUnitSelector)}
+                    onClick={() => {
+                      setScreenshotMode(false);
+                      setShowUnitSelector(!showUnitSelector);
+                    }}
                     disabled={isSending}
-                    className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-200"
+                    className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-200 font-semibold text-sm"
                   >
                     <span>📍</span>
                     Send to Unit
+                  </button>
+
+                  {/* Send to Unit Screenshot */}
+                  <button
+                    onClick={() => {
+                      setScreenshotMode(true);
+                      setShowUnitSelector(!showUnitSelector);
+                    }}
+                    disabled={isSending}
+                    className="px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-purple-200 font-semibold text-sm"
+                  >
+                    <span>📸</span>
+                    Send to Unit Screenshot
                   </button>
                 </div>
               </div>
@@ -949,7 +1176,11 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                           onClick={() => {
                             setSelectedUnit(unit);
                             if (isConfigured) {
-                              sendReportToTelegram(unit);
+                              if (screenshotMode) {
+                                sendReportToTelegramScreenshot(unit);
+                              } else {
+                                sendReportToTelegram(unit);
+                              }
                             } else {
                               alert(`⚠️ No group ID configured for ${unit}. Please add it in telegramBot.js`);
                             }
@@ -1150,201 +1381,152 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     }
   };
 
-  const renderHiddenCapture = () => {
-    if (!captureUnit) return null;
-    const reportData = getReportData();
-    const captureData = reportData?.units?.[captureUnit];
-    if (!captureData) return null;
-
-    return (
-      <div 
-        id="telegram-report-capture" 
-        style={{ 
-          position: 'absolute', 
-          left: '-9999px', 
-          top: '0', 
-          width: '1200px', 
-          background: '#f8fafc', 
-          padding: '32px', 
-          fontFamily: 'Inter, system-ui, sans-serif',
-          color: '#1e293b'
-        }}
-      >
-        {/* HEADER CARD */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white shadow-lg mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">📍 {captureUnit} BRANCH</h1>
-              <p className="text-blue-100 text-sm mt-1">Confirmed Hand Over Performance Report</p>
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-blue-200">Generated At</div>
-              <div className="font-semibold">
-                {new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* OVERALL KPI CARDS */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 font-medium">🌅 Target ព្រឹក | 🌙 Target ល្ងាច</div>
-            <div className="text-lg font-bold text-gray-800 mt-1">
-              {captureData.targetMorning} | {captureData.targetEvening}
-            </div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 font-medium">✅ Result (Cleared)</div>
-            <div className="text-lg font-bold text-emerald-600 mt-1">{captureData.result}</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 font-medium">📋 Remain (Pending)</div>
-            <div className="text-lg font-bold text-amber-600 mt-1">{captureData.remain}</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-            <div className="text-xs text-gray-500 font-medium">📊 Performance Ratio</div>
-            <div className="text-lg font-bold text-indigo-600 mt-1">{captureData.ratio}%</div>
-          </div>
-        </div>
-
-        {/* MODULE 1 TABLE */}
-        {captureData.stockoutYetConfirm && captureData.stockoutYetConfirm.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-            <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
-              <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                <span>📦</span> 1. STOCKOUT YET CONFIRM ({captureData.stockoutYetConfirm.length})
-              </h3>
-            </div>
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-100 text-gray-600 uppercase font-semibold border-b border-gray-200">
-                  <th className="px-4 py-2 text-center w-12 border-b border-gray-200 bg-gray-50">#</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Warehouse Stock out</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Export No</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Stock Receiver</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Group Receiver</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Construction</th>
-                  <th className="px-4 py-2 text-center w-20 border-b border-gray-200 bg-gray-50">Days</th>
-                </tr>
-              </thead>
-              <tbody>
-                {captureData.stockoutYetConfirm.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="px-4 py-2 text-center text-gray-400 font-medium">{index + 1}</td>
-                    <td className="px-4 py-2 font-medium text-gray-800">{item.exportCode || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.exportNo || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.stockReceiver || item.warehouse || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.groupReceiver || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.constructionReceiver || '-'}</td>
-                    <td className="px-4 py-2 text-center">
-                      <span className={`px-2 py-0.5 rounded font-bold ${item.daysDiff > 4 ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}`}>
-                        +{item.daysDiff}d
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* MODULE 2 TABLE */}
-        {captureData.noCreateHandOver && captureData.noCreateHandOver.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-            <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
-              <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                <span>📝</span> 2. NO CREATE HAND OVER ({captureData.noCreateHandOver.length})
-              </h3>
-            </div>
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-100 text-gray-600 uppercase font-semibold border-b border-gray-200">
-                  <th className="px-4 py-2 text-center w-12 border-b border-gray-200 bg-gray-50">#</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Code of Stock-out Note</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Warehouse</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Recipient</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Creator</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Creating Date</th>
-                  <th className="px-4 py-2 text-center w-20 border-b border-gray-200 bg-gray-50">Days</th>
-                </tr>
-              </thead>
-              <tbody>
-                {captureData.noCreateHandOver.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="px-4 py-2 text-center text-gray-400 font-medium">{index + 1}</td>
-                    <td className="px-4 py-2 font-medium text-gray-800">{item.code || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.warehouse || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.recipient || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.creator || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.date || '-'}</td>
-                    <td className="px-4 py-2 text-center">
-                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">
-                        +{item.daysDiff}d
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* MODULE 3 TABLE */}
-        {captureData.stockOutNoteNotConfirmed && captureData.stockOutNoteNotConfirmed.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
-            <div className="bg-gray-50 border-b border-gray-100 px-5 py-3">
-              <h3 className="font-bold text-gray-700 flex items-center gap-2">
-                <span>⚠️</span> 3. STOCK OUT NOTE - NOT CONFIRMED ({captureData.stockOutNoteNotConfirmed.length})
-              </h3>
-            </div>
-            <table className="w-full text-xs text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-100 text-gray-600 uppercase font-semibold border-b border-gray-200">
-                  <th className="px-4 py-2 text-center w-12 border-b border-gray-200 bg-gray-50">#</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Code of Handover Minutes</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Type of Handover</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Handover Unit</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Unit Confirm Handover</th>
-                  <th className="px-4 py-2 border-b border-gray-200 bg-gray-50">Handover Date</th>
-                  <th className="px-4 py-2 text-center w-20 border-b border-gray-200 bg-gray-50">Days</th>
-                </tr>
-              </thead>
-              <tbody>
-                {captureData.stockOutNoteNotConfirmed.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50/50">
-                    <td className="px-4 py-2 text-center text-gray-400 font-medium">{index + 1}</td>
-                    <td className="px-4 py-2 font-medium text-gray-800">{item.code || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.type || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.warehouse || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.unitConfirm || '-'}</td>
-                    <td className="px-4 py-2 text-gray-600">{item.date || '-'}</td>
-                    <td className="px-4 py-2 text-center">
-                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">
-                        +{item.daysDiff}d
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* FOOTER */}
-        <div className="text-center text-[10px] text-gray-400 mt-8 border-t pt-4">
-          Report generated automatically by GIS KPI System. © 2026 GIS Asset Management.
-        </div>
-      </div>
-    );
-  };
-
   if (isEmbedded) {
     return (
       <div key={selectedComponent} className="w-full bg-gray-50 min-h-screen animate-fadeIn">
         {renderComponent()}
         {renderProgressModal()}
-        {renderHiddenCapture()}
+        {/* Hidden Screenshot Report Generator */}
+        {screenshotUnit && (
+          <div 
+            id="telegram-screenshot-report" 
+            style={{ 
+              position: 'fixed', 
+              left: '-9999px', 
+              top: '0', 
+              width: '750px', 
+              background: '#f8fafc', 
+              padding: '28px',
+              fontFamily: 'Inter, system-ui, sans-serif'
+            }}
+          >
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 text-white shadow-xl mb-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">CONFIRMED HAND OVER REPORT</h1>
+                  <p className="text-sm opacity-90 mt-1">📍 Branch: <strong className="text-lg font-extrabold">{screenshotUnit}</strong></p>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs opacity-75">Date & Time</div>
+                  <div className="text-sm font-semibold">{new Date().toLocaleDateString('en-GB')}</div>
+                  <div className="text-sm font-semibold">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-6 gap-3 mb-6">
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                <div className="text-[10px] text-gray-400 font-bold uppercase">Target ព្រឹក</div>
+                <div className="text-lg font-extrabold text-blue-600 mt-1">{getUnitTotals(screenshotUnit).targetMorning}</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                <div className="text-[10px] text-gray-400 font-bold uppercase">Target ល្ងាច</div>
+                <div className="text-lg font-extrabold text-indigo-600 mt-1">{getUnitTotals(screenshotUnit).targetEvening}</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                <div className="text-[10px] text-gray-400 font-bold uppercase">Result</div>
+                <div className="text-lg font-extrabold text-emerald-600 mt-1">{getUnitTotals(screenshotUnit).result}</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                <div className="text-[10px] text-gray-400 font-bold uppercase">Remain</div>
+                <div className="text-lg font-extrabold text-amber-600 mt-1">{getUnitTotals(screenshotUnit).remain}</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                <div className="text-[10px] text-gray-400 font-bold uppercase">Ratio</div>
+                <div className="text-lg font-extrabold text-purple-600 mt-1">{getUnitTotals(screenshotUnit).ratio}%</div>
+              </div>
+              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                <div className="text-[10px] text-gray-400 font-bold uppercase">In System</div>
+                <div className="text-lg font-extrabold text-cyan-600 mt-1">{getUnitTotals(screenshotUnit).inSystem}</div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+              <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
+                <span className="flex items-center gap-2">📦 1. STOCKOUT YET CONFIRM</span>
+                <span className={getUnitM1Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
+                  {getUnitM1Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM1Items(screenshotUnit).length} Items`}
+                </span>
+              </h3>
+              {getUnitM1Items(screenshotUnit).length > 0 ? (
+                <div className="mt-3 space-y-3">
+                  {Object.values(getM1Groups(getUnitM1Items(screenshotUnit))).map((group, idx) => (
+                    <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                      <div className="text-xs font-semibold text-gray-700">📋 Group Receiver: {group.groupReceiver}</div>
+                      <div className="text-[11px] text-gray-500 mt-0.5">Stock Receiver: {group.stockReceiver}</div>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {group.items.map((item, i) => (
+                          <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2 text-[10px] flex justify-between items-center shadow-xs">
+                            <span className="font-medium text-slate-600">{item.exportNo}</span>
+                            <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-bold">+{item.daysDiff}d</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
+              )}
+            </div>
+
+            <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+              <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
+                <span className="flex items-center gap-2">📝 2. NO CREATE HAND OVER</span>
+                <span className={getUnitM2Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
+                  {getUnitM2Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM2Items(screenshotUnit).length} Items`}
+                </span>
+              </h3>
+              {getUnitM2Items(screenshotUnit).length > 0 ? (
+                <div className="mt-3 space-y-3">
+                  {Object.entries(getM2Groups(getUnitM2Items(screenshotUnit))).map(([recipient, items], idx) => (
+                    <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                      <div className="text-xs font-semibold text-gray-700">👤 Recipient: {recipient}</div>
+                      <div className="mt-2 space-y-1.5">
+                        {items.map((item, i) => (
+                          <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2.5 text-[10px] flex justify-between items-center shadow-xs">
+                            <span className="font-medium text-slate-600 truncate max-w-[280px]">{item.code}</span>
+                            <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md font-bold">Qty of Day: {item.daysDiff}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
+              )}
+            </div>
+
+            <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm">
+              <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
+                <span className="flex items-center gap-2">⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED</span>
+                <span className={getUnitM3Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
+                  {getUnitM3Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM3Items(screenshotUnit).length} Items`}
+                </span>
+              </h3>
+              {getUnitM3Items(screenshotUnit).length > 0 ? (
+                <div className="mt-3 space-y-3">
+                  {Object.entries(getM3Groups(getUnitM3Items(screenshotUnit))).map(([unitConfirm, items], idx) => (
+                    <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                      <div className="text-xs font-semibold text-gray-700">🏢 Unit confirm handover: {unitConfirm}</div>
+                      <div className="mt-2 space-y-1.5">
+                        {items.map((item, i) => (
+                          <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2.5 text-[10px] flex justify-between items-center shadow-xs">
+                            <span className="font-medium text-slate-600 truncate max-w-[280px]">{item.code}</span>
+                            <span className="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-md font-bold">+{item.daysDiff} days</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -1357,7 +1539,147 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         <main key={selectedComponent} className="flex-1 overflow-y-auto bg-gray-50 animate-fadeIn">
           {renderComponent()}
           {renderProgressModal()}
-          {renderHiddenCapture()}
+          {/* Hidden Screenshot Report Generator */}
+          {screenshotUnit && (
+            <div 
+              id="telegram-screenshot-report" 
+              style={{ 
+                position: 'fixed', 
+                left: '-9999px', 
+                top: '0', 
+                width: '750px', 
+                background: '#f8fafc', 
+                padding: '28px',
+                fontFamily: 'Inter, system-ui, sans-serif'
+              }}
+            >
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 text-white shadow-xl mb-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h1 className="text-2xl font-bold tracking-tight">CONFIRMED HAND OVER REPORT</h1>
+                    <p className="text-sm opacity-90 mt-1">📍 Branch: <strong className="text-lg font-extrabold">{screenshotUnit}</strong></p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs opacity-75">Date & Time</div>
+                    <div className="text-sm font-semibold">{new Date().toLocaleDateString('en-GB')}</div>
+                    <div className="text-sm font-semibold">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-6 gap-3 mb-6">
+                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                  <div className="text-[10px] text-gray-400 font-bold uppercase">Target ព្រឹក</div>
+                  <div className="text-lg font-extrabold text-blue-600 mt-1">{getUnitTotals(screenshotUnit).targetMorning}</div>
+                </div>
+                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                  <div className="text-[10px] text-gray-400 font-bold uppercase">Target ល្ងាច</div>
+                  <div className="text-lg font-extrabold text-indigo-600 mt-1">{getUnitTotals(screenshotUnit).targetEvening}</div>
+                </div>
+                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                  <div className="text-[10px] text-gray-400 font-bold uppercase">Result</div>
+                  <div className="text-lg font-extrabold text-emerald-600 mt-1">{getUnitTotals(screenshotUnit).result}</div>
+                </div>
+                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                  <div className="text-[10px] text-gray-400 font-bold uppercase">Remain</div>
+                  <div className="text-lg font-extrabold text-amber-600 mt-1">{getUnitTotals(screenshotUnit).remain}</div>
+                </div>
+                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                  <div className="text-[10px] text-gray-400 font-bold uppercase">Ratio</div>
+                  <div className="text-lg font-extrabold text-purple-600 mt-1">{getUnitTotals(screenshotUnit).ratio}%</div>
+                </div>
+                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
+                  <div className="text-[10px] text-gray-400 font-bold uppercase">In System</div>
+                  <div className="text-lg font-extrabold text-cyan-600 mt-1">{getUnitTotals(screenshotUnit).inSystem}</div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+                <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
+                  <span className="flex items-center gap-2">📦 1. STOCKOUT YET CONFIRM</span>
+                  <span className={getUnitM1Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
+                    {getUnitM1Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM1Items(screenshotUnit).length} Items`}
+                  </span>
+                </h3>
+                {getUnitM1Items(screenshotUnit).length > 0 ? (
+                  <div className="mt-3 space-y-3">
+                    {Object.values(getM1Groups(getUnitM1Items(screenshotUnit))).map((group, idx) => (
+                      <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                        <div className="text-xs font-semibold text-gray-700">📋 Group Receiver: {group.groupReceiver}</div>
+                        <div className="text-[11px] text-gray-500 mt-0.5">Stock Receiver: {group.stockReceiver}</div>
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          {group.items.map((item, i) => (
+                            <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2 text-[10px] flex justify-between items-center shadow-xs">
+                              <span className="font-medium text-slate-600">{item.exportNo}</span>
+                              <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-bold">+{item.daysDiff}d</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
+                )}
+              </div>
+
+              <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+                <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
+                  <span className="flex items-center gap-2">📝 2. NO CREATE HAND OVER</span>
+                  <span className={getUnitM2Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
+                    {getUnitM2Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM2Items(screenshotUnit).length} Items`}
+                  </span>
+                </h3>
+                {getUnitM2Items(screenshotUnit).length > 0 ? (
+                  <div className="mt-3 space-y-3">
+                    {Object.entries(getM2Groups(getUnitM2Items(screenshotUnit))).map(([recipient, items], idx) => (
+                      <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                        <div className="text-xs font-semibold text-gray-700">👤 Recipient: {recipient}</div>
+                        <div className="mt-2 space-y-1.5">
+                          {items.map((item, i) => (
+                            <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2.5 text-[10px] flex justify-between items-center shadow-xs">
+                              <span className="font-medium text-slate-600 truncate max-w-[280px]">{item.code}</span>
+                              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md font-bold">Qty of Day: {item.daysDiff}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
+                )}
+              </div>
+
+              <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm">
+                <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
+                  <span className="flex items-center gap-2">⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED</span>
+                  <span className={getUnitM3Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
+                    {getUnitM3Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM3Items(screenshotUnit).length} Items`}
+                  </span>
+                </h3>
+                {getUnitM3Items(screenshotUnit).length > 0 ? (
+                  <div className="mt-3 space-y-3">
+                    {Object.entries(getM3Groups(getUnitM3Items(screenshotUnit))).map(([unitConfirm, items], idx) => (
+                      <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                        <div className="text-xs font-semibold text-gray-700">🏢 Unit confirm handover: {unitConfirm}</div>
+                        <div className="mt-2 space-y-1.5">
+                          {items.map((item, i) => (
+                            <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2.5 text-[10px] flex justify-between items-center shadow-xs">
+                              <span className="font-medium text-slate-600 truncate max-w-[280px]">{item.code}</span>
+                              <span className="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-md font-bold">+{item.daysDiff} days</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

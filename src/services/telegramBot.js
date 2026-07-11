@@ -1234,3 +1234,60 @@ export const deleteTemplate = async (templateId) => {
     return false;
   }
 };
+
+// ============================================================
+// 📌 SEND PHOTO TO TELEGRAM - FOR SCREENSHOTS
+// ============================================================
+
+export const sendPhotoToTelegram = async (unit, photoBlob, caption = '', signal = null) => {
+  const startTime = Date.now();
+  try {
+    const groupId = GROUP_IDS[unit];
+    if (!groupId || groupId === '') {
+      return { 
+        success: false, 
+        error: `No group ID configured for ${unit}`,
+        duration: Date.now() - startTime
+      };
+    }
+
+    const token = getBotToken(unit);
+    const directUrl = `https://api.telegram.org/bot${token}/sendPhoto`;
+    
+    const formData = new FormData();
+    formData.append('chat_id', groupId);
+    formData.append('photo', photoBlob, 'screenshot.png');
+    if (caption) {
+      formData.append('caption', caption);
+      formData.append('parse_mode', 'HTML');
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for upload
+
+    const directResponse = await fetch(directUrl, {
+      method: 'POST',
+      body: formData,
+      signal: signal || controller.signal
+    });
+
+    const directResult = await directResponse.json();
+    const duration = Date.now() - startTime;
+    clearTimeout(timeoutId);
+
+    if (directResult.ok) {
+      console.log(`✅ Sent photo directly to ${unit} (${duration}ms)`);
+      return { success: true, result: directResult, duration };
+    } else {
+      console.error(`❌ Failed to send photo directly to ${unit}: ${directResult.description}`);
+      return { success: false, error: directResult.description, duration };
+    }
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    if (error.name === 'AbortError') {
+      return { success: false, error: 'Timeout (25s)', aborted: true, duration };
+    }
+    console.error(`❌ Error sending photo to ${unit}:`, error);
+    return { success: false, error: error.message, duration };
+  }
+};
