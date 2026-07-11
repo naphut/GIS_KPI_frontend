@@ -306,10 +306,14 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   // 🚫 FILTER FUNCTION: Check if item should be excluded
   const shouldExcludeItem = (item) => {
-    // Exclude if constructionReceiver contains "GPON" (case insensitive)
+    // Exclude if constructionReceiver contains "GPON" (case insensitive) ONLY for units: SPE, TAK, KAM, CHH
     if (item.constructionReceiver && 
         item.constructionReceiver.toUpperCase().includes('GPON')) {
-      return true;
+      const unit = item.unit || getUnit(item.exportCode, item.exportNo, item.groupReceiver);
+      const excludedGponUnits = ['SPE', 'TAK', 'KAM', 'CHH'];
+      if (excludedGponUnits.includes(unit)) {
+        return true;
+      }
     }
     // Exclude if groupReceiver contains "GIS_MOD"
     if (item.groupReceiver && 
@@ -1262,7 +1266,7 @@ const STOCKOUT_YET_CONFIRM = () => {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold text-white">🔄 Smart Import</h2>
-                <p className="text-blue-100 text-sm">Auto-filters GPON & GIS_MOD | Unit from Group Receiver</p>
+                <p className="text-blue-100 text-sm">Auto-filters GPON (for SPE, TAK, KAM, CHH) & GIS_MOD | Unit from Group Receiver</p>
               </div>
               <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
             </div>
@@ -1271,7 +1275,7 @@ const STOCKOUT_YET_CONFIRM = () => {
             <textarea 
               value={pasteData} 
               onChange={(e) => setPasteData(e.target.value)} 
-              placeholder="Paste your system data here...&#10;&#10;Format: Export Code, Export No, Date, Stock Receiver, Group Receiver, Construction Receiver&#10;&#10;🚫 Items with GPON or GIS_MOD will be automatically excluded" 
+              placeholder="Paste your system data here...&#10;&#10;Format: Export Code, Export No, Date, Stock Receiver, Group Receiver, Construction Receiver&#10;&#10;🚫 Items with GPON (for SPE, TAK, KAM, CHH) or GIS_MOD will be automatically excluded" 
               className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
             <div className="mt-4 p-3 bg-gray-50 rounded-xl">
@@ -1279,7 +1283,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                 <strong>📊 What will happen:</strong>
                 <ul className="mt-1 ml-4 list-disc">
                   <li>🎯 <span className="text-purple-600">Unit</span> → Extracted from Group Receiver</li>
-                  <li>🚫 <span className="text-rose-600">EXCLUDED</span> → GPON (Construction) &amp; GIS_MOD (Group Receiver)</li>
+                  <li>🚫 <span className="text-rose-600">EXCLUDED</span> → GPON (for SPE, TAK, KAM, CHH) &amp; GIS_MOD (Group Receiver)</li>
                   <li>🎯 <span className="text-purple-600">New Unit</span> → Auto-create target (morning/evening)</li>
                   <li>✅ <span className="text-emerald-600">COMPLETED</span> → Missing Export No (+1 Result)</li>
                   <li>📋 <span className="text-blue-600">REMAINING</span> → Same Export No</li>
@@ -1542,7 +1546,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                     </td>
                     <td className="px-2 py-1.5 text-xs whitespace-normal break-words">
                       <div onClick={() => startEdit(item.id, 'constructionReceiver', item.constructionReceiver)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">
-                        {item.constructionReceiver?.toUpperCase().includes('GPON') ? (
+                        {item.constructionReceiver?.toUpperCase().includes('GPON') && ['SPE', 'TAK', 'KAM', 'CHH'].includes(item.unit) ? (
                           <span className="text-rose-500 line-through font-medium">{item.constructionReceiver} 🚫</span>
                         ) : item.constructionReceiver || '-'}
                       </div>
@@ -1568,7 +1572,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                       <div className="text-4xl">📭</div>
                       <p className="text-lg font-medium">No data in system</p>
                       <p className="text-sm text-gray-400">Click "Smart Import" to import data</p>
-                      <p className="text-xs text-rose-400">🚫 GPON and GIS_MOD are automatically filtered out</p>
+                      <p className="text-xs text-rose-400">🚫 GPON (for SPE, TAK, KAM, CHH) and GIS_MOD are automatically filtered out</p>
                     </div>
                   </td>
                 </tr>
