@@ -353,45 +353,25 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   // Module 1
   message += `<b>📦 1. STOCKOUT YET CONFIRM│ ${m1Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m1Items.length > 0) {
-    // Group by Normalized Team (SOSxx, FBCxx, etc.)
-    const getNormalizedTeam = (str) => {
-      if (!str || str === '-') return null;
-      const upper = str.toUpperCase().replace(/\s+/g, '');
-      const sosMatch = upper.match(/SOS(?:_?TEAM)?_?(\d+)/);
-      if (sosMatch) return `SOS${sosMatch[1].padStart(2, '0')}`;
-      const fbcMatch = upper.match(/FBC(?:_?TEAM)?_?(\d+)/);
-      if (fbcMatch) return `FBC${fbcMatch[1].padStart(2, '0')}`;
-      return null;
-    };
-
+    // Group by Group Receiver + Stock Receiver
     const m1Groups = {};
     m1Items.forEach(item => {
       const stockRec = item.stockReceiver || item.warehouse || '-';
       const groupRec = item.groupReceiver || '-';
-      
-      const teamKey = getNormalizedTeam(groupRec) || getNormalizedTeam(stockRec) || `${groupRec}_${stockRec}`;
-      
-      if (!m1Groups[teamKey]) {
-        m1Groups[teamKey] = {
-          groupReceiver: groupRec !== '-' ? groupRec : null,
-          stockReceiver: stockRec !== '-' ? stockRec : null,
+      const key = `${groupRec}_${stockRec}`;
+      if (!m1Groups[key]) {
+        m1Groups[key] = {
+          groupReceiver: groupRec,
+          stockReceiver: stockRec,
           items: []
         };
       }
-      m1Groups[teamKey].items.push(item);
+      m1Groups[key].items.push(item);
     });
 
     Object.values(m1Groups).forEach(group => {
-      if (group.groupReceiver) {
-        message += `📋 Group Receiver: ${escapeHtml(group.groupReceiver)}\n`;
-        if (group.stockReceiver) {
-          message += `│    Stock Receiver: -${escapeHtml(group.stockReceiver)}\n`;
-        }
-      } else if (group.stockReceiver) {
-        message += `📋 Stock Receiver: ${escapeHtml(group.stockReceiver)}\n`;
-      } else {
-        message += `📋 Unassigned Team\n`;
-      }
+      message += `📋 Group Receiver: ${escapeHtml(group.groupReceiver)}\n`;
+      message += `│    Stock Receiver: -${escapeHtml(group.stockReceiver)}\n`;
       message += `┌─────────────────────────┐\n`;
       group.items.forEach(item => {
         const exportNo = item.exportNo || '-';
@@ -435,7 +415,7 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     // Group by Unit confirm handover
     const m3Groups = {};
     m3Items.forEach(item => {
-      const key = item.unitConfirm || item.warehouse || '-';
+      const key = item.unitConfirm || '-';
       if (!m3Groups[key]) {
         m3Groups[key] = [];
       }
