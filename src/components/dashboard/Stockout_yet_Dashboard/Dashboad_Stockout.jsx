@@ -617,7 +617,9 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       const canvas = await html2canvas(element, {
         useCORS: true,
         scale: 2,
-        backgroundColor: '#f8fafc'
+        backgroundColor: '#f8fafc',
+        width: 750,
+        height: element.offsetHeight || 500
       });
       
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -734,7 +736,9 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           const canvas = await html2canvas(element, {
             useCORS: true,
             scale: 2,
-            backgroundColor: '#f8fafc'
+            backgroundColor: '#f8fafc',
+            width: 750,
+            height: element.offsetHeight || 500
           });
           
           const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -1391,10 +1395,13 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           <div 
             id="telegram-screenshot-report" 
             style={{ 
-              position: 'fixed', 
-              left: '-9999px', 
+              position: 'absolute', 
+              left: '0', 
               top: '0', 
+              zIndex: -9999,
+              pointerEvents: 'none',
               width: '750px', 
+              minHeight: '500px',
               background: '#f8fafc', 
               padding: '28px',
               fontFamily: 'Inter, system-ui, sans-serif'
@@ -1544,10 +1551,13 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
             <div 
               id="telegram-screenshot-report" 
               style={{ 
-                position: 'fixed', 
-                left: '-9999px', 
+                position: 'absolute', 
+                left: '0', 
                 top: '0', 
+                zIndex: -9999,
+                pointerEvents: 'none',
                 width: '750px', 
+                minHeight: '500px',
                 background: '#f8fafc', 
                 padding: '28px',
                 fontFamily: 'Inter, system-ui, sans-serif'
