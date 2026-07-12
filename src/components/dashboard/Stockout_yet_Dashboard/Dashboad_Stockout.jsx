@@ -593,7 +593,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           minHeight: '500px',
           background: '#f8fafc', 
           padding: '28px',
-          fontFamily: 'Inter, system-ui, sans-serif'
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
         }}
       >
         {/* Main Banner */}
@@ -665,35 +665,35 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
             <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
               <table className="min-w-full text-left border-collapse table-fixed">
                 <thead>
-                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[10px] font-bold border-b border-slate-200">
-                    <th className="border-r border-slate-200 px-2 py-1.5 text-center w-[30px]">#</th>
-                    <th className="border-r border-slate-200 px-2 py-1.5 w-[110px]">Warehouse Stock out</th>
-                    <th className="border-r border-slate-200 px-2 py-1.5 w-[115px]">Export No</th>
-                    <th className="border-r border-slate-200 px-2 py-1.5 w-[75px] text-center">Date</th>
-                    <th className="border-r border-slate-200 px-2 py-1.5 w-[90px]">Stock Receiver</th>
-                    <th className="border-r border-slate-200 px-2 py-1.5 w-[90px]">Group Receiver</th>
-                    <th className="border-r border-slate-200 px-2 py-1.5 w-[150px]">Construction</th>
-                    <th className="border-r border-slate-200 px-2 py-1.5 w-[45px] text-center">Unit</th>
-                    <th className="border-r border-slate-200 px-2 py-1.5 w-[50px] text-center">Days</th>
-                    <th className="px-2 py-1.5 text-center w-[40px]">Action</th>
+                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-800 text-[10px] font-black border-b border-slate-200">
+                    <th className="border-r border-slate-200 px-2 py-1.5 text-center w-[30px] font-extrabold uppercase">#</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[110px] font-black uppercase">Warehouse Stock out</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[115px] font-black uppercase">Export No</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[75px] text-center font-black uppercase">Date</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[90px] font-black uppercase">Stock Receiver</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[90px] font-black uppercase">Group Receiver</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[150px] font-black uppercase">Construction</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[45px] text-center font-black uppercase">Unit</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[50px] text-center font-black uppercase">Days</th>
+                    <th className="px-2 py-1.5 text-center w-[40px] font-black uppercase">Action</th>
                   </tr>
                 </thead>
-                <tbody className="text-[9.5px] text-slate-600 divide-y divide-slate-100">
+                <tbody className="text-[9.5px] text-slate-800 font-medium divide-y divide-slate-100">
                   {sortedM1.map((item, index) => (
                     <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
-                      <td className="border-r border-slate-100 px-2 py-1.5 text-center font-semibold text-slate-400">{index + 1}</td>
-                      <td className="border-r border-slate-100 px-2 py-1.5 font-mono text-slate-700 truncate max-w-[110px]" title={item.exportCode}>{item.exportCode || '-'}</td>
-                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-800 tracking-tight font-mono">{item.exportNo}</td>
-                      <td className="border-r border-slate-100 px-2 py-1.5 font-mono text-slate-500 text-center">{item.realExport || '-'}</td>
-                      <td className="border-r border-slate-100 px-2 py-1.5 font-medium truncate max-w-[90px] text-slate-500" title={item.stockReceiver}>{cleanWarehouseName(item.stockReceiver || '-')}</td>
-                      <td className="border-r border-slate-100 px-2 py-1.5 font-medium truncate max-w-[90px] text-slate-500" title={item.groupReceiver}>{cleanWarehouseName(item.groupReceiver || '-')}</td>
-                      <td className="border-r border-slate-100 px-2 py-1.5 text-slate-500 truncate max-w-[150px] font-mono text-[9px]" title={item.constructionReceiver}>{item.constructionReceiver || '-'}</td>
-                      <td className="border-r border-slate-100 px-2 py-1.5 text-center font-bold">
-                        <span className="bg-indigo-50 text-indigo-700 px-1 rounded border border-indigo-100 text-[8.5px] inline-block">{item.unit || '-'}</span>
+                      <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold text-slate-500">{index + 1}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-800 font-mono truncate max-w-[110px]" title={item.exportCode}>{item.exportCode || '-'}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-black text-slate-900 tracking-tight font-mono">{item.exportNo}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-700 font-mono text-center">{item.realExport || '-'}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold truncate max-w-[90px] text-slate-800" title={item.stockReceiver}>{cleanWarehouseName(item.stockReceiver || '-')}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold truncate max-w-[90px] text-slate-800" title={item.groupReceiver}>{cleanWarehouseName(item.groupReceiver || '-')}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 text-slate-700 font-bold truncate max-w-[150px] font-mono text-[9px]" title={item.constructionReceiver}>{item.constructionReceiver || '-'}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">
+                        <span className="bg-indigo-50 text-indigo-800 px-1 rounded border border-indigo-100 text-[8.5px] inline-block font-black">{item.unit || '-'}</span>
                       </td>
                       <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
                       <td className="px-2 py-1.5 text-center">
-                        <span className="text-emerald-600 font-bold text-xs">✅</span>
+                        <span className="text-emerald-600 font-black text-xs">✅</span>
                       </td>
                     </tr>
                   ))}
@@ -822,13 +822,13 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       }
       
       const offsetHeight = element.offsetHeight || 500;
-      // Calculate max scale to keep sum of width + height under 9600px for Telegram
-      const maxTelegramScale = 9600 / (850 + offsetHeight);
-      const dynamicScale = Math.min(3, Math.max(1.5, maxTelegramScale));
+      let scale = 3.0;
+      if (offsetHeight > 1800) scale = 2.0;
+      else if (offsetHeight > 1200) scale = 2.5;
 
       const canvas = await html2canvas(element, {
         useCORS: true,
-        scale: dynamicScale,
+        scale: scale,
         backgroundColor: '#f8fafc',
         width: 850,
         height: offsetHeight,
@@ -968,12 +968,13 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           }
           
           const offsetHeight = element.offsetHeight || 500;
-          const maxTelegramScale = 9600 / (850 + offsetHeight);
-          const dynamicScale = Math.min(3, Math.max(1.5, maxTelegramScale));
+          let scale = 3.0;
+          if (offsetHeight > 1800) scale = 2.0;
+          else if (offsetHeight > 1200) scale = 2.5;
 
           const canvas = await html2canvas(element, {
             useCORS: true,
-            scale: dynamicScale,
+            scale: scale,
             backgroundColor: '#f8fafc',
             width: 850,
             height: offsetHeight,
