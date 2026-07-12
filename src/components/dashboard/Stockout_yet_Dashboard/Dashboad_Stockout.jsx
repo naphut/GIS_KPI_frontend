@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import html2canvas from 'html2canvas';
 import Navbar from '../../common/Navbar';
 import Sidebar from '../../common/Sidebar';
@@ -12,7 +13,8 @@ import {
   hasToken,
   getSavedTemplates,
   saveTemplate,
-  deleteTemplate
+  deleteTemplate,
+  cleanWarehouseName
 } from '../../../services/telegramBot';
 import NO_CREATE_HAND_OVER from '../../../Page/Stockout_yet/NO_CREATE_HAND_OVER';
 import { loadFromDb } from '../../../services/dbStore';
@@ -582,6 +584,239 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     return data.units[unit]?.m3Items || [];
   };
 
+  const renderScreenshotReport = () => {
+    if (!screenshotUnit) return null;
+    
+    const m1Items = getUnitM1Items(screenshotUnit);
+    const m2Items = getUnitM2Items(screenshotUnit);
+    const m3Items = getUnitM3Items(screenshotUnit);
+    
+    // Sort items for readability
+    const sortedM1 = [...m1Items].sort((a, b) => {
+      const groupA = a.groupReceiver || '';
+      const groupB = b.groupReceiver || '';
+      return groupA.localeCompare(groupB);
+    });
+
+    const sortedM2 = [...m2Items].sort((a, b) => {
+      const recA = a.recipient || '';
+      const recB = b.recipient || '';
+      return recA.localeCompare(recB);
+    });
+
+    const sortedM3 = [...m3Items].sort((a, b) => {
+      const ucA = a.unitConfirm || '';
+      const ucB = b.unitConfirm || '';
+      return ucA.localeCompare(ucB);
+    });
+
+    // Color-coded delay badges
+    const getDelayBadge = (days) => {
+      const num = parseInt(days) || 0;
+      if (num >= 5) {
+        return <span className="bg-rose-50 text-rose-700 border border-rose-100 font-extrabold px-2 py-0.5 rounded text-[10px] inline-block text-center min-w-[30px]">+{num}d</span>;
+      } else if (num >= 3) {
+        return <span className="bg-amber-50 text-amber-700 border border-amber-100 font-bold px-2 py-0.5 rounded text-[10px] inline-block text-center min-w-[30px]">+{num}d</span>;
+      } else {
+        return <span className="bg-slate-50 text-slate-600 border border-slate-100 px-2 py-0.5 rounded text-[10px] inline-block text-center min-w-[30px]">+{num}d</span>;
+      }
+    };
+
+    return (
+      <div 
+        id="telegram-screenshot-report" 
+        style={{ 
+          position: 'absolute', 
+          left: '0', 
+          top: '0', 
+          zIndex: -9999,
+          pointerEvents: 'none',
+          width: '750px', 
+          minHeight: '500px',
+          background: '#f8fafc', 
+          padding: '28px',
+          fontFamily: 'Inter, system-ui, sans-serif'
+        }}
+      >
+        {/* Main Banner */}
+        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 rounded-3xl p-6 text-white shadow-lg mb-6 relative overflow-hidden">
+          <div className="absolute right-0 top-0 bottom-0 opacity-10 pointer-events-none flex items-center pr-8">
+            <svg width="180" height="180" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          </div>
+          <div className="flex justify-between items-center relative z-10">
+            <div>
+              <h1 className="text-[22px] font-black tracking-tight uppercase">CONFIRMED HAND OVER REPORT</h1>
+              <p className="text-xs opacity-90 mt-1 flex items-center gap-1.5">
+                <span>📍 Branch/Unit:</span>
+                <span className="bg-white/20 px-2.5 py-0.5 rounded-full font-bold text-sm">{screenshotUnit}</span>
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] opacity-75 uppercase font-bold tracking-wider">Report Generated</div>
+              <div className="text-sm font-bold mt-0.5">{new Date().toLocaleDateString('en-GB')}</div>
+              <div className="text-xs opacity-90 font-medium">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard Metrics Grid */}
+        <div className="grid grid-cols-6 gap-3 mb-6">
+          <div className="bg-white border border-blue-100 rounded-2xl p-3 shadow-xs text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500"></div>
+            <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide">🌅 Target ព្រឹក</div>
+            <div className="text-lg font-black text-blue-600 mt-1">{getUnitTotals(screenshotUnit).targetMorning}</div>
+          </div>
+          <div className="bg-white border border-indigo-100 rounded-2xl p-3 shadow-xs text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-indigo-500"></div>
+            <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide">🌙 Target ល្ងាច</div>
+            <div className="text-lg font-black text-indigo-600 mt-1">{getUnitTotals(screenshotUnit).targetEvening}</div>
+          </div>
+          <div className="bg-white border border-emerald-100 rounded-2xl p-3 shadow-xs text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500"></div>
+            <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide">✅ Result</div>
+            <div className="text-lg font-black text-emerald-600 mt-1">{getUnitTotals(screenshotUnit).result}</div>
+          </div>
+          <div className="bg-white border border-amber-100 rounded-2xl p-3 shadow-xs text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500"></div>
+            <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide">📋 Remain</div>
+            <div className="text-lg font-black text-amber-600 mt-1">{getUnitTotals(screenshotUnit).remain}</div>
+          </div>
+          <div className="bg-white border border-purple-100 rounded-2xl p-3 shadow-xs text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-purple-500"></div>
+            <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide">📊 Ratio</div>
+            <div className="text-lg font-black text-purple-600 mt-1">{getUnitTotals(screenshotUnit).ratio}%</div>
+          </div>
+          <div className="bg-white border border-cyan-100 rounded-2xl p-3 shadow-xs text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-cyan-500"></div>
+            <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-wide">📦 In System</div>
+            <div className="text-lg font-black text-cyan-600 mt-1">{getUnitTotals(screenshotUnit).inSystem}</div>
+          </div>
+        </div>
+
+        {/* Module 1 Table */}
+        <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+          <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
+            <span className="flex items-center gap-2 text-slate-700">📦 1. STOCKOUT YET CONFIRM</span>
+            <span className={m1Items.length === 0 ? "text-emerald-600 font-extrabold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100" : "text-amber-700 font-extrabold text-xs bg-amber-50 px-3 py-1 rounded-full border border-amber-100"}>
+              {m1Items.length === 0 ? "✅ Completed" : `📋 ${m1Items.length} Items`}
+            </span>
+          </h3>
+          {m1Items.length > 0 ? (
+            <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
+              <table className="min-w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[11px] font-bold border-b border-slate-200">
+                    <th className="border-r border-slate-200 px-3 py-2 text-center w-12">ល.រ</th>
+                    <th className="border-r border-slate-200 px-3 py-2">Export No</th>
+                    <th className="border-r border-slate-200 px-3 py-2">Group Receiver</th>
+                    <th className="border-r border-slate-200 px-3 py-2">Stock Receiver</th>
+                    <th className="px-3 py-2 text-center w-22">ចំនួនថ្ងៃ ⚠️</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[10.5px] text-slate-600 divide-y divide-slate-100">
+                  {sortedM1.map((item, index) => (
+                    <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
+                      <td className="border-r border-slate-100 px-3 py-1.5 text-center font-semibold text-slate-400">{index + 1}</td>
+                      <td className="border-r border-slate-100 px-3 py-1.5 font-bold text-slate-800 tracking-tight">{item.exportNo}</td>
+                      <td className="border-r border-slate-100 px-3 py-1.5 font-medium truncate max-w-[140px] text-slate-500">{cleanWarehouseName(item.groupReceiver || '-')}</td>
+                      <td className="border-r border-slate-100 px-3 py-1.5 truncate max-w-[170px] text-slate-500">{cleanWarehouseName(item.stockReceiver || item.warehouse || '-')}</td>
+                      <td className="px-3 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl py-5 text-center text-emerald-600 font-bold text-xs flex flex-col items-center gap-1.5">
+              <span>🎉 All items cleared!</span>
+              <span className="text-[10px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
+            </div>
+          )}
+        </div>
+
+        {/* Module 2 Table */}
+        <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+          <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
+            <span className="flex items-center gap-2 text-slate-700">📝 2. NO CREATE HAND OVER</span>
+            <span className={m2Items.length === 0 ? "text-emerald-600 font-extrabold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100" : "text-blue-700 font-extrabold text-xs bg-blue-50 px-3 py-1 rounded-full border border-blue-100"}>
+              {m2Items.length === 0 ? "✅ Completed" : `📋 ${m2Items.length} Items`}
+            </span>
+          </h3>
+          {m2Items.length > 0 ? (
+            <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
+              <table className="min-w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[11px] font-bold border-b border-slate-200">
+                    <th className="border-r border-slate-200 px-3 py-2 text-center w-12">ល.រ</th>
+                    <th className="border-r border-slate-200 px-3 py-2">Code</th>
+                    <th className="border-r border-slate-200 px-3 py-2">Recipient</th>
+                    <th className="px-3 py-2 text-center w-22">ចំនួនថ្ងៃ ⚠️</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[10.5px] text-slate-600 divide-y divide-slate-100">
+                  {sortedM2.map((item, index) => (
+                    <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
+                      <td className="border-r border-slate-100 px-3 py-1.5 text-center font-semibold text-slate-400">{index + 1}</td>
+                      <td className="border-r border-slate-100 px-3 py-1.5 font-bold text-slate-800 tracking-tight">{item.code}</td>
+                      <td className="border-r border-slate-100 px-3 py-1.5 font-medium truncate max-w-[240px] text-slate-500">{cleanWarehouseName(item.recipient || '-')}</td>
+                      <td className="px-3 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl py-5 text-center text-emerald-600 font-bold text-xs flex flex-col items-center gap-1.5">
+              <span>🎉 All items cleared!</span>
+              <span className="text-[10px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
+            </div>
+          )}
+        </div>
+
+        {/* Module 3 Table */}
+        <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm">
+          <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
+            <span className="flex items-center gap-2 text-slate-700">⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED</span>
+            <span className={m3Items.length === 0 ? "text-emerald-600 font-extrabold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100" : "text-rose-700 font-extrabold text-xs bg-rose-50 px-3 py-1 rounded-full border border-rose-100"}>
+              {m3Items.length === 0 ? "✅ Completed" : `📋 ${m3Items.length} Items`}
+            </span>
+          </h3>
+          {m3Items.length > 0 ? (
+            <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
+              <table className="min-w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[11px] font-bold border-b border-slate-200">
+                    <th className="border-r border-slate-200 px-3 py-2 text-center w-12">ល.រ</th>
+                    <th className="border-r border-slate-200 px-3 py-2">Code</th>
+                    <th className="border-r border-slate-200 px-3 py-2">Unit Confirm Handover</th>
+                    <th className="px-3 py-2 text-center w-22">ចំនួនថ្ងៃ ⚠️</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[10.5px] text-slate-600 divide-y divide-slate-100">
+                  {sortedM3.map((item, index) => (
+                    <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
+                      <td className="border-r border-slate-100 px-3 py-1.5 text-center font-semibold text-slate-400">{index + 1}</td>
+                      <td className="border-r border-slate-100 px-3 py-1.5 font-bold text-slate-800 tracking-tight">{item.code}</td>
+                      <td className="border-r border-slate-100 px-3 py-1.5 font-medium truncate max-w-[240px] text-slate-500">{cleanWarehouseName(item.unitConfirm || '-')}</td>
+                      <td className="px-3 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl py-5 text-center text-emerald-600 font-bold text-xs flex flex-col items-center gap-1.5">
+              <span>🎉 All items cleared!</span>
+              <span className="text-[10px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Send single unit screenshot
   const sendReportToTelegramScreenshot = async (unit) => {
     if (isSending) return;
@@ -614,15 +849,42 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         throw new Error('Screenshot element not found in DOM');
       }
       
+      const offsetHeight = element.offsetHeight || 500;
+      // Calculate max scale to keep sum of width + height under 9600px for Telegram
+      const maxTelegramScale = 9600 / (750 + offsetHeight);
+      const dynamicScale = Math.min(3, Math.max(1.5, maxTelegramScale));
+
       const canvas = await html2canvas(element, {
         useCORS: true,
-        scale: 2,
+        scale: dynamicScale,
         backgroundColor: '#f8fafc',
         width: 750,
-        height: element.offsetHeight || 500
+        height: offsetHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight,
+        logging: false,
+        onclone: (clonedDoc) => {
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            #telegram-screenshot-report * {
+              -webkit-font-smoothing: antialiased !important;
+              -moz-osx-font-smoothing: grayscale !important;
+              text-rendering: optimizeLegibility !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
       });
       
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      
+      console.log(`[Screenshot Debug] Element: ${element.offsetWidth}x${element.offsetHeight}, Canvas: ${canvas.width}x${canvas.height}, Blob: ${blob?.size || 0} bytes`);
+      
+      if (!blob || blob.size < 1000 || canvas.width < 100 || canvas.height < 100) {
+        throw new Error(`Invalid screenshot generated: Canvas=${canvas.width}x${canvas.height}, Blob=${blob?.size || 0} bytes. Element offset height is ${element.offsetHeight}px.`);
+      }
       
       const result = await sendPhotoToTelegram(
         unit, 
@@ -733,15 +995,39 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
             throw new Error('Screenshot element not found');
           }
           
+          const offsetHeight = element.offsetHeight || 500;
+          const maxTelegramScale = 9600 / (750 + offsetHeight);
+          const dynamicScale = Math.min(3, Math.max(1.5, maxTelegramScale));
+
           const canvas = await html2canvas(element, {
             useCORS: true,
-            scale: 2,
+            scale: dynamicScale,
             backgroundColor: '#f8fafc',
             width: 750,
-            height: element.offsetHeight || 500
+            height: offsetHeight,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: document.documentElement.offsetWidth,
+            windowHeight: document.documentElement.offsetHeight,
+            logging: false,
+            onclone: (clonedDoc) => {
+              const style = clonedDoc.createElement('style');
+              style.innerHTML = `
+                #telegram-screenshot-report * {
+                  -webkit-font-smoothing: antialiased !important;
+                  -moz-osx-font-smoothing: grayscale !important;
+                  text-rendering: optimizeLegibility !important;
+                }
+              `;
+              clonedDoc.head.appendChild(style);
+            }
           });
           
           const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          
+          if (!blob || blob.size < 1000 || canvas.width < 100 || canvas.height < 100) {
+            throw new Error(`Invalid screenshot generated for ${unit}: Canvas=${canvas.width}x${canvas.height}, Blob=${blob?.size || 0} bytes. Element offset height is ${element.offsetHeight}px.`);
+          }
           
           const result = await sendPhotoToTelegram(
             unit,
@@ -1390,150 +1676,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       <div key={selectedComponent} className="w-full bg-gray-50 min-h-screen animate-fadeIn">
         {renderComponent()}
         {renderProgressModal()}
-        {/* Hidden Screenshot Report Generator */}
-        {screenshotUnit && (
-          <div 
-            id="telegram-screenshot-report" 
-            style={{ 
-              position: 'absolute', 
-              left: '0', 
-              top: '0', 
-              zIndex: -9999,
-              pointerEvents: 'none',
-              width: '750px', 
-              minHeight: '500px',
-              background: '#f8fafc', 
-              padding: '28px',
-              fontFamily: 'Inter, system-ui, sans-serif'
-            }}
-          >
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 text-white shadow-xl mb-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">CONFIRMED HAND OVER REPORT</h1>
-                  <p className="text-sm opacity-90 mt-1">📍 Branch: <strong className="text-lg font-extrabold">{screenshotUnit}</strong></p>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs opacity-75">Date & Time</div>
-                  <div className="text-sm font-semibold">{new Date().toLocaleDateString('en-GB')}</div>
-                  <div className="text-sm font-semibold">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-6 gap-3 mb-6">
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                <div className="text-[10px] text-gray-400 font-bold uppercase">Target ព្រឹក</div>
-                <div className="text-lg font-extrabold text-blue-600 mt-1">{getUnitTotals(screenshotUnit).targetMorning}</div>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                <div className="text-[10px] text-gray-400 font-bold uppercase">Target ល្ងាច</div>
-                <div className="text-lg font-extrabold text-indigo-600 mt-1">{getUnitTotals(screenshotUnit).targetEvening}</div>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                <div className="text-[10px] text-gray-400 font-bold uppercase">Result</div>
-                <div className="text-lg font-extrabold text-emerald-600 mt-1">{getUnitTotals(screenshotUnit).result}</div>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                <div className="text-[10px] text-gray-400 font-bold uppercase">Remain</div>
-                <div className="text-lg font-extrabold text-amber-600 mt-1">{getUnitTotals(screenshotUnit).remain}</div>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                <div className="text-[10px] text-gray-400 font-bold uppercase">Ratio</div>
-                <div className="text-lg font-extrabold text-purple-600 mt-1">{getUnitTotals(screenshotUnit).ratio}%</div>
-              </div>
-              <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                <div className="text-[10px] text-gray-400 font-bold uppercase">In System</div>
-                <div className="text-lg font-extrabold text-cyan-600 mt-1">{getUnitTotals(screenshotUnit).inSystem}</div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
-              <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
-                <span className="flex items-center gap-2">📦 1. STOCKOUT YET CONFIRM</span>
-                <span className={getUnitM1Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
-                  {getUnitM1Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM1Items(screenshotUnit).length} Items`}
-                </span>
-              </h3>
-              {getUnitM1Items(screenshotUnit).length > 0 ? (
-                <div className="mt-3 space-y-3">
-                  {Object.values(getM1Groups(getUnitM1Items(screenshotUnit))).map((group, idx) => (
-                    <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                      <div className="text-xs font-semibold text-gray-700">📋 Group Receiver: {group.groupReceiver}</div>
-                      <div className="text-[11px] text-gray-500 mt-0.5">Stock Receiver: {group.stockReceiver}</div>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        {group.items.map((item, i) => (
-                          <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2 text-[10px] flex justify-between items-center shadow-xs">
-                            <span className="font-medium text-slate-600">{item.exportNo}</span>
-                            <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-bold">+{item.daysDiff}d</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
-              )}
-            </div>
-
-            <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
-              <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
-                <span className="flex items-center gap-2">📝 2. NO CREATE HAND OVER</span>
-                <span className={getUnitM2Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
-                  {getUnitM2Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM2Items(screenshotUnit).length} Items`}
-                </span>
-              </h3>
-              {getUnitM2Items(screenshotUnit).length > 0 ? (
-                <div className="mt-3 space-y-3">
-                  {Object.entries(getM2Groups(getUnitM2Items(screenshotUnit))).map(([recipient, items], idx) => (
-                    <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                      <div className="text-xs font-semibold text-gray-700">👤 Recipient: {recipient}</div>
-                      <div className="mt-2 space-y-1.5">
-                        {items.map((item, i) => (
-                          <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2.5 text-[10px] flex justify-between items-center shadow-xs">
-                            <span className="font-medium text-slate-600 truncate max-w-[280px]">{item.code}</span>
-                            <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md font-bold">Qty of Day: {item.daysDiff}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
-              )}
-            </div>
-
-            <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm">
-              <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
-                <span className="flex items-center gap-2">⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED</span>
-                <span className={getUnitM3Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
-                  {getUnitM3Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM3Items(screenshotUnit).length} Items`}
-                </span>
-              </h3>
-              {getUnitM3Items(screenshotUnit).length > 0 ? (
-                <div className="mt-3 space-y-3">
-                  {Object.entries(getM3Groups(getUnitM3Items(screenshotUnit))).map(([unitConfirm, items], idx) => (
-                    <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                      <div className="text-xs font-semibold text-gray-700">🏢 Unit confirm handover: {unitConfirm}</div>
-                      <div className="mt-2 space-y-1.5">
-                        {items.map((item, i) => (
-                          <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2.5 text-[10px] flex justify-between items-center shadow-xs">
-                            <span className="font-medium text-slate-600 truncate max-w-[280px]">{item.code}</span>
-                            <span className="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-md font-bold">+{item.daysDiff} days</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
-              )}
-            </div>
-          </div>
-        )}
+        {createPortal(renderScreenshotReport(), document.body)}
       </div>
     );
   }
@@ -1546,152 +1689,9 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         <main key={selectedComponent} className="flex-1 overflow-y-auto bg-gray-50 animate-fadeIn">
           {renderComponent()}
           {renderProgressModal()}
-          {/* Hidden Screenshot Report Generator */}
-          {screenshotUnit && (
-            <div 
-              id="telegram-screenshot-report" 
-              style={{ 
-                position: 'absolute', 
-                left: '0', 
-                top: '0', 
-                zIndex: -9999,
-                pointerEvents: 'none',
-                width: '750px', 
-                minHeight: '500px',
-                background: '#f8fafc', 
-                padding: '28px',
-                fontFamily: 'Inter, system-ui, sans-serif'
-              }}
-            >
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-6 text-white shadow-xl mb-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-tight">CONFIRMED HAND OVER REPORT</h1>
-                    <p className="text-sm opacity-90 mt-1">📍 Branch: <strong className="text-lg font-extrabold">{screenshotUnit}</strong></p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs opacity-75">Date & Time</div>
-                    <div className="text-sm font-semibold">{new Date().toLocaleDateString('en-GB')}</div>
-                    <div className="text-sm font-semibold">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-6 gap-3 mb-6">
-                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                  <div className="text-[10px] text-gray-400 font-bold uppercase">Target ព្រឹក</div>
-                  <div className="text-lg font-extrabold text-blue-600 mt-1">{getUnitTotals(screenshotUnit).targetMorning}</div>
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                  <div className="text-[10px] text-gray-400 font-bold uppercase">Target ល្ងាច</div>
-                  <div className="text-lg font-extrabold text-indigo-600 mt-1">{getUnitTotals(screenshotUnit).targetEvening}</div>
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                  <div className="text-[10px] text-gray-400 font-bold uppercase">Result</div>
-                  <div className="text-lg font-extrabold text-emerald-600 mt-1">{getUnitTotals(screenshotUnit).result}</div>
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                  <div className="text-[10px] text-gray-400 font-bold uppercase">Remain</div>
-                  <div className="text-lg font-extrabold text-amber-600 mt-1">{getUnitTotals(screenshotUnit).remain}</div>
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                  <div className="text-[10px] text-gray-400 font-bold uppercase">Ratio</div>
-                  <div className="text-lg font-extrabold text-purple-600 mt-1">{getUnitTotals(screenshotUnit).ratio}%</div>
-                </div>
-                <div className="bg-white border border-gray-100 rounded-2xl p-3 shadow-sm text-center">
-                  <div className="text-[10px] text-gray-400 font-bold uppercase">In System</div>
-                  <div className="text-lg font-extrabold text-cyan-600 mt-1">{getUnitTotals(screenshotUnit).inSystem}</div>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
-                <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
-                  <span className="flex items-center gap-2">📦 1. STOCKOUT YET CONFIRM</span>
-                  <span className={getUnitM1Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
-                    {getUnitM1Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM1Items(screenshotUnit).length} Items`}
-                  </span>
-                </h3>
-                {getUnitM1Items(screenshotUnit).length > 0 ? (
-                  <div className="mt-3 space-y-3">
-                    {Object.values(getM1Groups(getUnitM1Items(screenshotUnit))).map((group, idx) => (
-                      <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                        <div className="text-xs font-semibold text-gray-700">📋 Group Receiver: {group.groupReceiver}</div>
-                        <div className="text-[11px] text-gray-500 mt-0.5">Stock Receiver: {group.stockReceiver}</div>
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                          {group.items.map((item, i) => (
-                            <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2 text-[10px] flex justify-between items-center shadow-xs">
-                              <span className="font-medium text-slate-600">{item.exportNo}</span>
-                              <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-md font-bold">+{item.daysDiff}d</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
-                )}
-              </div>
-
-              <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
-                <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
-                  <span className="flex items-center gap-2">📝 2. NO CREATE HAND OVER</span>
-                  <span className={getUnitM2Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
-                    {getUnitM2Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM2Items(screenshotUnit).length} Items`}
-                  </span>
-                </h3>
-                {getUnitM2Items(screenshotUnit).length > 0 ? (
-                  <div className="mt-3 space-y-3">
-                    {Object.entries(getM2Groups(getUnitM2Items(screenshotUnit))).map(([recipient, items], idx) => (
-                      <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                        <div className="text-xs font-semibold text-gray-700">👤 Recipient: {recipient}</div>
-                        <div className="mt-2 space-y-1.5">
-                          {items.map((item, i) => (
-                            <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2.5 text-[10px] flex justify-between items-center shadow-xs">
-                              <span className="font-medium text-slate-600 truncate max-w-[280px]">{item.code}</span>
-                              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md font-bold">Qty of Day: {item.daysDiff}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
-                )}
-              </div>
-
-              <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100">
-                  <span className="flex items-center gap-2">⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED</span>
-                  <span className={getUnitM3Items(screenshotUnit).length === 0 ? "text-emerald-500 font-bold text-xs bg-emerald-50 px-2.5 py-1 rounded-full" : "text-amber-500 font-bold text-xs bg-amber-50 px-2.5 py-1 rounded-full"}>
-                    {getUnitM3Items(screenshotUnit).length === 0 ? "✅ Completed" : `📋 ${getUnitM3Items(screenshotUnit).length} Items`}
-                  </span>
-                </h3>
-                {getUnitM3Items(screenshotUnit).length > 0 ? (
-                  <div className="mt-3 space-y-3">
-                    {Object.entries(getM3Groups(getUnitM3Items(screenshotUnit))).map(([unitConfirm, items], idx) => (
-                      <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                        <div className="text-xs font-semibold text-gray-700">🏢 Unit confirm handover: {unitConfirm}</div>
-                        <div className="mt-2 space-y-1.5">
-                          {items.map((item, i) => (
-                            <div key={i} className="bg-white border border-slate-200/50 rounded-xl p-2.5 text-[10px] flex justify-between items-center shadow-xs">
-                              <span className="font-medium text-slate-600 truncate max-w-[280px]">{item.code}</span>
-                              <span className="bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded-md font-bold">+{item.daysDiff} days</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-center text-gray-400 py-3">🎉 All items cleared!</div>
-                )}
-              </div>
-            </div>
-          )}
         </main>
       </div>
+      {createPortal(renderScreenshotReport(), document.body)}
     </div>
   );
 };

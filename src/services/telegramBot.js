@@ -14,31 +14,31 @@ const DEFAULT_TOKEN = '8571996109:AAHiDszOTGk4uEnb0iPKcnNXlGoTSE7K740';
 
 // Group IDs for each province
 const GROUP_IDS = {
-  BAN: "-1003815749201",
-  BAT: "-1004928617538",
-  CHA: "-1002154876394",
-  CHH: "-1006739281540",
-  KAM: "-1005481736291",
-  KAN: "-1001847263950",
-  KANZ1: "-1009154376284",
-  KOH: "-1003278516492",
-  KRA: "-1007845219360",
-  MON: "-1004692185731",
-  ODD: "-1008516372945",
-  PNP: "-5359041682",
-  PNPZ1: "-1006924158730",
-  PNPZ2: "-1004137892651",
-  PRE: "-1001578263948",
-  PRH: "-1007264915382",
-  PUR: "-1003849157260",
-  ROT: "-1005972384619",
-  SIE: "-1008437612954",
-  SIH: "-1002169547381",
-  SPE: "-1007358194620",
-  STU: "-1009514826375",
-  SVA: "-1004726391580",
-  TAK: "-1006841952734",
-  THO: "-1003297486159",
+  'BAN': '-4064404599',
+  'BAT': '-4040029628',
+  'CHA': '-4049172108',
+  'CHH': '-4051031281',
+  'KAM': '-4095493891',
+  'KAN': '-972214275',
+  'KANZ1': '-4660884501',
+  'KOH': '-4040314167',
+  'KRA': '-4043528749',
+  'MON': '-4098682856',
+  'ODD': '-916660446',
+  'PNP': '-908517536',
+  'PNPZ1': '-1002524347910',
+  'PNPZ2': '-1002766967718',
+'PRE': '-4041390598',
+  'PRH': '-4012609247',
+  'PUR': '-4056509295',
+  'ROT': '-4085028170',
+  'SIE': '-4033369254',
+  'SIH': '-4011071980',
+  'SPE': '-4022650547',
+  'STU': '-4037945549',
+  'SVA': '-4076297232',
+  'TAK': '-1002222222223',
+  'THO': '-4075992457',
 };
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
@@ -89,6 +89,34 @@ const calculateDaysDiff = (dateString) => {
   } catch (e) {
     return 0;
   }
+};
+
+// Clean and format warehouse/recipient names to GIS_{PROV}_SOSTEAM{xx}
+export const cleanWarehouseName = (name) => {
+  if (!name || name === '-') return '-';
+  if (typeof name !== 'string') name = String(name);
+  
+  const trimmed = name.trim();
+  
+  // Pattern 1: GIS_PROV_..._SOSTEAMxx or GIS_PROV_..._SOS_TEAMxx
+  const regexRotational = /^GIS_([A-Z]{3})_.*_SOS_?TEAM(\d+)$/i;
+  const match = trimmed.match(regexRotational);
+  if (match) {
+    const province = match[1].toUpperCase();
+    const teamNum = match[2];
+    return `GIS_${province}_SOSTEAM${teamNum}`;
+  }
+
+  // Pattern 2: GIS_PROV_SOSTEAMxx (without middle part)
+  const regexSimple = /^GIS_([A-Z]{3})_SOS_?TEAM(\d+)$/i;
+  const matchSimple = trimmed.match(regexSimple);
+  if (matchSimple) {
+    const province = matchSimple[1].toUpperCase();
+    const teamNum = matchSimple[2];
+    return `GIS_${province}_SOSTEAM${teamNum}`;
+  }
+
+  return trimmed;
 };
 
 // ============================================================
@@ -336,19 +364,16 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
 
   let message = `📊 <b>📋 CONFIRMED HAND OVER REPORT</b>\n`;
   message += `📍 <b>BRANCH</b> : ${unit}\n`;
-  message += `🕐 <b>TIME</b>   : ${time}\n`;
-  message += `📅 <b>DATE</b>   : ${date}\n`;
+  message += `Time: ${time} | Date: ${date}\n`;
   message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
   message += `📈 <b>📊 OVERALL KPI SUMMARY</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🌅 Target ព្រឹក  : ${targetMorning}\n`;
-  message += `│ 🌙 Target ល្ងាច : ${targetEvening}\n`;
-  message += `│ ✅ Result       : ${totalResult}\n`;
-  message += `│ 📋 Remain      : ${totalRemain}\n`;
-  message += `│ 📊 Ratio       : ${typeof totalRatio === 'number' ? totalRatio.toFixed(1) : totalRatio}%\n`;
-  message += `│ 📦 In System   : ${totalInSystem}\n`;
-  message += `└─────────────────────────┘\n`;
+  message += `<code>`;
+  message += `🌅 Target ព្រឹក  : ${String(targetMorning).padEnd(6)} | 🌙 Target ល្ងាច : ${targetEvening}\n`;
+  message += `✅ Result       : ${String(totalResult).padEnd(6)} | 📋 Remain      : ${totalRemain}\n`;
+  message += `📊 Ratio       : ${String((typeof totalRatio === 'number' ? totalRatio.toFixed(1) : totalRatio) + '%').padEnd(6)} | 📦 In System   : ${totalInSystem}\n`;
+  message += `</code>`;
+  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
   // Module 1
   message += `<b>📦 1. STOCKOUT YET CONFIRM│ ${m1Items.length === 0 ? '✅' : '📋'}</b>\n`;
@@ -356,8 +381,9 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     // Group by Group Receiver + Stock Receiver
     const m1Groups = {};
     m1Items.forEach(item => {
-      const stockRec = item.stockReceiver || item.warehouse || '-';
-      const groupRec = item.groupReceiver || '-';
+      const rawStockRec = item.stockReceiver || item.warehouse || '-';
+      const stockRec = cleanWarehouseName(rawStockRec);
+      const groupRec = cleanWarehouseName(item.groupReceiver || '-');
       const key = `${groupRec}_${stockRec}`;
       if (!m1Groups[key]) {
         m1Groups[key] = {
@@ -370,27 +396,22 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     });
 
     Object.values(m1Groups).forEach(group => {
-      message += `📋 Group Receiver: ${escapeHtml(group.groupReceiver)}\n`;
-      message += `│    Stock Receiver: -${escapeHtml(group.stockReceiver)}\n`;
-      message += `┌─────────────────────────┐\n`;
-      group.items.forEach(item => {
+      message += `[SPLIT]📋 Rec: ${escapeHtml(group.groupReceiver)} / Stock: ${escapeHtml(group.stockReceiver)}\n`;
+      group.items.forEach((item, index) => {
         const exportNo = item.exportNo || '-';
         const days = item.daysDiff || 0;
-        message += `│    Export No: ${escapeHtml(exportNo)}\n`;
-        message += `│   └─  Days: ${days} days\n`;
+        message += `  ${index + 1}. <code>${escapeHtml(exportNo)}</code> (${days}d)\n`;
       });
-      message += `└─────────────────────────┘\n`;
     });
   }
-  message += `\n`;
 
   // Module 2
-  message += `<b>📝 2. NO CREATE HAND OVER│ ${m2Items.length === 0 ? '✅' : '📋'}</b>\n`;
+  message += `\n<b>📝 2. NO CREATE HAND OVER│ ${m2Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m2Items.length > 0) {
     // Group by Recipient
     const m2Groups = {};
     m2Items.forEach(item => {
-      const key = item.recipient || '-';
+      const key = cleanWarehouseName(item.recipient || '-');
       if (!m2Groups[key]) {
         m2Groups[key] = [];
       }
@@ -398,24 +419,20 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     });
 
     Object.entries(m2Groups).forEach(([recipient, items]) => {
-      message += `Recipient: ${escapeHtml(recipient)}\n`;
-      message += `┌─────────────────────────┐\n`;
+      message += `[SPLIT]👤 Recipient: ${escapeHtml(recipient)}\n`;
       items.forEach((item, index) => {
-        message += `│ ${index + 1}. ${escapeHtml(item.code || '-')}\n`;
-        message += `│ └─ Q'ty of Day: ${item.daysDiff || 0}\n`;
+        message += `  ${index + 1}. <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d)\n`;
       });
-      message += `└─────────────────────────┘\n`;
     });
   }
-  message += `\n`;
 
   // Module 3
-  message += `<b>⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED│ ${m3Items.length === 0 ? '✅' : '📋'}</b>\n`;
+  message += `\n<b>⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED│ ${m3Items.length === 0 ? '✅' : '📋'}</b>\n`;
   if (m3Items.length > 0) {
     // Group by Unit confirm handover
     const m3Groups = {};
     m3Items.forEach(item => {
-      const key = item.unitConfirm || '-';
+      const key = cleanWarehouseName(item.unitConfirm || '-');
       if (!m3Groups[key]) {
         m3Groups[key] = [];
       }
@@ -423,20 +440,16 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
     });
 
     Object.entries(m3Groups).forEach(([unitConfirm, items]) => {
-      message += `Unit confirm handover: ${escapeHtml(unitConfirm)}\n`;
-      message += `┌─────────────────────────┐\n`;
+      message += `[SPLIT]🏢 Confirm Unit: ${escapeHtml(unitConfirm)}\n`;
       items.forEach((item, index) => {
-        message += `│ ${index + 1}. Code: ${escapeHtml(item.code || '-')}\n`;
-        message += `│    └─ Days: ${item.daysDiff || 0} days\n`;
+        message += `  ${index + 1}. <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d)\n`;
       });
-      message += `└─────────────────────────┘\n`;
     });
   }
-  message += `\n`;
 
-  message += `━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
   if (customNote && customNote.trim()) {
-    message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
   }
   message += `<i>📊 Report generated from Confirmed Hand Over Dashboard</i>`;
 
@@ -448,10 +461,6 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
 // ============================================================
 
 const formatRestockMessage = (unit, data, customNote = '') => {
-  const now = new Date();
-  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
   let unitData = data;
   if (data && data.units && data.units[unit]) {
     unitData = data.units[unit];
@@ -470,76 +479,67 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   const unsignedOutItems = unitData.unsignedOutItems || [];
 
   let message = `📊 <b>TASK ASSET REPORT</b>\n`;
-  message += `📍 <b>BRANCH</b> : ${unit}\n`;
-  message += `🕐 <b>TIME</b>   : ${time}\n`;
-  message += `📅 <b>DATE</b>   : ${date}\n`;
-  message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  message += `📍 <b>BRANCH : ${unit}</b>\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
-  message += `📈 <b>KPI SUMMARY RESTOCK</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🌅 Target ព្រឹក: ${targetMorning}\n`;
-  message += `│ 🌙 Target ល្ងាច: ${targetEvening}\n`;
-  message += `│ 📋 Remain    : ${remain}\n`;
-  message += `│ ✅ Result    : ${result}\n`;
-  message += `│ 📊 Ratio     : ${typeof ratio === 'number' ? ratio.toFixed(1) : ratio}%\n`;
-  message += `│ 📦 In System  : ${inSystem}\n`;
-  message += `└─────────────────────────┘\n\n`;
+  message += `📈 <b>KPI SUMMARY (RESTOCK)</b>\n`;
+  message += `<code>`;
+  message += `│ 🌅 Target ព្រឹក   : ${targetMorning}\n`;
+  message += `│ 🌙 Target ល្ងាច  : ${targetEvening}\n`;
+  message += `│ 📋 Remain        : ${remain}\n`;
+  message += `│ ✅ Result        : ${result}\n`;
+  message += `│ 📊 Ratio         : ${typeof ratio === 'number' ? ratio.toFixed(1) : ratio}%\n`;
+  message += `│ 📦 In System     : ${inSystem}`;
+  message += `</code>\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
   // Restock Out (EXPORT CA)
-  const restockOut = unitData.restockOut || { target: 0, result: 0, remain: 0, ratio: 0 };
-  const rOutRatio = typeof restockOut.ratio === 'number' ? restockOut.ratio : parseFloat(restockOut.ratio || 0);
-  message += `<b>RESTOCK OUT</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🎯 Target    : ${restockOut.target}\n`;
-  message += `│ ✅ Result    : ${restockOut.result}\n`;
-  message += `│ 📋 Remain    : ${restockOut.remain}\n`;
-  message += `│ 📊 Ratio     : ${rOutRatio.toFixed(1)}%\n`;
-  message += `└─────────────────────────┘\n`;
+  message += `📤 <b>RESTOCK OUT</b> ✅\n`;
   if (unsignedOutItems.length > 0) {
-    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    unsignedOutItems.forEach((item, index) => {
-      message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.code || '-')}\n`;
-      message += `│    Group request: ${escapeHtml(item.groupRequest || '-')}\n`;
-      message += `│    Creator: ${escapeHtml(item.creator || '-')}\n`;
-      message += `│    Q'ty of day: ${item.daysDiff || 0} days\n`;
-      message += `└─────────────────────────┘\n`;
+    const outGroups = {};
+    unsignedOutItems.forEach(item => {
+      const g = cleanWarehouseName(item.groupRequest || '-');
+      if (!outGroups[g]) {
+        outGroups[g] = [];
+      }
+      outGroups[g].push(item);
     });
-  } else {
-    message += `┌─────────────────────────┐\n│ 📋 No unsigned documents\n└─────────────────────────┘\n`;
+
+    Object.entries(outGroups).forEach(([groupRequest, items]) => {
+      message += `[SPLIT]🔸 <b>Group Request: ${escapeHtml(groupRequest)}</b>\n`;
+      items.forEach((item, index) => {
+        message += `│ ${index + 1}. <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d) ⚠️\n`;
+      });
+      message += `\n`;
+    });
   }
-  message += `\n`;
 
   // Restock In (IMPORT CA)
-  const restockIn = unitData.restockIn || { target: 0, result: 0, remain: 0, ratio: 0 };
-  const rInRatio = typeof restockIn.ratio === 'number' ? restockIn.ratio : parseFloat(restockIn.ratio || 0);
-  message += `<b>RESTOCK IN</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🎯 Target    : ${restockIn.target}\n`;
-  message += `│ ✅ Result    : ${restockIn.result}\n`;
-  message += `│ 📋 Remain    : ${restockIn.remain}\n`;
-  message += `│ 📊 Ratio     : ${rInRatio.toFixed(1)}%\n`;
-  message += `└─────────────────────────┘\n`;
+  message += `📥 <b>RESTOCK IN</b> ✅\n`;
   if (unsignedInItems.length > 0) {
-    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    unsignedInItems.forEach((item, index) => {
-      message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. ${escapeHtml(item.code || '-')}\n`;
-      message += `│    Unit Requests: ${escapeHtml(item.unitRequests || '-')}\n`;
-      message += `│    Creator: ${escapeHtml(item.creator || '-')}\n`;
-      message += `│    Q'ty of day: ${item.daysDiff || 0} days\n`;
-      message += `└─────────────────────────┘\n`;
+    const inGroups = {};
+    unsignedInItems.forEach(item => {
+      const u = cleanWarehouseName(item.unitRequests || '-');
+      if (!inGroups[u]) {
+        inGroups[u] = [];
+      }
+      inGroups[u].push(item);
     });
-  } else {
-    message += `┌─────────────────────────┐\n│ 📋 No unsigned documents\n└─────────────────────────┘\n`;
-  }
-  message += `\n`;
 
-  message += `━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-  if (customNote && customNote.trim()) {
-    message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    Object.entries(inGroups).forEach(([unitRequests, items]) => {
+      message += `[SPLIT]🔸 <b>Unit: ${escapeHtml(unitRequests)}</b>\n`;
+      items.forEach((item, index) => {
+        message += `│ ${index + 1}. <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d) ⚠️\n`;
+      });
+      message += `\n`;
+    });
   }
-  message += `<i>Report generated from Restock Dashboard</i>`;
+
+  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  if (customNote && customNote.trim()) {
+    message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  }
+  message += `📊 <i>Report generated from Dashboard RESTOCK</i>`;
 
   return message;
 };
@@ -572,79 +572,64 @@ const formatCAMessage = (unit, data, customNote = '') => {
 
   let message = `📊 <b>TASK ASSET REPORT</b>\n`;
   message += `📍 <b>BRANCH</b> : ${unit}\n`;
-  message += `🕐 <b>TIME</b>   : ${time}\n`;
-  message += `📅 <b>DATE</b>   : ${date}\n`;
-  message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  message += `Time: ${time} | Date: ${date}\n`;
+  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
-  message += `📈 <b>KPI SUMMARY CA</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🌅 Target ព្រឹក: ${targetMorning}\n`;
-  message += `│ 🌙 Target ល្ងាច: ${targetEvening}\n`;
-  message += `│ 📋 Remain    : ${remain}\n`;
-  message += `│ ✅ Result    : ${result}\n`;
-  message += `│ 📊 Ratio     : ${typeof ratio === 'number' ? ratio.toFixed(1) : ratio}%\n`;
-  message += `│ 📦 In System  : ${inSystem}\n`;
-  message += `└─────────────────────────┘\n\n`;
+  message += `📈 <b>📋 KPI SUMMARY (CA)</b>\n`;
+  message += `<code>`;
+  message += `🌅 Target ព្រឹក  : ${String(targetMorning).padEnd(6)} | 🌙 Target ល្ងាច : ${targetEvening}\n`;
+  message += `✅ Result       : ${String(result).padEnd(6)} | 📋 Remain      : ${remain}\n`;
+  message += `📊 Ratio       : ${String((typeof ratio === 'number' ? ratio.toFixed(1) : ratio) + '%').padEnd(6)} | 📦 In System   : ${inSystem}\n`;
+  message += `</code>`;
+  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
 
   // Export CA
-  const stockOut = unitData.stockOut || { target: 0, result: 0, remain: 0, ratio: 0 };
-  const sOutRatio = typeof stockOut.ratio === 'number' ? stockOut.ratio : parseFloat(stockOut.ratio || 0);
-  const sOutTarget = stockOut.target || 0;
-  const sOutRemain = stockOut.remain || 0;
-  message += `<b>EXPORT CA✅</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🎯 Target    : ${sOutTarget}\n`;
-  message += `│ ✅ Result    : ${stockOut.result}\n`;
-  message += `│ 📋 Remain    : ${sOutRemain}\n`;
-  message += `│ 📊 Ratio     : ${sOutRatio.toFixed(1)}%\n`;
-  message += `└─────────────────────────┘\n`;
+  message += `📤 <b>EXPORT CA ${unsignedOutItems.length === 0 ? '✅' : '📋'}</b>\n`;
   if (unsignedOutItems.length > 0) {
-    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    unsignedOutItems.forEach((item, index) => {
-      message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. Export Note Code: ${escapeHtml(item.code || item.exportNoteCode || '-')} \n`;
-      message += `│    Unit Entering: ${escapeHtml(item.unitEntering || '-')}\n`;
-      message += `│    Status CA: ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
-      message += `│    Days: ${item.daysDiff || 0} days\n`;
-      message += `└─────────────────────────┘\n`;
+    const outGroups = {};
+    unsignedOutItems.forEach(item => {
+      const u = cleanWarehouseName(item.unitEntering || '-');
+      if (!outGroups[u]) {
+        outGroups[u] = [];
+      }
+      outGroups[u].push(item);
     });
-  } else {
-    message += `┌─────────────────────────┐\n│ 📋 No unsigned documents\n└─────────────────────────┘\n`;
+
+    Object.entries(outGroups).forEach(([unitEntering, items]) => {
+      const statusText = items[0]?.statusCA ? ` (${items[0].statusCA} ⚠️)` : '';
+      message += `[SPLIT]🔸 Unit: ${escapeHtml(unitEntering)}${statusText}\n`;
+      items.forEach((item, index) => {
+        message += `  ${index + 1}. Code: <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d)\n`;
+      });
+    });
   }
-  message += `\n`;
 
   // Import CA
-  const stockIn = unitData.stockIn || { target: 0, result: 0, remain: 0, ratio: 0 };
-  const sInRatio = typeof stockIn.ratio === 'number' ? stockIn.ratio : parseFloat(stockIn.ratio || 0);
-  const sInTarget = stockIn.target || 0;
-  const sInRemain = stockIn.remain || 0;
-  message += `<b>IMPORT CA✅</b>\n`;
-  message += `┌─────────────────────────┐\n`;
-  message += `│ 🎯 Target    : ${sInTarget}\n`;
-  message += `│ ✅ Result    : ${stockIn.result}\n`;
-  message += `│ 📋 Remain    : ${sInRemain}\n`;
-  message += `│ 📊 Ratio     : ${sInRatio.toFixed(1)}%\n`;
-  message += `└─────────────────────────┘\n`;
+  message += `\n📥 <b>IMPORT CA ${unsignedInItems.length === 0 ? '✅' : '📋'}</b>\n`;
   if (unsignedInItems.length > 0) {
-    message += `\n<b>📋 REMAINING ITEMS:</b>\n`;
-    unsignedInItems.forEach((item, index) => {
-      message += `┌─────────────────────────┐\n`;
-      message += `│ ${index + 1}. Receipt Code: ${escapeHtml(item.code || item.codeReceipt || '-')}\n`;
-      message += `│    Warehouse: ${escapeHtml(item.warehouse || '-')}\n`;
-      message += `│    Status CA: ${escapeHtml(item.statusCA || 'Unsigned')}\n`;
-      message += `│    Days: ${item.daysDiff || 0} days\n`;
-      message += `└─────────────────────────┘\n`;
+    const inGroups = {};
+    unsignedInItems.forEach(item => {
+      const w = cleanWarehouseName(item.warehouse || '-');
+      if (!inGroups[w]) {
+        inGroups[w] = [];
+      }
+      inGroups[w].push(item);
     });
-  } else {
-    message += `┌─────────────────────────┐\n│ 📋 No unsigned documents\n└─────────────────────────┘\n`;
-  }
-  message += `\n`;
 
-  message += `━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-  if (customNote && customNote.trim()) {
-    message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n\n━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    Object.entries(inGroups).forEach(([warehouse, items]) => {
+      const statusText = items[0]?.statusCA ? ` (${items[0].statusCA} ⚠️)` : '';
+      message += `[SPLIT]🔸 Unit: ${escapeHtml(warehouse)}${statusText}\n`;
+      items.forEach((item, index) => {
+        message += `  ${index + 1}. Code: <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d)\n`;
+      });
+    });
   }
-  message += `<i>Report generated from Dashboard CA</i>`;
+
+  message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  if (customNote && customNote.trim()) {
+    message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  }
+  message += `<i>📊 Report generated from Dashboard CA</i>`;
 
   return message;
 };
@@ -742,15 +727,16 @@ const sendSingleMessageToTelegram = async (unit, message, signal = null) => {
 };
 
 const sendMessageToTelegram = async (unit, message, signal = null) => {
-  // Telegram character limit is 4096. We split at 3900 to leave safety margin.
+  // Clean up delimiter if message doesn't need splitting
   if (message.length <= 3900) {
-    return await sendSingleMessageToTelegram(unit, message, signal);
+    const cleanMessage = message.replaceAll('[SPLIT]', '');
+    return await sendSingleMessageToTelegram(unit, cleanMessage, signal);
   }
 
   console.log(`✂️ Message is too long (${message.length} chars). Splitting into parts...`);
   
-  // Split by the item card delimiter
-  const separator = '┌─────────────────────────┐';
+  // Split by the internal custom delimiter
+  const separator = '[SPLIT]';
   const parts = message.split(separator);
   const messagesToSend = [];
   
@@ -758,7 +744,7 @@ const sendMessageToTelegram = async (unit, message, signal = null) => {
   let currentMessage = parts[0];
 
   for (let i = 1; i < parts.length; i++) {
-    const itemCard = separator + parts[i];
+    const itemCard = parts[i]; // Do not add back the [SPLIT] delimiter
     // If adding this item exceeds the target chunk size, commit the current chunk
     if (currentMessage.length + itemCard.length > 3900) {
       if (currentMessage.trim()) {
