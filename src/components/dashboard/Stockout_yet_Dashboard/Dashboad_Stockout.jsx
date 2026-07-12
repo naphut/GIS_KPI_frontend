@@ -767,22 +767,36 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           </h3>
           {m3Items.length > 0 ? (
             <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
-              <table className="min-w-full text-left border-collapse">
+              <table className="min-w-full text-left border-collapse table-fixed">
                 <thead>
-                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[11px] font-bold border-b border-slate-200">
-                    <th className="border-r border-slate-200 px-3 py-2 text-center w-12">ល.រ</th>
-                    <th className="border-r border-slate-200 px-3 py-2">Code</th>
-                    <th className="border-r border-slate-200 px-3 py-2">Unit Confirm Handover</th>
-                    <th className="px-3 py-2 text-center w-22">ចំនួនថ្ងៃ ⚠️</th>
+                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-800 text-[10px] font-black border-b border-slate-200">
+                    <th className="border-r border-slate-200 px-2 py-1.5 text-center w-[30px] font-extrabold uppercase">#</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[120px] font-black uppercase">Code of handover minutes</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[100px] font-black uppercase">Type of handover</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[110px] font-black uppercase">Handover unit</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[110px] font-black uppercase">Unit confirm handover</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[75px] text-center font-black uppercase">Handover date</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[65px] text-center font-black uppercase">Status</th>
+                    <th className="border-r border-slate-200 px-2 py-1.5 w-[45px] text-center font-black uppercase">Days</th>
+                    <th className="px-2 py-1.5 text-center w-[45px] font-black uppercase">UNIT</th>
                   </tr>
                 </thead>
-                <tbody className="text-[10.5px] text-slate-600 divide-y divide-slate-100">
+                <tbody className="text-[9.5px] text-slate-800 font-medium divide-y divide-slate-100">
                   {sortedM3.map((item, index) => (
                     <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
-                      <td className="border-r border-slate-100 px-3 py-1.5 text-center font-semibold text-slate-400">{index + 1}</td>
-                      <td className="border-r border-slate-100 px-3 py-1.5 font-bold text-slate-800 tracking-tight">{item.code}</td>
-                      <td className="border-r border-slate-100 px-3 py-1.5 font-medium truncate max-w-[240px] text-slate-500">{cleanWarehouseName(item.unitConfirm || '-')}</td>
-                      <td className="px-3 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold text-slate-500">{index + 1}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-black text-slate-900 tracking-tight font-mono">{item.code}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold truncate max-w-[100px] text-slate-800">{item.type || '-'}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold truncate max-w-[110px] text-slate-800" title={item.handoverUnit}>{cleanWarehouseName(item.handoverUnit || '-')}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold truncate max-w-[110px] text-slate-800" title={item.unitConfirm}>{cleanWarehouseName(item.unitConfirm || '-')}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-700 font-mono text-center">{item.date || '-'}</td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 text-center">
+                        <span className={`px-1 py-0.5 rounded text-[8.5px] font-extrabold ${item.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>{item.status || '-'}</span>
+                      </td>
+                      <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
+                      <td className="px-2 py-1.5 text-center font-extrabold">
+                        <span className="bg-indigo-50 text-indigo-800 px-1 rounded border border-indigo-100 text-[8.5px] inline-block font-black">{item.unit || '-'}</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
