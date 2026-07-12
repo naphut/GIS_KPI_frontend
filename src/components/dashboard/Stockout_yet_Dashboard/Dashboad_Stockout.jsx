@@ -86,6 +86,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const [activeM2Items, setActiveM2Items] = useState([]);
   const [activeM3Items, setActiveM3Items] = useState([]);
   const [screenshotPartText, setScreenshotPartText] = useState("");
+  const [screenshotTitle, setScreenshotTitle] = useState("CONFIRMED HAND OVER REPORT");
 
   // Update time every minute
   useEffect(() => {
@@ -594,7 +595,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           </div>
           <div className="flex justify-between items-center relative z-10">
             <div>
-              <h1 className="text-[22px] font-black tracking-tight uppercase">CONFIRMED HAND OVER REPORT</h1>
+              <h1 className="text-[22px] font-black tracking-tight uppercase">{screenshotTitle}</h1>
               <p className="text-xs opacity-90 mt-1 flex items-center gap-1.5">
                 <span>📍 Branch/Unit:</span>
                 <span className="bg-white/20 px-2.5 py-0.5 rounded-full font-bold text-sm">{screenshotUnit} {screenshotPartText}</span>
@@ -824,7 +825,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           m1: chunk,
           m2: [],
           m3: [],
-          label: `M1 - Part ${idx + 1}/${chunks.length}`
+          label: `Part ${idx + 1}/${chunks.length}`,
+          title: "TEAM STEP 1"
         });
       });
     }
@@ -836,7 +838,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           m1: [],
           m2: chunk,
           m3: [],
-          label: `M2 - Part ${idx + 1}/${chunks.length}`
+          label: `Part ${idx + 1}/${chunks.length}`,
+          title: "ASSET STEP :2"
         });
       });
     }
@@ -848,7 +851,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           m1: [],
           m2: [],
           m3: chunk,
-          label: `M3 - Part ${idx + 1}/${chunks.length}`
+          label: `Part ${idx + 1}/${chunks.length}`,
+          title: "TEAM STEP 3"
         });
       });
     }
@@ -858,7 +862,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         m1: [],
         m2: [],
         m3: [],
-        label: "Cleared"
+        label: "Cleared",
+        title: "CONFIRMED HAND OVER REPORT"
       });
     }
 
@@ -905,6 +910,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         setActiveM2Items(task.m2);
         setActiveM3Items(task.m3);
         setScreenshotPartText(tasks.length > 1 ? `(${task.label})` : "");
+        setScreenshotTitle(task.title);
 
         setSendProgress({
           current: i + 1,
@@ -955,7 +961,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           throw new Error(`Invalid screenshot generated: Canvas=${canvas.width}x${canvas.height}`);
         }
 
-        const caption = `📊 <b>CONFIRMED HAND OVER REPORT - ${unit}</b> ${tasks.length > 1 ? `(${task.label})` : ''}\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`;
+        const caption = `📊 <b>${task.title} - ${unit}</b> ${tasks.length > 1 ? `(${task.label})` : ''}\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`;
 
         const result = await sendPhotoToTelegram(
           unit,
@@ -1006,6 +1012,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       setActiveM2Items([]);
       setActiveM3Items([]);
       setScreenshotPartText("");
+      setScreenshotTitle("CONFIRMED HAND OVER REPORT");
       if (!abortControllerRef.current?.signal.aborted) {
         setTimeout(() => setShowProgressModal(false), 3000);
       }
@@ -1066,6 +1073,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
             setActiveM2Items(task.m2);
             setActiveM3Items(task.m3);
             setScreenshotPartText(tasks.length > 1 ? `(${task.label})` : "");
+            setScreenshotTitle(task.title);
 
             // Wait for rendering
             await new Promise(resolve => setTimeout(resolve, 350));
@@ -1109,7 +1117,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
               throw new Error(`Invalid screenshot generated for ${unit}: Canvas=${canvas.width}x${canvas.height}`);
             }
             
-            const caption = `📊 <b>CONFIRMED HAND OVER REPORT - ${unit}</b> ${tasks.length > 1 ? `(${task.label})` : ''}\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`;
+            const caption = `📊 <b>${task.title} - ${unit}</b> ${tasks.length > 1 ? `(${task.label})` : ''}\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`;
 
             const result = await sendPhotoToTelegram(
               unit,
@@ -1161,6 +1169,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       setActiveM2Items([]);
       setActiveM3Items([]);
       setScreenshotPartText("");
+      setScreenshotTitle("CONFIRMED HAND OVER REPORT");
       if (!abortControllerRef.current?.signal.aborted) {
         setTimeout(() => setShowProgressModal(false), 4000);
       }
