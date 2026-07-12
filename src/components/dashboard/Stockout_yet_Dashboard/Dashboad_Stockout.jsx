@@ -514,48 +514,6 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     }
   };
 
-  // Grouping helper functions for screenshot formatting
-  const getM1Groups = (m1Items) => {
-    const groups = {};
-    m1Items.forEach(item => {
-      const stockRec = item.stockReceiver || item.warehouse || '-';
-      const groupRec = item.groupReceiver || '-';
-      const key = `${groupRec}_${stockRec}`;
-      if (!groups[key]) {
-        groups[key] = {
-          groupReceiver: groupRec,
-          stockReceiver: stockRec,
-          items: []
-        };
-      }
-      groups[key].items.push(item);
-    });
-    return groups;
-  };
-
-  const getM2Groups = (m2Items) => {
-    const groups = {};
-    m2Items.forEach(item => {
-      const key = item.recipient || '-';
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-      groups[key].push(item);
-    });
-    return groups;
-  };
-
-  const getM3Groups = (m3Items) => {
-    const groups = {};
-    m3Items.forEach(item => {
-      const key = item.unitConfirm || '-';
-      if (!groups[key]) {
-        groups[key] = [];
-      }
-      groups[key].push(item);
-    });
-    return groups;
-  };
 
   const getUnitTotals = (unit) => {
     const data = getReportData();
