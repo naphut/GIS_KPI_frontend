@@ -82,6 +82,10 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [screenshotUnit, setScreenshotUnit] = useState(null);
   const [screenshotMode, setScreenshotMode] = useState(false);
+  const [activeM1Items, setActiveM1Items] = useState([]);
+  const [activeM2Items, setActiveM2Items] = useState([]);
+  const [activeM3Items, setActiveM3Items] = useState([]);
+  const [screenshotPartText, setScreenshotPartText] = useState("");
 
   // Update time every minute
   useEffect(() => {
@@ -545,29 +549,14 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const renderScreenshotReport = () => {
     if (!screenshotUnit) return null;
     
-    const m1Items = getUnitM1Items(screenshotUnit);
-    const m2Items = getUnitM2Items(screenshotUnit);
-    const m3Items = getUnitM3Items(screenshotUnit);
+    const m1Items = activeM1Items;
+    const m2Items = activeM2Items;
+    const m3Items = activeM3Items;
     
-    // Sort items for readability
-    const sortedM1 = [...m1Items].sort((a, b) => {
-      const groupA = a.groupReceiver || '';
-      const groupB = b.groupReceiver || '';
-      return groupA.localeCompare(groupB);
-    });
-
-    const sortedM2 = [...m2Items].sort((a, b) => {
-      const recA = a.recipient || '';
-      const recB = b.recipient || '';
-      return recA.localeCompare(recB);
-    });
-
-    const sortedM3 = [...m3Items].sort((a, b) => {
-      const ucA = a.unitConfirm || '';
-      const ucB = b.unitConfirm || '';
-      return ucA.localeCompare(ucB);
-    });
-
+    const sortedM1 = m1Items;
+    const sortedM2 = m2Items;
+    const sortedM3 = m3Items;
+    
     // Color-coded delay badges
     const getDelayBadge = (days) => {
       const num = parseInt(days) || 0;
@@ -608,7 +597,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
               <h1 className="text-[22px] font-black tracking-tight uppercase">CONFIRMED HAND OVER REPORT</h1>
               <p className="text-xs opacity-90 mt-1 flex items-center gap-1.5">
                 <span>📍 Branch/Unit:</span>
-                <span className="bg-white/20 px-2.5 py-0.5 rounded-full font-bold text-sm">{screenshotUnit}</span>
+                <span className="bg-white/20 px-2.5 py-0.5 rounded-full font-bold text-sm">{screenshotUnit} {screenshotPartText}</span>
               </p>
             </div>
             <div className="text-right">
@@ -654,14 +643,14 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         </div>
 
         {/* Module 1 Table */}
-        <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
-          <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
-            <span className="flex items-center gap-2 text-slate-700">📦 1. STOCKOUT YET CONFIRM</span>
-            <span className={m1Items.length === 0 ? "text-emerald-600 font-extrabold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100" : "text-amber-700 font-extrabold text-xs bg-amber-50 px-3 py-1 rounded-full border border-amber-100"}>
-              {m1Items.length === 0 ? "✅ Completed" : `📋 ${m1Items.length} Items`}
-            </span>
-          </h3>
-          {m1Items.length > 0 ? (
+        {m1Items.length > 0 && (
+          <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+            <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
+              <span className="flex items-center gap-2 text-slate-700">📦 1. STOCKOUT YET CONFIRM</span>
+              <span className="text-amber-700 font-extrabold text-xs bg-amber-50 px-3 py-1 rounded-full border border-amber-100">
+                📋 {m1Items.length} Items
+              </span>
+            </h3>
             <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
               <table className="min-w-full text-left border-collapse table-fixed">
                 <thead>
@@ -700,23 +689,18 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                 </tbody>
               </table>
             </div>
-          ) : (
-            <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl py-5 text-center text-emerald-600 font-bold text-xs flex flex-col items-center gap-1.5">
-              <span>🎉 All items cleared!</span>
-              <span className="text-[10px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Module 2 Table */}
-        <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
-          <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
-            <span className="flex items-center gap-2 text-slate-700">📝 2. NO CREATE HAND OVER</span>
-            <span className={m2Items.length === 0 ? "text-emerald-600 font-extrabold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100" : "text-blue-700 font-extrabold text-xs bg-blue-50 px-3 py-1 rounded-full border border-blue-100"}>
-              {m2Items.length === 0 ? "✅ Completed" : `📋 ${m2Items.length} Items`}
-            </span>
-          </h3>
-          {m2Items.length > 0 ? (
+        {m2Items.length > 0 && (
+          <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+            <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
+              <span className="flex items-center gap-2 text-slate-700">📝 2. NO CREATE HAND OVER</span>
+              <span className="text-blue-700 font-extrabold text-xs bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                📋 {m2Items.length} Items
+              </span>
+            </h3>
             <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
               <table className="min-w-full text-left border-collapse table-fixed">
                 <thead>
@@ -749,23 +733,18 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                 </tbody>
               </table>
             </div>
-          ) : (
-            <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl py-5 text-center text-emerald-600 font-bold text-xs flex flex-col items-center gap-1.5">
-              <span>🎉 All items cleared!</span>
-              <span className="text-[10px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Module 3 Table */}
-        <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm">
-          <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
-            <span className="flex items-center gap-2 text-slate-700">⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED</span>
-            <span className={m3Items.length === 0 ? "text-emerald-600 font-extrabold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100" : "text-rose-700 font-extrabold text-xs bg-rose-50 px-3 py-1 rounded-full border border-rose-100"}>
-              {m3Items.length === 0 ? "✅ Completed" : `📋 ${m3Items.length} Items`}
-            </span>
-          </h3>
-          {m3Items.length > 0 ? (
+        {m3Items.length > 0 && (
+          <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm">
+            <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
+              <span className="flex items-center gap-2 text-slate-700">⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED</span>
+              <span className="text-rose-700 font-extrabold text-xs bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
+                📋 {m3Items.length} Items
+              </span>
+            </h3>
             <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
               <table className="min-w-full text-left border-collapse table-fixed">
                 <thead>
@@ -802,15 +781,88 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                 </tbody>
               </table>
             </div>
-          ) : (
-            <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl py-5 text-center text-emerald-600 font-bold text-xs flex flex-col items-center gap-1.5">
-              <span>🎉 All items cleared!</span>
-              <span className="text-[10px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Empty State / All Cleared */}
+        {m1Items.length === 0 && m2Items.length === 0 && m3Items.length === 0 && (
+          <div className="bg-emerald-50/40 border border-emerald-100 rounded-3xl p-6 text-center text-emerald-600 font-bold text-sm flex flex-col items-center gap-2">
+            <span>🎉 ALL MODULES COMPLETED</span>
+            <span className="text-xs text-emerald-500 font-medium">គ្មានទិន្នន័យចាល់ឡើយ (All Items Cleared)</span>
+          </div>
+        )}
       </div>
     );
+  };
+
+  const generateScreenshotTasks = (unit) => {
+    const m1Items = getUnitM1Items(unit);
+    const m2Items = getUnitM2Items(unit);
+    const m3Items = getUnitM3Items(unit);
+    
+    // Sort items for readability
+    const sortedM1 = [...m1Items].sort((a, b) => (a.groupReceiver || '').localeCompare(b.groupReceiver || ''));
+    const sortedM2 = [...m2Items].sort((a, b) => (a.recipient || '').localeCompare(b.recipient || ''));
+    const sortedM3 = [...m3Items].sort((a, b) => (a.unitConfirm || '').localeCompare(b.unitConfirm || ''));
+
+    const tasks = [];
+    const chunkSize = 50;
+
+    // Helper to chunk array
+    const chunkArray = (arr, size) => {
+      const chunks = [];
+      for (let i = 0; i < arr.length; i += size) {
+        chunks.push(arr.slice(i, i + size));
+      }
+      return chunks;
+    };
+
+    if (sortedM1.length > 0) {
+      const chunks = chunkArray(sortedM1, chunkSize);
+      chunks.forEach((chunk, idx) => {
+        tasks.push({
+          m1: chunk,
+          m2: [],
+          m3: [],
+          label: `M1 - Part ${idx + 1}/${chunks.length}`
+        });
+      });
+    }
+
+    if (sortedM2.length > 0) {
+      const chunks = chunkArray(sortedM2, chunkSize);
+      chunks.forEach((chunk, idx) => {
+        tasks.push({
+          m1: [],
+          m2: chunk,
+          m3: [],
+          label: `M2 - Part ${idx + 1}/${chunks.length}`
+        });
+      });
+    }
+
+    if (sortedM3.length > 0) {
+      const chunks = chunkArray(sortedM3, chunkSize);
+      chunks.forEach((chunk, idx) => {
+        tasks.push({
+          m1: [],
+          m2: [],
+          m3: chunk,
+          label: `M3 - Part ${idx + 1}/${chunks.length}`
+        });
+      });
+    }
+
+    if (tasks.length === 0) {
+      tasks.push({
+        m1: [],
+        m2: [],
+        m3: [],
+        label: "Cleared"
+      });
+    }
+
+    return tasks;
   };
 
   // Send single unit screenshot
@@ -825,7 +877,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     setIsSending(true);
     setShowProgressModal(true);
     setSendProgress({
-      current: 1,
+      current: 0,
       total: 1,
       unit: unit,
       status: 'sending'
@@ -835,109 +887,125 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     abortControllerRef.current = new AbortController();
     
     try {
-      setScreenshotUnit(unit);
-      
-      // Wait for rendering
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const element = document.getElementById('telegram-screenshot-report');
-      if (!element) {
-        throw new Error('Screenshot element not found in DOM');
-      }
-      
-      const offsetHeight = element.offsetHeight || 500;
-      let scale = 3.0;
-      if (offsetHeight > 1800) scale = 2.0;
-      else if (offsetHeight > 1200) scale = 2.5;
-
-      const canvas = await html2canvas(element, {
-        useCORS: true,
-        scale: scale,
-        backgroundColor: '#f8fafc',
-        width: 850,
-        height: offsetHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: document.documentElement.offsetWidth,
-        windowHeight: document.documentElement.offsetHeight,
-        logging: false,
-        onclone: (clonedDoc) => {
-          const style = clonedDoc.createElement('style');
-          style.innerHTML = `
-            #telegram-screenshot-report * {
-              -webkit-font-smoothing: antialiased !important;
-              -moz-osx-font-smoothing: grayscale !important;
-              text-rendering: optimizeLegibility !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-        }
-      });
-      
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      
-      console.log(`[Screenshot Debug] Element: ${element.offsetWidth}x${element.offsetHeight}, Canvas: ${canvas.width}x${canvas.height}, Blob: ${blob?.size || 0} bytes`);
-      
-      if (!blob || blob.size < 1000 || canvas.width < 100 || canvas.height < 100) {
-        throw new Error(`Invalid screenshot generated: Canvas=${canvas.width}x${canvas.height}, Blob=${blob?.size || 0} bytes. Element offset height is ${element.offsetHeight}px.`);
-      }
-      
-      const result = await sendPhotoToTelegram(
-        unit, 
-        blob, 
-        `📊 <b>CONFIRMED HAND OVER REPORT - ${unit}</b>\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`, 
-        abortControllerRef.current.signal
-      );
-      
-      if (result && result.success) {
-        setSendProgress({
-          current: 1,
-          total: 1,
-          unit: unit,
-          status: 'success'
-        });
-        setSendResults({
-          total: 1,
-          success: 1,
-          failed: 0
-        });
-        alert(`✅ Screenshot report sent successfully to ${unit} group!`);
-      } else {
-        const isAbort = result?.aborted || abortControllerRef.current.signal.aborted;
-        if (!isAbort) {
-          setSendProgress({
-            current: 1,
-            total: 1,
-            unit: unit,
-            status: 'failed',
-            error: result?.error || 'Failed to send'
-          });
-          setSendResults({
-            total: 1,
-            success: 0,
-            failed: 1
-          });
-          alert(`❌ Failed to send screenshot report: ${result?.error || 'Unknown error'}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error generating screenshot:', error);
-      alert(`❌ Error generating screenshot: ${error.message}`);
+      const tasks = generateScreenshotTasks(unit);
       setSendProgress({
         current: 1,
-        total: 1,
+        total: tasks.length,
         unit: unit,
-        status: 'failed',
-        error: error.message
+        status: 'sending'
+      });
+
+      setScreenshotUnit(unit);
+
+      for (let i = 0; i < tasks.length; i++) {
+        if (abortControllerRef.current.signal.aborted) break;
+
+        const task = tasks[i];
+        setActiveM1Items(task.m1);
+        setActiveM2Items(task.m2);
+        setActiveM3Items(task.m3);
+        setScreenshotPartText(tasks.length > 1 ? `(${task.label})` : "");
+
+        setSendProgress({
+          current: i + 1,
+          total: tasks.length,
+          unit: unit,
+          status: 'sending'
+        });
+
+        // Wait for rendering
+        await new Promise(resolve => setTimeout(resolve, 350));
+
+        const element = document.getElementById('telegram-screenshot-report');
+        if (!element) {
+          throw new Error('Screenshot element not found in DOM');
+        }
+
+        const offsetHeight = element.offsetHeight || 500;
+        let scale = 3.0;
+        if (offsetHeight > 1800) scale = 2.0;
+        else if (offsetHeight > 1200) scale = 2.5;
+
+        const canvas = await html2canvas(element, {
+          useCORS: true,
+          scale: scale,
+          backgroundColor: '#f8fafc',
+          width: 850,
+          height: offsetHeight,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: document.documentElement.offsetWidth,
+          windowHeight: document.documentElement.offsetHeight,
+          logging: false,
+          onclone: (clonedDoc) => {
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+              #telegram-screenshot-report * {
+                -webkit-font-smoothing: antialiased !important;
+                -moz-osx-font-smoothing: grayscale !important;
+                text-rendering: optimizeLegibility !important;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        });
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        if (!blob || blob.size < 1000 || canvas.width < 100 || canvas.height < 100) {
+          throw new Error(`Invalid screenshot generated: Canvas=${canvas.width}x${canvas.height}`);
+        }
+
+        const caption = `📊 <b>CONFIRMED HAND OVER REPORT - ${unit}</b> ${tasks.length > 1 ? `(${task.label})` : ''}\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`;
+
+        const result = await sendPhotoToTelegram(
+          unit,
+          blob,
+          caption,
+          abortControllerRef.current.signal
+        );
+
+        if (!result || !result.success) {
+          throw new Error(result?.error || 'Failed to send photo to Telegram');
+        }
+      }
+
+      setSendProgress({
+        current: tasks.length,
+        total: tasks.length,
+        unit: unit,
+        status: 'success'
       });
       setSendResults({
         total: 1,
-        success: 0,
-        failed: 1
+        success: 1,
+        failed: 0
       });
+      alert(`✅ Screenshot report sent successfully to ${unit} group!`);
+    } catch (error) {
+      console.error('Error generating/sending screenshot:', error);
+      const isAbort = abortControllerRef.current.signal.aborted;
+      if (!isAbort) {
+        setSendProgress({
+          current: 0,
+          total: 1,
+          unit: unit,
+          status: 'failed',
+          error: error.message
+        });
+        setSendResults({
+          total: 1,
+          success: 0,
+          failed: 1
+        });
+        alert(`❌ Error generating/sending screenshot: ${error.message}`);
+      }
     } finally {
       setIsSending(false);
       setScreenshotUnit(null);
+      setActiveM1Items([]);
+      setActiveM2Items([]);
+      setActiveM3Items([]);
+      setScreenshotPartText("");
       if (!abortControllerRef.current?.signal.aborted) {
         setTimeout(() => setShowProgressModal(false), 3000);
       }
@@ -970,6 +1038,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     let completedCount = 0;
     
     try {
+      setScreenshotUnit(null);
+
       for (const unit of configured) {
         if (abortControllerRef.current.signal.aborted) {
           break;
@@ -983,57 +1053,79 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         });
         
         try {
+          const tasks = generateScreenshotTasks(unit);
           setScreenshotUnit(unit);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          
-          const element = document.getElementById('telegram-screenshot-report');
-          if (!element) {
-            throw new Error('Screenshot element not found');
-          }
-          
-          const offsetHeight = element.offsetHeight || 500;
-          let scale = 3.0;
-          if (offsetHeight > 1800) scale = 2.0;
-          else if (offsetHeight > 1200) scale = 2.5;
 
-          const canvas = await html2canvas(element, {
-            useCORS: true,
-            scale: scale,
-            backgroundColor: '#f8fafc',
-            width: 850,
-            height: offsetHeight,
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: document.documentElement.offsetWidth,
-            windowHeight: document.documentElement.offsetHeight,
-            logging: false,
-            onclone: (clonedDoc) => {
-              const style = clonedDoc.createElement('style');
-              style.innerHTML = `
-                #telegram-screenshot-report * {
-                  -webkit-font-smoothing: antialiased !important;
-                  -moz-osx-font-smoothing: grayscale !important;
-                  text-rendering: optimizeLegibility !important;
-                }
-              `;
-              clonedDoc.head.appendChild(style);
+          let unitSuccess = true;
+
+          for (let i = 0; i < tasks.length; i++) {
+            if (abortControllerRef.current.signal.aborted) break;
+
+            const task = tasks[i];
+            setActiveM1Items(task.m1);
+            setActiveM2Items(task.m2);
+            setActiveM3Items(task.m3);
+            setScreenshotPartText(tasks.length > 1 ? `(${task.label})` : "");
+
+            // Wait for rendering
+            await new Promise(resolve => setTimeout(resolve, 350));
+            
+            const element = document.getElementById('telegram-screenshot-report');
+            if (!element) {
+              throw new Error('Screenshot element not found');
             }
-          });
-          
-          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-          
-          if (!blob || blob.size < 1000 || canvas.width < 100 || canvas.height < 100) {
-            throw new Error(`Invalid screenshot generated for ${unit}: Canvas=${canvas.width}x${canvas.height}, Blob=${blob?.size || 0} bytes. Element offset height is ${element.offsetHeight}px.`);
+            
+            const offsetHeight = element.offsetHeight || 500;
+            let scale = 3.0;
+            if (offsetHeight > 1800) scale = 2.0;
+            else if (offsetHeight > 1200) scale = 2.5;
+
+            const canvas = await html2canvas(element, {
+              useCORS: true,
+              scale: scale,
+              backgroundColor: '#f8fafc',
+              width: 850,
+              height: offsetHeight,
+              scrollX: 0,
+              scrollY: 0,
+              windowWidth: document.documentElement.offsetWidth,
+              windowHeight: document.documentElement.offsetHeight,
+              logging: false,
+              onclone: (clonedDoc) => {
+                const style = clonedDoc.createElement('style');
+                style.innerHTML = `
+                  #telegram-screenshot-report * {
+                    -webkit-font-smoothing: antialiased !important;
+                    -moz-osx-font-smoothing: grayscale !important;
+                    text-rendering: optimizeLegibility !important;
+                  }
+                `;
+                clonedDoc.head.appendChild(style);
+              }
+            });
+            
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+            if (!blob || blob.size < 1000 || canvas.width < 100 || canvas.height < 100) {
+              throw new Error(`Invalid screenshot generated for ${unit}: Canvas=${canvas.width}x${canvas.height}`);
+            }
+            
+            const caption = `📊 <b>CONFIRMED HAND OVER REPORT - ${unit}</b> ${tasks.length > 1 ? `(${task.label})` : ''}\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`;
+
+            const result = await sendPhotoToTelegram(
+              unit,
+              blob,
+              caption,
+              abortControllerRef.current.signal
+            );
+            
+            if (!result || !result.success) {
+              unitSuccess = false;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 350));
           }
-          
-          const result = await sendPhotoToTelegram(
-            unit,
-            blob,
-            `📊 <b>CONFIRMED HAND OVER REPORT - ${unit}</b>\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`,
-            abortControllerRef.current.signal
-          );
-          
-          if (result && result.success) {
+
+          if (unitSuccess) {
             successCount++;
           } else {
             failCount++;
@@ -1065,6 +1157,10 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     } finally {
       setIsSending(false);
       setScreenshotUnit(null);
+      setActiveM1Items([]);
+      setActiveM2Items([]);
+      setActiveM3Items([]);
+      setScreenshotPartText("");
       if (!abortControllerRef.current?.signal.aborted) {
         setTimeout(() => setShowProgressModal(false), 4000);
       }
