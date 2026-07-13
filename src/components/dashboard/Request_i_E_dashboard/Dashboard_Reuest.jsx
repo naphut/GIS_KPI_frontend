@@ -868,7 +868,7 @@ const Dashboard_Request = () => {
         canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
       });
       
-      const caption = `📊 <b>TASK ASSET REPORT (RESTOCK) - BRANCH: ${unit}</b>\n<i>Please review the unsigned Restock documents above.</i>`;
+      const caption = `📊 <b>TASK ASSET REPORT (RESTOCK) - BRANCH: ${unit}</b>`;
       const result = await sendPhotoToTelegram(unit, blob, caption, signal);
       
       if (result && result.success) {
@@ -1004,7 +1004,7 @@ const Dashboard_Request = () => {
             canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
           });
           
-          const caption = `📊 <b>TASK ASSET REPORT (RESTOCK) - BRANCH: ${unit}</b>\n<i>Please review the unsigned Restock documents above.</i>`;
+          const caption = `📊 <b>TASK ASSET REPORT (RESTOCK) - BRANCH: ${unit}</b>`;
           const sendRes = await sendPhotoToTelegram(unit, blob, caption, signal);
           
           completedCount++;
