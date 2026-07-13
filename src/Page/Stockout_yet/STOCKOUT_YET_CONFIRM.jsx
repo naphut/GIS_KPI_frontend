@@ -145,6 +145,16 @@ const STOCKOUT_YET_CONFIRM = () => {
   const [data, setData] = useState(() => getStorageData(STORAGE_KEYS.DATA) || []);
   const [completionHistory, setCompletionHistory] = useState(() => getStorageData(STORAGE_KEYS.COMPLETION) || []);
   const [searchTerm, setSearchTerm] = useState('');
+  const [columnFilters, setColumnFilters] = useState({
+    exportCode: '',
+    exportNo: '',
+    realExport: '',
+    stockReceiver: '',
+    groupReceiver: '',
+    constructionReceiver: '',
+    unit: '',
+    daysDiff: ''
+  });
   const [filterGIS, setFilterGIS] = useState(true);
   const [showAlarmModal, setShowAlarmModal] = useState(false);
   const [alarmThreshold, setAlarmThreshold] = useState(4);
@@ -781,7 +791,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   };
 
   const exportToExcel = () => {
-    const exportData = data.map(item => ({
+    const exportData = filteredData.map(item => ({
       'No': item.no, 'Warehouse Stock out': item.exportCode, 'Export No': item.exportNo,
       'Date': item.realExport, 'Stock Receiver': item.stockReceiver,
       'Group Receiver': item.groupReceiver, 'Construction Receiver': item.constructionReceiver,
@@ -865,8 +875,20 @@ const STOCKOUT_YET_CONFIRM = () => {
         item.constructionReceiver?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+
+    // Apply column-specific filters
+    Object.keys(columnFilters).forEach(key => {
+      const filterVal = columnFilters[key];
+      if (filterVal) {
+        filtered = filtered.filter(item => {
+          const itemVal = item[key] !== undefined && item[key] !== null ? item[key].toString().toLowerCase() : '';
+          return itemVal.includes(filterVal.toLowerCase());
+        });
+      }
+    });
+
     return filtered;
-  }, [data, searchTerm, filterGIS]);
+  }, [data, searchTerm, filterGIS, columnFilters]);
 
   const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
@@ -1449,6 +1471,23 @@ const STOCKOUT_YET_CONFIRM = () => {
                 <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-16 px-2 py-1 text-sm border rounded-lg text-center bg-white" min="1"/>
                 <span className="text-sm">days</span>
               </div>
+              {Object.values(columnFilters).some(val => val) && (
+                <button 
+                  onClick={() => setColumnFilters({
+                    exportCode: '',
+                    exportNo: '',
+                    realExport: '',
+                    stockReceiver: '',
+                    groupReceiver: '',
+                    constructionReceiver: '',
+                    unit: '',
+                    daysDiff: ''
+                  })}
+                  className="px-3 py-1.5 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
+                >
+                  ✕ Clear Filters
+                </button>
+              )}
               <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-48 sm:w-64 px-4 py-2 pl-10 text-sm border rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
               <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
                 <input type="checkbox" checked={filterGIS} onChange={(e) => setFilterGIS(e.target.checked)} className="rounded" />
@@ -1500,6 +1539,23 @@ const STOCKOUT_YET_CONFIRM = () => {
                   </th>
                 ))}
                 <th className="px-2 py-2 w-10 text-left text-xs font-semibold text-gray-600 uppercase bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)]">Action</th>
+              </tr>
+              <tr className="bg-gray-100/50">
+                <th className="px-2 py-1 border-b border-gray-200"></th>
+                {columns.map(col => (
+                  <th key={`filter-${col.key}`} className="px-2 py-1 border-b border-gray-200">
+                    {col.key !== 'no' ? (
+                      <input
+                        type="text"
+                        placeholder={`Filter...`}
+                        value={columnFilters[col.key] || ''}
+                        onChange={(e) => setColumnFilters(prev => ({ ...prev, [col.key]: e.target.value }))}
+                        className="w-full px-2 py-1 border border-gray-200 rounded-lg text-[10px] font-normal bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    ) : null}
+                  </th>
+                ))}
+                <th className="px-2 py-1 border-b border-gray-200"></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
