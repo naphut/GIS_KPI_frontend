@@ -958,68 +958,68 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           pointerEvents: 'none',
           width: '1200px',
           background: '#f8fafc',
-          padding: '32px',
+          padding: '24px',
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
         }}
       >
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm mb-6 flex justify-between items-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-amber-500 to-purple-500"></div>
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm mb-4 flex justify-between items-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-amber-500 to-purple-500"></div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📊</span>
-              <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg">📊</span>
+              <h1 className="text-base font-black text-slate-800 tracking-tight uppercase">
                 Stockout KPI Summary Report
               </h1>
             </div>
-            <p className="text-xs text-slate-500 mt-1 font-semibold">
+            <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">
               Performance & delay summary of all active remaining items for branch: <span className="text-blue-600 font-bold">{screenshotUnit}</span>
             </p>
           </div>
-          <div className="text-right text-xs font-semibold text-slate-600 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">
+          <div className="text-right text-[10px] font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
             <div>Date: <strong className="text-slate-900">{new Date().toLocaleDateString('en-GB')}</strong></div>
             <div className="mt-0.5">Time: <strong className="text-slate-900">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong></div>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-5 mb-6">
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Active Teams</span>
-              <span className="text-3xl font-black text-slate-800 mt-1 block">{rows.length}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Teams</span>
+              <span className="text-xl font-black text-slate-800 mt-0.5 block">{rows.length}</span>
             </div>
-            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-xl text-blue-600 font-bold">
+            <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center text-base text-blue-600 font-bold">
               👥
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider block">Under KPI (On-Time)</span>
-              <span className="text-3xl font-black text-emerald-600 mt-1 block">{totalUnder}</span>
+              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider block">Under KPI (On-Time)</span>
+              <span className="text-xl font-black text-emerald-600 mt-0.5 block">{totalUnder}</span>
             </div>
-            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-xl text-emerald-600 font-bold">
+            <div className="w-9 h-9 bg-emerald-50 rounded-lg flex items-center justify-center text-base text-emerald-600 font-bold">
               ✅
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-sm flex items-center justify-between">
             <div>
-              <span className="text-xs font-bold text-red-500 uppercase tracking-wider block">Over KPI (Delayed)</span>
-              <span className="text-3xl font-black text-red-600 mt-1 block">{totalOver}</span>
+              <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">Over KPI (Delayed)</span>
+              <span className="text-xl font-black text-red-600 mt-0.5 block">{totalOver}</span>
             </div>
-            <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-xl text-red-600 font-bold">
+            <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center text-base text-red-600 font-bold">
               🚨
             </div>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
-          <table className="min-w-full text-center border-collapse table-fixed text-[11px] font-bold text-slate-700">
+        <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+          <table className="min-w-full text-center border-collapse table-fixed text-[10px] font-bold text-slate-700">
             <thead>
-              <tr className="text-white text-[11px] border-b border-slate-200">
-                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[40px] py-3.5 font-bold uppercase tracking-wider">No</th>
-                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[70px] py-3.5 font-bold uppercase tracking-wider">Code</th>
-                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[200px] py-3.5 text-left px-4 font-bold uppercase tracking-wider">Units name</th>
+              <tr className="text-white text-[10px] border-b border-slate-200">
+                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[40px] py-2 font-bold uppercase tracking-wider">No</th>
+                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[70px] py-2 font-bold uppercase tracking-wider">Code</th>
+                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[200px] py-2 text-left px-4 font-bold uppercase tracking-wider">Units name</th>
                 
                 <th colSpan="3" className="bg-blue-600 border-r border-blue-700 py-2 font-bold uppercase tracking-wider">
                   Sheet 01<br/>
