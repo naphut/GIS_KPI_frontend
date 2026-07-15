@@ -874,7 +874,9 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
 
   const getSummaryRows = () => {
     const rows = [];
-    allUnits.forEach(unit => {
+    const unitsToProcess = screenshotUnit ? [screenshotUnit] : allUnits;
+    
+    unitsToProcess.forEach(unit => {
       const m1Items = getUnitM1Items(unit);
       const m2Items = getUnitM2Items(unit);
       const m3Items = getUnitM3Items(unit);
@@ -960,8 +962,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       >
         <div className="flex justify-between items-center pb-4 border-b border-slate-200 mb-5">
           <div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tight">📊 STOCKOUT OVERALL SUMMARY REPORT</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Summary of all active remaining stockout items grouped by team/unit</p>
+            <h1 className="text-xl font-black text-slate-800 tracking-tight">📊 STOCKOUT SUMMARY REPORT - BRANCH: {screenshotUnit}</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Summary of active remaining stockout items grouped by team/unit for {screenshotUnit}</p>
           </div>
           <div className="text-right text-xs text-slate-500">
             <div>Generated: <strong>{new Date().toLocaleDateString('en-GB')}</strong></div>
