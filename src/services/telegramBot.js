@@ -99,11 +99,34 @@ export const cleanWarehouseName = (name) => {
   
   const trimmed = name.trim().toUpperCase();
   
-  const match = trimmed.match(/^GIS_([A-Z]{3})_.*SOS_?TEAM(\d+)$/i) || 
-                trimmed.match(/^GIS_([A-Z]{3})_.*SOSTEAM(\d+)$/i) ||
-                trimmed.match(/^GIS_([A-Z]{3})_?SOSTEAM(\d+)$/i) ||
-                trimmed.match(/^GIS_([A-Z]{3})_?SOS_?TEAM(\d+)$/i);
+  // 1. Check for FBC Team pattern
+  // Matches: GIS_STU_STOCK_NOC_FBCTEAM01 -> GIS_STU_FBC_TEAM01
+  const fbcMatch = trimmed.match(/^GIS_([A-Z]{3})_.*FBC_?TEAM(\d+)$/i) ||
+                   trimmed.match(/^GIS_([A-Z]{3})_?FBC_?TEAM(\d+)$/i);
+  if (fbcMatch) {
+    return `GIS_${fbcMatch[1]}_FBC_TEAM${fbcMatch[2]}`;
+  }
   
+  // 2. Check for SOS Team pattern with underscore (SOS_TEAM)
+  // Matches: GIS_CHA_SOS_TEAM03 -> GIS_CHA_SOS_TEAM03
+  const sosTeamMatch = trimmed.match(/^GIS_([A-Z]{3})_.*SOS_TEAM(\d+)$/i) ||
+                       trimmed.match(/^GIS_([A-Z]{3})_?SOS_TEAM(\d+)$/i);
+  if (sosTeamMatch) {
+    return `GIS_${sosTeamMatch[1]}_SOS_TEAM${sosTeamMatch[2]}`;
+  }
+
+  // 3. Check for SOS Team pattern without underscore (SOSTEAM)
+  // Matches: GIS_CHA_STOCK_ROTATIONAL_SOSTEAM03 -> GIS_CHA_SOSTEAM03
+  // Matches: GIS_CHA_STOCK_XL_SOSTEAM04 -> GIS_CHA_SOSTEAM04
+  const sosTeamNoUnderscoreMatch = trimmed.match(/^GIS_([A-Z]{3})_.*SOSTEAM(\d+)$/i) ||
+                                  trimmed.match(/^GIS_([A-Z]{3})_?SOSTEAM(\d+)$/i);
+  if (sosTeamNoUnderscoreMatch) {
+    return `GIS_${sosTeamNoUnderscoreMatch[1]}_SOSTEAM${sosTeamNoUnderscoreMatch[2]}`;
+  }
+
+  // 4. General fallback SOS Team match
+  const match = trimmed.match(/^GIS_([A-Z]{3})_.*SOS_?TEAM(\d+)$/i) || 
+                trimmed.match(/^GIS_([A-Z]{3})_?SOS_?TEAM(\d+)$/i);
   if (match) {
     const province = match[1];
     const teamNum = match[2];

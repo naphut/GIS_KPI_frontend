@@ -896,24 +896,24 @@ const Dashboard_CA = () => {
       
       const teamsSet = new Set();
       outItems.forEach(item => {
-        const teamName = (item.exportWarehouse || item.unitEntering || '').trim();
-        if (teamName) teamsSet.add(teamName);
+        const teamName = cleanWarehouseName(item.exportWarehouse || item.unitEntering || '');
+        if (teamName && teamName !== '-') teamsSet.add(teamName);
       });
       inItems.forEach(item => {
-        const teamName = (item.warehouse || '').trim();
-        if (teamName) teamsSet.add(teamName);
+        const teamName = cleanWarehouseName(item.warehouse || '');
+        if (teamName && teamName !== '-') teamsSet.add(teamName);
       });
       
       const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
       
       teams.forEach(team => {
         const teamOutItems = outItems.filter(item => {
-          const tName = (item.exportWarehouse || item.unitEntering || '').trim();
+          const tName = cleanWarehouseName(item.exportWarehouse || item.unitEntering || '');
           return tName === team;
         });
         
         const teamInItems = inItems.filter(item => {
-          const tName = (item.warehouse || '').trim();
+          const tName = cleanWarehouseName(item.warehouse || '');
           return tName === team;
         });
         
