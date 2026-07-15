@@ -1215,29 +1215,35 @@ const Dashboard_CA = () => {
                 <th colSpan="9" className="bg-amber-600 border-r border-amber-700 border-b border-amber-700/60 py-2 font-bold uppercase tracking-wider text-[9.5px]">
                   STOCK IN RECEIPT
                 </th>
-                <th colSpan="3" className="bg-red-700 border-b border-red-800 py-1 font-bold text-red-200 uppercase tracking-wider text-[8.5px] align-middle text-center">KPI TARGETS</th>
+                <th colSpan="3" className="bg-red-600 border-b border-red-700/60 py-2 font-bold uppercase tracking-wider text-[9.5px] align-middle text-center">
+                  TOTAL
+                </th>
               </tr>
               <tr className="text-white text-[9px]">
                 <th colSpan="2" className="bg-blue-700 border-r border-blue-800/60 border-b border-blue-800/40 py-1.5 font-bold">Unsigned</th>
                 <th colSpan="3" className="bg-blue-700 border-r border-blue-800/60 border-b border-blue-800/40 py-1.5 font-bold">Is signing</th>
                 <th colSpan="3" className="bg-blue-700 border-r border-blue-800/60 border-b border-blue-800/40 py-1.5 font-bold">Cancel</th>
-                <th rowSpan="2" className="bg-blue-800 border-r border-blue-900 py-1.5 font-bold align-middle">Total</th>
+                <th colSpan="1" className="bg-blue-800 border-r border-blue-900 border-b border-blue-900/60 py-1.5 font-bold">Total</th>
 
                 <th colSpan="2" className="bg-amber-700 border-r border-amber-800/60 border-b border-amber-800/40 py-1.5 font-bold">Unsigned</th>
                 <th colSpan="3" className="bg-amber-700 border-r border-amber-800/60 border-b border-amber-800/40 py-1.5 font-bold">Is signing</th>
                 <th colSpan="3" className="bg-amber-700 border-r border-amber-800/60 border-b border-amber-800/40 py-1.5 font-bold">Cancel</th>
-                <th rowSpan="2" className="bg-amber-800 border-r border-amber-900 py-1.5 font-bold align-middle">Total</th>
+                <th colSpan="1" className="bg-amber-800 border-r border-amber-900 border-b border-amber-900/60 py-1.5 font-bold">Total</th>
+                
+                <th colSpan="3" className="bg-red-650 border-r border-red-750 border-b border-red-750/60 py-1.5 font-bold text-white text-[9px] text-center">KPI SUMMARY</th>
               </tr>
               <tr className="text-[8.5px] font-extrabold">
                 <th colSpan="2" className="bg-blue-50 text-blue-800 border-r border-blue-200 border-b border-blue-200/60 py-1">KPI = 1DAYS</th>
                 <th colSpan="3" className="bg-blue-50 text-blue-800 border-r border-blue-200 border-b border-blue-200/60 py-1">KPI = 7DAYS</th>
                 <th colSpan="3" className="bg-blue-50 text-blue-800 border-r border-blue-200 border-b border-blue-200/60 py-1">KPI = 7DAYS</th>
+                <th colSpan="1" className="bg-blue-850 text-white border-r border-blue-900 border-b border-blue-950/60 py-1 font-bold text-[8.5px]">Summary</th>
 
                 <th colSpan="2" className="bg-amber-50 text-amber-800 border-r border-amber-200 border-b border-amber-200/60 py-1">KPI = 1DAYS</th>
                 <th colSpan="3" className="bg-amber-50 text-amber-800 border-r border-amber-200 border-b border-amber-200/60 py-1">KPI = 7DAYS</th>
                 <th colSpan="3" className="bg-amber-50 text-amber-800 border-r border-amber-200 border-b border-amber-200/60 py-1">KPI = 7DAYS</th>
+                <th colSpan="1" className="bg-amber-850 text-white border-r border-amber-900 border-b border-amber-955/60 py-1 font-bold text-[8.5px]">Summary</th>
                 
-                <th colSpan="3" className="bg-red-700 border-r border-red-800 py-1 font-bold text-red-200 uppercase tracking-wider text-[8.5px] align-middle text-center">KPI TARGETS</th>
+                <th colSpan="3" className="bg-red-700 border-r border-red-800 border-b border-red-800/60 py-1 font-bold text-red-200 uppercase tracking-wider text-[8.5px] align-middle text-center">KPI TARGETS</th>
               </tr>
               <tr className="bg-slate-100 text-slate-650 text-[8.5px] font-black border-b border-slate-300">
                 <th className="border-r border-blue-100 py-1.5 text-red-700 bg-red-100 font-extrabold">Day &gt; 1</th>
