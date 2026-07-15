@@ -1098,6 +1098,7 @@ const Dashboard_CA = () => {
       setScreenshotUnit(null);
       setSummaryImageMode(false);
       setIsSelectingForSummary(false);
+      setIsSending(false);
       if (!abortControllerRef.current?.signal.aborted) {
         setTimeout(() => setShowProgressModal(false), 3000);
       }
