@@ -1230,18 +1230,18 @@ const Dashboard_CA = () => {
                 <th colSpan="3" className="bg-amber-700 border-r border-amber-800/60 py-1 font-bold">Cancel</th>
                 <th rowSpan="2" className="bg-amber-800 border-r border-amber-900 py-1 font-bold">Total</th>
               </tr>
-              <tr className="text-white text-[8.5px] border-b border-slate-250">
-                <th colSpan="2" className="bg-blue-750 border-r border-blue-800/80 py-1 font-bold text-blue-200">KPI = 1DAYS</th>
-                <th colSpan="3" className="bg-blue-750 border-r border-blue-800/80 py-1 font-bold text-blue-200">KPI = 7DAYS</th>
-                <th colSpan="3" className="bg-blue-750 border-r border-blue-800/80 py-1 font-bold text-blue-200">KPI = 7DAYS</th>
+              <tr className="text-[8.5px] border-b border-slate-250 font-extrabold">
+                <th colSpan="2" className="bg-blue-50 text-blue-800 border-r border-blue-200 py-1">KPI = 1DAYS</th>
+                <th colSpan="3" className="bg-blue-50 text-blue-800 border-r border-blue-200 py-1">KPI = 7DAYS</th>
+                <th colSpan="3" className="bg-blue-50 text-blue-800 border-r border-blue-200 py-1">KPI = 7DAYS</th>
 
-                <th colSpan="2" className="bg-amber-750 border-r border-amber-800/80 py-1 font-bold text-amber-200">KPI = 1DAYS</th>
-                <th colSpan="3" className="bg-amber-750 border-r border-amber-800/80 py-1 font-bold text-amber-200">KPI = 7DAYS</th>
-                <th colSpan="3" className="bg-amber-750 border-r border-amber-800/80 py-1 font-bold text-amber-200">KPI = 7DAYS</th>
+                <th colSpan="2" className="bg-amber-50 text-amber-800 border-r border-amber-200 py-1">KPI = 1DAYS</th>
+                <th colSpan="3" className="bg-amber-50 text-amber-800 border-r border-amber-200 py-1">KPI = 7DAYS</th>
+                <th colSpan="3" className="bg-amber-50 text-amber-800 border-r border-amber-200 py-1">KPI = 7DAYS</th>
                 
-                <th className="bg-slate-900 border-r border-slate-950 py-1 font-bold text-slate-200">Under KPI</th>
-                <th className="bg-slate-900 border-r border-slate-950 py-1 font-bold text-slate-200">Over KPI</th>
-                <th className="bg-slate-900 py-1 font-bold text-slate-200">Total</th>
+                <th rowSpan="2" className="bg-slate-800 border-r border-slate-900 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Under KPI</th>
+                <th rowSpan="2" className="bg-slate-800 border-r border-slate-900 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Over KPI</th>
+                <th rowSpan="2" className="bg-slate-800 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Total</th>
               </tr>
               <tr className="bg-slate-100 text-slate-650 text-[8.5px] border-b border-slate-200 font-black">
                 <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/40">Day &gt; 1</th>
@@ -1252,7 +1252,7 @@ const Dashboard_CA = () => {
                 <th className="border-r border-blue-100 py-1.5 text-blue-750 bg-blue-50/40">Day &lt;= 4</th>
                 <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/40">Day &gt; 4</th>
                 <th className="border-r border-blue-250 py-1.5 text-blue-900 bg-blue-100/40">Total</th>
-                <th className="border-r border-slate-200 py-1.5 bg-blue-200/50 text-blue-950">Total</th>
+                <th className="border-r border-slate-200 py-1.5 bg-blue-200/50 text-blue-955">Total</th>
 
                 <th className="border-r border-amber-100 py-1.5 text-red-650 bg-amber-50/40">Day &gt; 1</th>
                 <th className="border-r border-amber-200 py-1.5 text-amber-900 bg-amber-100/40">Total</th>
@@ -1263,10 +1263,6 @@ const Dashboard_CA = () => {
                 <th className="border-r border-amber-100 py-1.5 text-red-650 bg-amber-50/40">Day &gt; 4</th>
                 <th className="border-r border-amber-250 py-1.5 text-amber-900 bg-amber-100/40">Total</th>
                 <th className="border-r border-slate-200 py-1.5 bg-amber-200/50 text-amber-955">Total</th>
-
-                <th className="border-r border-indigo-100 py-1.5 text-indigo-700 bg-indigo-50/40">Under KPI</th>
-                <th className="border-r border-indigo-100 py-1.5 text-red-650 bg-indigo-50/40">Over KPI</th>
-                <th className="py-1.5 bg-indigo-200/50 text-indigo-950 font-black">Total</th>
               </tr>
               
               <tr className="bg-slate-50 text-slate-800 font-black text-[10px] border-b border-slate-300 shadow-inner">
