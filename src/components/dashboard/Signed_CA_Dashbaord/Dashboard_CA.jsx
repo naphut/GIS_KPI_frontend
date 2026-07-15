@@ -1205,9 +1205,9 @@ const Dashboard_CA = () => {
           <table className="min-w-full text-center border-collapse table-fixed text-[10px] font-bold text-slate-700">
             <thead>
               <tr className="text-white text-[10px] border-b border-slate-200">
-                <th rowSpan="4" className="bg-slate-700 border-r border-slate-600 w-[40px] py-2 font-bold uppercase tracking-wider">No</th>
-                <th rowSpan="4" className="bg-slate-700 border-r border-slate-600 w-[60px] py-2 font-bold uppercase tracking-wider">Code branch</th>
-                <th rowSpan="4" className="bg-slate-700 border-r border-slate-600 w-[180px] py-2 text-left px-3 font-bold uppercase tracking-wider">Units name</th>
+                <th rowSpan="4" className="bg-[#1e293b] border-r border-slate-700 w-[40px] py-2 font-bold uppercase tracking-wider">NO</th>
+                <th rowSpan="4" className="bg-[#1e293b] border-r border-slate-700 w-[60px] py-2 font-bold uppercase tracking-wider">CODE BRANCH</th>
+                <th rowSpan="4" className="bg-[#1e293b] border-r border-slate-700 w-[180px] py-2 text-left px-3 font-bold uppercase tracking-wider">UNITS NAME</th>
                 
                 <th colSpan="9" className="bg-blue-600 border-r border-blue-700 py-1.5 font-bold uppercase tracking-wider text-[9.5px]">
                   STOCK OUT RECEIPT
@@ -1215,7 +1215,7 @@ const Dashboard_CA = () => {
                 <th colSpan="9" className="bg-amber-600 border-r border-amber-700 py-1.5 font-bold uppercase tracking-wider text-[9.5px]">
                   STOCK IN RECEIPT
                 </th>
-                <th rowSpan="2" colSpan="3" className="bg-slate-800 py-1.5 font-bold uppercase tracking-wider text-[9.5px]">
+                <th rowSpan="2" colSpan="3" className="bg-red-600 py-1.5 font-bold uppercase tracking-wider text-[9.5px]">
                   Total
                 </th>
               </tr>
@@ -1239,9 +1239,9 @@ const Dashboard_CA = () => {
                 <th colSpan="3" className="bg-amber-50 text-amber-800 border-r border-amber-200 py-1">KPI = 7DAYS</th>
                 <th colSpan="3" className="bg-amber-50 text-amber-800 border-r border-amber-200 py-1">KPI = 7DAYS</th>
                 
-                <th rowSpan="2" className="bg-slate-800 border-r border-slate-900 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Under KPI</th>
-                <th rowSpan="2" className="bg-slate-800 border-r border-slate-900 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Over KPI</th>
-                <th rowSpan="2" className="bg-slate-800 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Total</th>
+                <th rowSpan="2" className="bg-red-700 border-r border-red-800 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Under KPI</th>
+                <th rowSpan="2" className="bg-red-700 border-r border-red-800 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Over KPI</th>
+                <th rowSpan="2" className="bg-red-800 py-1 font-bold text-white uppercase tracking-wider text-[8px] vertical-align-middle">Total</th>
               </tr>
               <tr className="bg-slate-100 text-slate-650 text-[8.5px] border-b border-slate-200 font-black">
                 <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/40">Day &gt; 1</th>
@@ -1288,9 +1288,9 @@ const Dashboard_CA = () => {
                 <td className="border-r border-amber-250 py-2 bg-amber-50/10">{formatVal(totalInCancelTotal)}</td>
                 <td className="border-r border-slate-200 py-2 bg-amber-100 text-amber-900 font-black">{formatVal(totalInTotal)}</td>
 
-                <td className="border-r border-indigo-100 py-2 bg-indigo-50/10 text-indigo-800 font-bold">{formatVal(totalUnder)}</td>
-                <td className={`border-r border-indigo-200 py-2 bg-indigo-50/10 ${totalOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalOver)}</td>
-                <td className="py-2 bg-indigo-200 text-indigo-950 font-black text-[10.5px]">{formatVal(totalAll)}</td>
+                <td className="border-r border-red-100 py-2 bg-red-50/10 text-red-800 font-bold">{formatVal(totalUnder)}</td>
+                <td className={`border-r border-red-200 py-2 bg-red-50/10 ${totalOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalOver)}</td>
+                <td className="py-2 bg-red-200 text-red-950 font-black text-[10.5px]">{formatVal(totalAll)}</td>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-150 bg-white">
@@ -1320,9 +1320,9 @@ const Dashboard_CA = () => {
                   <td className="border-r border-slate-150 py-1.5 bg-amber-50/5 font-medium text-slate-650">{formatVal(row.sInCancelTotal)}</td>
                   <td className="border-r border-slate-200 py-1.5 bg-amber-100/10 text-amber-900 font-bold">{formatVal(row.sInTotal)}</td>
 
-                  <td className="border-r border-slate-200 py-1.5 bg-indigo-50/5 text-slate-600 font-medium">{formatVal(row.underKpi)}</td>
-                  <td className={`border-r border-slate-200 py-1.5 bg-indigo-50/5 ${row.overKpi > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.overKpi)}</td>
-                  <td className="py-1.5 bg-indigo-100/10 text-indigo-950 font-black">{formatVal(row.total)}</td>
+                  <td className="border-r border-slate-200 py-1.5 bg-red-50/5 text-red-700 font-bold">{formatVal(row.underKpi)}</td>
+                  <td className={`border-r border-slate-200 py-1.5 bg-red-50/5 ${row.overKpi > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.overKpi)}</td>
+                  <td className="py-1.5 bg-red-100/10 text-red-950 font-black">{formatVal(row.total)}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
