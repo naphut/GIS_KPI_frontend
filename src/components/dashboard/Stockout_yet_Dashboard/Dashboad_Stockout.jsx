@@ -1017,9 +1017,9 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           <table className="min-w-full text-center border-collapse table-fixed text-[11px] font-bold text-slate-700">
             <thead>
               <tr className="text-white text-[11px] border-b border-slate-200">
-                <th rowSpan="2" className="bg-slate-700 border-r border-slate-650 w-[40px] py-3.5 font-bold uppercase tracking-wider">No</th>
-                <th rowSpan="2" className="bg-slate-700 border-r border-slate-650 w-[70px] py-3.5 font-bold uppercase tracking-wider">Code</th>
-                <th rowSpan="2" className="bg-slate-700 border-r border-slate-650 w-[200px] py-3.5 text-left px-4 font-bold uppercase tracking-wider">Units name</th>
+                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[40px] py-3.5 font-bold uppercase tracking-wider">No</th>
+                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[70px] py-3.5 font-bold uppercase tracking-wider">Code</th>
+                <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[200px] py-3.5 text-left px-4 font-bold uppercase tracking-wider">Units name</th>
                 
                 <th colSpan="3" className="bg-blue-600 border-r border-blue-700 py-2 font-bold uppercase tracking-wider">
                   Sheet 01<br/>
@@ -1044,9 +1044,6 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                 <th colSpan="3" className="bg-indigo-950 py-1.5 font-black text-indigo-200">KPI TARGETS</th>
               </tr>
               <tr className="bg-slate-100 text-slate-600 text-[9px] border-b border-slate-200 font-bold">
-                <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
-                <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
-                <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
                 
                 <th className="border-r border-blue-100 py-2 text-blue-700 bg-blue-50/30">Day &lt;= 4</th>
                 <th className="border-r border-blue-100 py-2 text-red-600 bg-blue-50/30">Day &gt; 4</th>
