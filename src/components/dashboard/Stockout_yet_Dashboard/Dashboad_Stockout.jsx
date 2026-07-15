@@ -971,9 +971,12 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                 Stockout KPI Summary Report
               </h1>
             </div>
-            <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">
-              Performance & delay summary of all active remaining items for branch: <span className="text-blue-600 font-bold">{screenshotUnit}</span>
-            </p>
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-600 font-bold uppercase">
+              <span>Branch:</span>
+              <span className="bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded-md border border-blue-100 font-black tracking-wider text-[10px]">
+                {screenshotUnit}
+              </span>
+            </div>
           </div>
           <div className="text-right text-[10px] font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
             <div>Date: <strong className="text-slate-900">{new Date().toLocaleDateString('en-GB')}</strong></div>
