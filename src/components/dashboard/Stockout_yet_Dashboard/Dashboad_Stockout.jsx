@@ -882,14 +882,14 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       const m3Items = getUnitM3Items(unit);
       
       const teamsSet = new Set();
-      m1Items.forEach(item => { teamsSet.add((item.groupReceiver || 'UNASSIGNED').trim()); });
-      m2Items.forEach(item => { teamsSet.add((item.recipient || 'UNASSIGNED').trim()); });
-      m3Items.forEach(item => { teamsSet.add((item.unitConfirm || 'UNASSIGNED').trim()); });
+      m1Items.forEach(item => { if (item.groupReceiver && item.groupReceiver.trim()) teamsSet.add(item.groupReceiver.trim()); });
+      m2Items.forEach(item => { if (item.recipient && item.recipient.trim()) teamsSet.add(item.recipient.trim()); });
+      m3Items.forEach(item => { if (item.unitConfirm && item.unitConfirm.trim()) teamsSet.add(item.unitConfirm.trim()); });
       
       const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
       
       teams.forEach(team => {
-        const matchTeam = (val) => (val || 'UNASSIGNED').trim() === team;
+        const matchTeam = (val) => val && val.trim() === team;
         
         const s1Under = m1Items.filter(item => matchTeam(item.groupReceiver) && (parseInt(item.daysDiff) || 0) <= 4).length;
         const s1Over = m1Items.filter(item => matchTeam(item.groupReceiver) && (parseInt(item.daysDiff) || 0) > 4).length;
@@ -1022,15 +1022,15 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                 <th rowSpan="3" className="bg-slate-700 border-r border-slate-650 w-[200px] py-2 text-left px-4 font-bold uppercase tracking-wider">Units name</th>
                 
                 <th colSpan="3" className="bg-blue-600 border-r border-blue-700 py-2 font-bold uppercase tracking-wider">
-                  Sheet 01<br/>
+                  TEAM STEP 1<br/>
                   <span className="text-[9px] font-normal text-white/80">Stock out not Confirm goods</span>
                 </th>
                 <th colSpan="3" className="bg-amber-600 border-r border-amber-700 py-2 font-bold uppercase tracking-wider">
-                  Sheet 02<br/>
+                  ASSET STEP :2<br/>
                   <span className="text-[9px] font-normal text-white/80">Stock out not create hand over</span>
                 </th>
                 <th colSpan="3" className="bg-purple-600 border-r border-purple-700 py-2 font-bold uppercase tracking-wider">
-                  Sheet 03<br/>
+                  TEAM STEP 3<br/>
                   <span className="text-[9px] font-normal text-white/80">Hand over not Confirmed</span>
                 </th>
                 <th colSpan="3" className="bg-indigo-900 py-2 font-bold uppercase tracking-wider">
@@ -1063,7 +1063,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
               </tr>
               
               <tr className="bg-slate-50 text-slate-800 font-black text-[11px] border-b border-slate-300 shadow-inner">
-                <td colSpan="3" className="border-r border-slate-300 text-center py-2.5 uppercase tracking-wider text-slate-950">Grand Total</td>
+                <td colSpan="3" className="border-r border-slate-300 text-center py-2.5 uppercase tracking-wider text-slate-950">TEAM</td>
                 <td className="border-r border-blue-100 py-2.5 text-blue-800 bg-blue-50/20">{formatVal(totalS1Under)}</td>
                 <td className="border-r border-blue-200 py-2.5 bg-blue-50/20">
                   {totalS1Over > 0 ? (
