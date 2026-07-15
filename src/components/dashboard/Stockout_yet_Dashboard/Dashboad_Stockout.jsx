@@ -984,34 +984,28 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-sm flex items-center justify-between">
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">👥</span>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Teams</span>
-              <span className="text-xl font-black text-slate-800 mt-0.5 block">{rows.length}</span>
-            </div>
-            <div className="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center text-base text-blue-600 font-bold">
-              👥
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Active Teams</span>
+              <span className="text-sm font-black text-slate-800 mt-1 block leading-none">{rows.length}</span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-sm flex items-center justify-between">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">✅</span>
             <div>
-              <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider block">Under KPI (On-Time)</span>
-              <span className="text-xl font-black text-emerald-600 mt-0.5 block">{totalUnder}</span>
-            </div>
-            <div className="w-9 h-9 bg-emerald-50 rounded-lg flex items-center justify-center text-base text-emerald-600 font-bold">
-              ✅
+              <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider block leading-none">Under KPI (On-Time)</span>
+              <span className="text-sm font-black text-emerald-600 mt-1 block leading-none">{totalUnder}</span>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-sm flex items-center justify-between">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">🚨</span>
             <div>
-              <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider block">Over KPI (Delayed)</span>
-              <span className="text-xl font-black text-red-600 mt-0.5 block">{totalOver}</span>
-            </div>
-            <div className="w-9 h-9 bg-red-50 rounded-lg flex items-center justify-center text-base text-red-600 font-bold">
-              🚨
+              <span className="text-[9px] font-bold text-red-500 uppercase tracking-wider block leading-none">Over KPI (Delayed)</span>
+              <span className="text-sm font-black text-red-600 mt-1 block leading-none">{totalOver}</span>
             </div>
           </div>
         </div>
@@ -1236,12 +1230,10 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         throw new Error('Failed to generate summary image');
       }
 
-      const caption = `📊 <b>STOCKOUT OVERALL SUMMARY REPORT - TARGET GROUP: ${unit}</b>\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`;
-
       const result = await sendPhotoToTelegram(
         unit,
         blob,
-        caption,
+        '',
         abortControllerRef.current.signal
       );
 
