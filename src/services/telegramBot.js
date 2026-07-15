@@ -17,7 +17,7 @@ const DEFAULT_TOKEN = '8571996109:AAHiDszOTGk4uEnb0iPKcnNXlGoTSE7K740';
 // Group IDs for each province (NEW)
 const GROUP_IDS = {
   'BAN': 'NEW_ID',
-  'BAT': 'NEW_ID',
+  'BAT': '-1004433153728',
   'CHA': 'NEW_ID',
   'CHH': 'NEW_ID',
   'KAM': 'NEW_ID',
@@ -26,7 +26,7 @@ const GROUP_IDS = {
   'KOH': 'NEW_ID',
   'KRA': 'NEW_ID',
   'MON': 'NEW_ID',
-  'ODD': 'NEW_ID',
+  'ODD': '-1004319408514',
   'PNP': '-5359041682',
   'PNPZ1': 'NEW_ID',
   'PNPZ2': 'NEW_ID',
