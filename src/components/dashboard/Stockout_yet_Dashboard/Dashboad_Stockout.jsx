@@ -955,109 +955,198 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
           zIndex: -9999,
           pointerEvents: 'none',
           width: '1200px',
-          background: '#ffffff',
-          padding: '24px',
+          background: '#f8fafc',
+          padding: '32px',
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
         }}
       >
-        <div className="flex justify-between items-center pb-4 border-b border-slate-200 mb-5">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm mb-6 flex justify-between items-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-amber-500"></div>
           <div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tight">📊 STOCKOUT SUMMARY REPORT - BRANCH: {screenshotUnit}</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Summary of active remaining stockout items grouped by team/unit for {screenshotUnit}</p>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📊</span>
+              <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase">
+                Stockout KPI Summary Report
+              </h1>
+            </div>
+            <p className="text-xs text-slate-500 mt-1 font-semibold">
+              Performance & delay summary of all active remaining items for branch: <span className="text-red-600 font-bold">{screenshotUnit}</span>
+            </p>
           </div>
-          <div className="text-right text-xs text-slate-500">
-            <div>Generated: <strong>{new Date().toLocaleDateString('en-GB')}</strong></div>
-            <div>Time: <strong>{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong></div>
+          <div className="text-right text-xs font-semibold text-slate-600 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">
+            <div>Date: <strong className="text-slate-900">{new Date().toLocaleDateString('en-GB')}</strong></div>
+            <div className="mt-0.5">Time: <strong className="text-slate-900">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong></div>
           </div>
         </div>
 
-        <div className="overflow-hidden border border-slate-200 rounded-xl shadow-sm">
-          <table className="min-w-full text-center border-collapse table-fixed text-[10px] font-medium text-slate-700">
+        <div className="grid grid-cols-3 gap-5 mb-6">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Active Teams</span>
+              <span className="text-3xl font-black text-slate-800 mt-1 block">{rows.length}</span>
+            </div>
+            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-xl text-blue-600 font-bold">
+              👥
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-emerald-500 uppercase tracking-wider block">Under KPI (On-Time)</span>
+              <span className="text-3xl font-black text-emerald-600 mt-1 block">{totalUnder}</span>
+            </div>
+            <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-xl text-emerald-600 font-bold">
+              ✅
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-red-500 uppercase tracking-wider block">Over KPI (Delayed)</span>
+              <span className="text-3xl font-black text-red-600 mt-1 block">{totalOver}</span>
+            </div>
+            <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-xl text-red-600 font-bold">
+              🚨
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+          <table className="min-w-full text-center border-collapse table-fixed text-[11px] font-bold text-slate-700">
             <thead>
-              <tr className="bg-red-600 text-white font-bold text-[10px] border-b border-red-700">
-                <th rowSpan="2" className="border-r border-red-700 w-[35px] py-2">No</th>
-                <th rowSpan="2" className="border-r border-red-700 w-[60px] py-2">Units Code</th>
-                <th rowSpan="2" className="border-r border-red-700 w-[180px] py-2 text-left px-3">Units name</th>
-                <th colSpan="3" className="border-r border-red-700 py-1">Sheet 01<br/>Stock out not Confirm goods</th>
-                <th colSpan="3" className="border-r border-red-700 py-1">Sheet 02<br/>Stock out not create hand over for using</th>
-                <th colSpan="3" className="border-r border-red-700 py-1">Sheet 03<br/>Hand over not Confirmed</th>
-                <th colSpan="3" className="py-1">Total</th>
+              <tr className="bg-gradient-to-r from-red-600 to-rose-700 text-white text-[11px] border-b border-red-700">
+                <th rowSpan="2" className="border-r border-red-700/30 w-[40px] py-3.5 font-bold uppercase tracking-wider">No</th>
+                <th rowSpan="2" className="border-r border-red-700/30 w-[70px] py-3.5 font-bold uppercase tracking-wider">Code</th>
+                <th rowSpan="2" className="border-r border-red-700/30 w-[200px] py-3.5 text-left px-4 font-bold uppercase tracking-wider">Units name</th>
+                <th colSpan="3" className="border-r border-red-700/30 py-2 font-bold uppercase tracking-wider">Sheet 01<br/><span className="text-[9px] font-normal text-white/80">Stock out not Confirm goods</span></th>
+                <th colSpan="3" className="border-r border-red-700/30 py-2 font-bold uppercase tracking-wider">Sheet 02<br/><span className="text-[9px] font-normal text-white/80">Stock out not create hand over</span></th>
+                <th colSpan="3" className="border-r border-red-700/30 py-2 font-bold uppercase tracking-wider">Sheet 03<br/><span className="text-[9px] font-normal text-white/80">Hand over not Confirmed</span></th>
+                <th colSpan="3" className="py-2 font-bold uppercase tracking-wider">Total Summary</th>
               </tr>
-              <tr className="bg-red-600 text-white font-bold text-[9px] border-b border-slate-200">
-                <th colSpan="3" className="border-r border-red-700 py-1">KPI = 4 DAYS</th>
-                <th colSpan="3" className="border-r border-red-700 py-1">KPI = 3 DAYS</th>
-                <th colSpan="3" className="border-r border-red-700 py-1">KPI = 3 DAYS</th>
-                <th colSpan="3" className="py-1"></th>
+              <tr className="bg-gradient-to-r from-red-600 to-rose-700 text-white text-[10px] border-b border-red-800/50">
+                <th colSpan="3" className="border-r border-red-700/30 py-1.5 font-black text-amber-300">KPI = 4 DAYS</th>
+                <th colSpan="3" className="border-r border-red-700/30 py-1.5 font-black text-amber-300">KPI = 3 DAYS</th>
+                <th colSpan="3" className="border-r border-red-700/30 py-1.5 font-black text-amber-300">KPI = 3 DAYS</th>
+                <th colSpan="3" className="py-1.5 font-black text-amber-200">KPI TARGETS</th>
               </tr>
-              <tr className="bg-red-600 text-white font-bold text-[9px] border-b border-slate-300">
-                <th className="border-r border-red-700 py-1" style={{display: 'none'}}></th>
-                <th className="border-r border-red-700 py-1" style={{display: 'none'}}></th>
-                <th className="border-r border-red-700 py-1" style={{display: 'none'}}></th>
+              <tr className="bg-slate-100 text-slate-600 text-[9px] border-b border-slate-200 font-bold">
+                <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
+                <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
+                <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
                 
-                <th className="border-r border-red-700 py-1">Day &lt;= 4</th>
-                <th className="border-r border-red-700 py-1">Day &gt; 4</th>
-                <th className="border-r border-red-700 py-1">Total</th>
+                <th className="border-r border-slate-200 py-2 text-emerald-600 font-bold">Day &lt;= 4</th>
+                <th className="border-r border-slate-200 py-2 text-red-600 font-bold">Day &gt; 4</th>
+                <th className="border-r border-slate-200 py-2 bg-slate-200/40 text-slate-800 font-bold">Total</th>
                 
-                <th className="border-r border-red-700 py-1">Day &lt;= 3</th>
-                <th className="border-r border-red-700 py-1">Day &gt; 3</th>
-                <th className="border-r border-red-700 py-1">Total</th>
+                <th className="border-r border-slate-200 py-2 text-emerald-600 font-bold">Day &lt;= 3</th>
+                <th className="border-r border-slate-200 py-2 text-red-600 font-bold">Day &gt; 3</th>
+                <th className="border-r border-slate-200 py-2 bg-slate-200/40 text-slate-800 font-bold">Total</th>
                 
-                <th className="border-r border-red-700 py-1">Day &lt;= 3</th>
-                <th className="border-r border-red-700 py-1">Day &gt; 3</th>
-                <th className="border-r border-red-700 py-1">Total</th>
+                <th className="border-r border-slate-200 py-2 text-emerald-600 font-bold">Day &lt;= 3</th>
+                <th className="border-r border-slate-200 py-2 text-red-600 font-bold">Day &gt; 3</th>
+                <th className="border-r border-slate-200 py-2 bg-slate-200/40 text-slate-800 font-bold">Total</th>
                 
-                <th className="border-r border-red-700 py-1">Under KPI</th>
-                <th className="border-r border-red-700 py-1">Over KPI</th>
-                <th className="py-1">Total</th>
+                <th className="border-r border-slate-200 py-2 text-emerald-600 font-bold">Under KPI</th>
+                <th className="border-r border-slate-200 py-2 text-red-600 font-bold">Over KPI</th>
+                <th className="py-2 bg-slate-200/80 text-slate-900 font-black">Overall Total</th>
               </tr>
               
-              <tr className="bg-slate-100 text-slate-900 font-extrabold text-[10px] border-b border-slate-300">
-                <td colSpan="3" className="border-r border-slate-300 text-center py-2 uppercase tracking-wider">Total</td>
-                <td className="border-r border-slate-300 py-2">{formatVal(totalS1Under)}</td>
-                <td className={`border-r border-slate-300 py-2 ${totalS1Over > 0 ? 'bg-red-50 text-red-700' : ''}`}>{formatVal(totalS1Over)}</td>
-                <td className="border-r border-slate-300 py-2 bg-slate-200/50">{formatVal(totalS1Total)}</td>
+              <tr className="bg-slate-50 text-slate-800 font-black text-[11px] border-b border-slate-300 shadow-inner">
+                <td colSpan="3" className="border-r border-slate-300 text-center py-2.5 uppercase tracking-wider text-slate-950">Grand Total</td>
+                <td className="border-r border-slate-200 py-2.5 text-emerald-700 font-bold">{formatVal(totalS1Under)}</td>
+                <td className="border-r border-slate-200 py-2.5 text-red-700 font-bold">
+                  {totalS1Over > 0 ? (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
+                      {totalS1Over}
+                    </span>
+                  ) : '-'}
+                </td>
+                <td className="border-r border-slate-200 py-2.5 bg-slate-100 text-slate-900">{formatVal(totalS1Total)}</td>
                 
-                <td className="border-r border-slate-300 py-2">{formatVal(totalS2Under)}</td>
-                <td className={`border-r border-slate-300 py-2 ${totalS2Over > 0 ? 'bg-red-50 text-red-700' : ''}`}>{formatVal(totalS2Over)}</td>
-                <td className="border-r border-slate-300 py-2 bg-slate-200/50">{formatVal(totalS2Total)}</td>
+                <td className="border-r border-slate-200 py-2.5 text-emerald-700 font-bold">{formatVal(totalS2Under)}</td>
+                <td className="border-r border-slate-200 py-2.5 text-red-700 font-bold">
+                  {totalS2Over > 0 ? (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
+                      {totalS2Over}
+                    </span>
+                  ) : '-'}
+                </td>
+                <td className="border-r border-slate-200 py-2.5 bg-slate-100 text-slate-900">{formatVal(totalS2Total)}</td>
                 
-                <td className="border-r border-slate-300 py-2">{formatVal(totalS3Under)}</td>
-                <td className={`border-r border-slate-300 py-2 ${totalS3Over > 0 ? 'bg-red-50 text-red-700' : ''}`}>{formatVal(totalS3Over)}</td>
-                <td className="border-r border-slate-300 py-2 bg-slate-200/50">{formatVal(totalS3Total)}</td>
+                <td className="border-r border-slate-200 py-2.5 text-emerald-700 font-bold">{formatVal(totalS3Under)}</td>
+                <td className="border-r border-slate-200 py-2.5 text-red-700 font-bold">
+                  {totalS3Over > 0 ? (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
+                      {totalS3Over}
+                    </span>
+                  ) : '-'}
+                </td>
+                <td className="border-r border-slate-200 py-2.5 bg-slate-100 text-slate-900">{formatVal(totalS3Total)}</td>
                 
-                <td className="border-r border-slate-300 py-2 bg-slate-200/30">{formatVal(totalUnder)}</td>
-                <td className={`border-r border-slate-300 py-2 ${totalOver > 0 ? 'bg-red-100 text-red-800' : ''}`}>{formatVal(totalOver)}</td>
-                <td className="py-2 bg-slate-200 font-black">{formatVal(totalAll)}</td>
+                <td className="border-r border-slate-200 py-2.5 bg-slate-100/50 text-emerald-700 font-bold">{formatVal(totalUnder)}</td>
+                <td className="border-r border-slate-200 py-2.5 bg-slate-100/50 text-red-700">
+                  {totalOver > 0 ? (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-600 text-white shadow-sm font-black">
+                      {totalOver}
+                    </span>
+                  ) : '-'}
+                </td>
+                <td className="py-2.5 bg-slate-200 text-slate-950 font-black text-xs">{formatVal(totalAll)}</td>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 bg-white">
+            <tbody className="divide-y divide-slate-150 bg-white">
               {rows.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                  <td className="border-r border-slate-200 py-1.5 font-bold text-slate-400">{idx + 1}</td>
-                  <td className="border-r border-slate-200 py-1.5 font-bold text-slate-800">{row.unit}</td>
-                  <td className="border-r border-slate-200 py-1.5 text-left px-3 font-semibold text-slate-800 break-all">{row.team}</td>
+                <tr key={idx} className="hover:bg-slate-50/50 transition-colors odd:bg-white even:bg-slate-50/20 text-slate-700">
+                  <td className="border-r border-slate-200 py-2 font-bold text-slate-400">{idx + 1}</td>
+                  <td className="border-r border-slate-200 py-2 font-bold text-slate-800">{row.unit}</td>
+                  <td className="border-r border-slate-200 py-2 text-left px-4 font-semibold text-slate-900 break-all">{row.team}</td>
                   
-                  <td className="border-r border-slate-200 py-1.5">{formatVal(row.s1Under)}</td>
-                  <td className={`border-r border-slate-200 py-1.5 ${row.s1Over > 0 ? 'bg-red-50 text-red-700 font-bold' : ''}`}>{formatVal(row.s1Over)}</td>
-                  <td className="border-r border-slate-200 py-1.5 bg-slate-50/50 font-bold">{formatVal(row.s1Total)}</td>
+                  <td className="border-r border-slate-150 py-2 text-slate-600 font-medium">{formatVal(row.s1Under)}</td>
+                  <td className="border-r border-slate-150 py-2">
+                    {row.s1Over > 0 ? (
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
+                        {row.s1Over
+                        }
+                      </span>
+                    ) : '-'}
+                  </td>
+                  <td className="border-r border-slate-150 py-2 bg-slate-50/50 text-slate-800 font-bold">{formatVal(row.s1Total)}</td>
                   
-                  <td className="border-r border-slate-200 py-1.5">{formatVal(row.s2Under)}</td>
-                  <td className={`border-r border-slate-200 py-1.5 ${row.s2Over > 0 ? 'bg-red-50 text-red-700 font-bold' : ''}`}>{formatVal(row.s2Over)}</td>
-                  <td className="border-r border-slate-200 py-1.5 bg-slate-50/50 font-bold">{formatVal(row.s2Total)}</td>
+                  <td className="border-r border-slate-150 py-2 text-slate-600 font-medium">{formatVal(row.s2Under)}</td>
+                  <td className="border-r border-slate-150 py-2">
+                    {row.s2Over > 0 ? (
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
+                        {row.s2Over}
+                      </span>
+                    ) : '-'}
+                  </td>
+                  <td className="border-r border-slate-150 py-2 bg-slate-50/50 text-slate-800 font-bold">{formatVal(row.s2Total)}</td>
                   
-                  <td className="border-r border-slate-200 py-1.5">{formatVal(row.s3Under)}</td>
-                  <td className={`border-r border-slate-200 py-1.5 ${row.s3Over > 0 ? 'bg-red-50 text-red-700 font-bold' : ''}`}>{formatVal(row.s3Over)}</td>
-                  <td className="border-r border-slate-200 py-1.5 bg-slate-50/50 font-bold">{formatVal(row.s3Total)}</td>
+                  <td className="border-r border-slate-150 py-2 text-slate-600 font-medium">{formatVal(row.s3Under)}</td>
+                  <td className="border-r border-slate-150 py-2">
+                    {row.s3Over > 0 ? (
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
+                        {row.s3Over}
+                      </span>
+                    ) : '-'}
+                  </td>
+                  <td className="border-r border-slate-150 py-2 bg-slate-50/50 text-slate-800 font-bold">{formatVal(row.s3Total)}</td>
                   
-                  <td className="border-r border-slate-200 py-1.5 bg-slate-50/20">{formatVal(row.underKpi)}</td>
-                  <td className={`border-r border-slate-200 py-1.5 ${row.overKpi > 0 ? 'bg-red-100 text-red-800 font-black' : ''}`}>{formatVal(row.overKpi)}</td>
-                  <td className="py-1.5 bg-slate-100 font-black text-slate-900">{formatVal(row.total)}</td>
+                  <td className="border-r border-slate-200 py-2 bg-slate-50/20 text-slate-600 font-medium">{formatVal(row.underKpi)}</td>
+                  <td className="border-r border-slate-200 py-2 bg-slate-50/20">
+                    {row.overKpi > 0 ? (
+                      <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold border border-red-200">
+                        {row.overKpi}
+                      </span>
+                    ) : '-'}
+                  </td>
+                  <td className="py-2 bg-slate-100 text-slate-900 font-black">{formatVal(row.total)}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan="15" className="py-10 text-center text-slate-400 font-medium bg-slate-50/50">
-                    🎉 No active remaining items in system! All modules completed.
+                  <td colSpan="15" className="py-12 text-center text-slate-400 font-medium bg-slate-50/50 text-xs">
+                    🎉 Outstanding completion! No pending stockout items found under this branch.
                   </td>
                 </tr>
               )}
