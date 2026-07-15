@@ -1736,7 +1736,7 @@ const Dashboard_CA = () => {
               {isSending && !screenshotMode && <span className="ml-1 animate-spin">⏳</span>}
             </button>
 
-            {/* Send Screenshot All */}
+            {/* Send Image All */}
             <button
               onClick={sendToAllScreenshot}
               disabled={isSending || configuredCount === 0}
@@ -1745,14 +1745,14 @@ const Dashboard_CA = () => {
                   ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 shadow-purple-200'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
-              title={configuredCount === 0 ? 'No provinces configured' : 'Send screenshot to all configured provinces'}
+              title={configuredCount === 0 ? 'No provinces configured' : 'Send image to all configured provinces'}
             >
               <span>📸</span>
-              Send Screenshot All ({configuredCount})
+              Send Image All ({configuredCount})
               {isSending && screenshotMode && <span className="ml-1 animate-spin">⏳</span>}
             </button>
             
-             {/* Send to Unit Text */}
+             {/* Send Text Unit (1) */}
             <button
               onClick={() => {
                 setIsSelectingForSummary(false);
@@ -1763,10 +1763,10 @@ const Dashboard_CA = () => {
               className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-200 font-semibold text-sm"
             >
               <span>📍</span>
-              Send to Unit
+              Send Text Unit (1)
             </button>
 
-            {/* Send to Unit Screenshot */}
+            {/* Send Image Unit (1) */}
             <button
               onClick={() => {
                 setIsSelectingForSummary(false);
@@ -1776,8 +1776,8 @@ const Dashboard_CA = () => {
               disabled={isSending}
               className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-indigo-200 font-semibold text-sm"
             >
-              <span>📸</span>
-              Send to Unit Screenshot
+              <span>🖼️</span>
+              Send Image Unit (1)
             </button>
 
             {/* Summary Image */}
@@ -1790,7 +1790,7 @@ const Dashboard_CA = () => {
               disabled={isSending}
               className="px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-purple-200 font-semibold text-sm"
             >
-              <span>🖼️</span>
+              <span>📊</span>
               Summary Image
             </button>
           </div>
