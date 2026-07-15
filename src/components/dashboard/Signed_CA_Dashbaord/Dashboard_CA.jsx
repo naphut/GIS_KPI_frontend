@@ -1680,8 +1680,8 @@ const Dashboard_CA = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <span>📊</span> **របាយការណ៍ជូនដំណឹងអំពីបង្កាន់ដៃដែលមិនទាន់បានបញ្ជាក់ (Confirm) និងមិនទាន់បានចុះហត្ថលេខា "CA" ក្នុងប្រព័ន្ធនៅឡើយ។**
+              <h1 className="text-xl font-bold text-white flex items-center gap-2">
+                <span>📊</span> របាយការណ៍បង្កាន់ដៃដែលមិនទាន់បញ្ជាក់ និងមិនទាន់ចុះហត្ថលេខា CA ក្នុងប្រព័ន្ធ
               </h1>
               <span className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/30">
                 🟢 Live • {currentTime.toLocaleTimeString()}
