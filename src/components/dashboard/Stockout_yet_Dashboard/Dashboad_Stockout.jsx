@@ -1062,43 +1062,19 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
               <tr className="bg-slate-50 text-slate-800 font-black text-[11px] border-b border-slate-300 shadow-inner">
                 <td colSpan="3" className="border-r border-slate-300 text-center py-2.5 uppercase tracking-wider text-slate-950">TEAM</td>
                 <td className="border-r border-blue-100 py-2.5 text-blue-800 bg-blue-50/20">{formatVal(totalS1Under)}</td>
-                <td className="border-r border-blue-200 py-2.5 bg-blue-50/20">
-                  {totalS1Over > 0 ? (
-                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
-                      {totalS1Over}
-                    </span>
-                  ) : '-'}
-                </td>
+                <td className={`border-r border-blue-200 py-2.5 bg-blue-50/20 ${totalS1Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalS1Over)}</td>
                 <td className="border-r border-slate-200 py-2.5 bg-blue-100/30 text-blue-900 font-black">{formatVal(totalS1Total)}</td>
                 
                 <td className="border-r border-amber-100 py-2.5 text-amber-800 bg-amber-50/20">{formatVal(totalS2Under)}</td>
-                <td className="border-r border-amber-200 py-2.5 bg-amber-50/20">
-                  {totalS2Over > 0 ? (
-                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
-                      {totalS2Over}
-                    </span>
-                  ) : '-'}
-                </td>
+                <td className={`border-r border-amber-200 py-2.5 bg-amber-50/20 ${totalS2Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalS2Over)}</td>
                 <td className="border-r border-slate-200 py-2.5 bg-amber-100/30 text-amber-900 font-black">{formatVal(totalS2Total)}</td>
                 
                 <td className="border-r border-purple-100 py-2.5 text-purple-800 bg-purple-50/20">{formatVal(totalS3Under)}</td>
-                <td className="border-r border-purple-200 py-2.5 bg-purple-50/20">
-                  {totalS3Over > 0 ? (
-                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
-                      {totalS3Over}
-                    </span>
-                  ) : '-'}
-                </td>
+                <td className={`border-r border-purple-200 py-2.5 bg-purple-50/20 ${totalS3Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalS3Over)}</td>
                 <td className="border-r border-slate-200 py-2.5 bg-purple-100/30 text-purple-900 font-black">{formatVal(totalS3Total)}</td>
                 
                 <td className="border-r border-indigo-100 py-2.5 bg-indigo-50/20 text-indigo-800 font-bold">{formatVal(totalUnder)}</td>
-                <td className="border-r border-indigo-200 py-2.5 bg-indigo-50/20">
-                  {totalOver > 0 ? (
-                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-650 text-white font-black shadow-sm">
-                      {totalOver}
-                    </span>
-                  ) : '-'}
-                </td>
+                <td className={`border-r border-indigo-200 py-2.5 bg-indigo-50/20 ${totalOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalOver)}</td>
                 <td className="py-2.5 bg-indigo-200 text-indigo-950 font-black text-xs">{formatVal(totalAll)}</td>
               </tr>
             </thead>
@@ -1111,45 +1087,29 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                   
                   {/* Sheet 01 */}
                   <td className="border-r border-slate-150 py-2 text-slate-600 bg-blue-50/5 font-medium">{formatVal(row.s1Under)}</td>
-                  <td className="border-r border-slate-150 py-2 bg-blue-50/5">
-                    {row.s1Over > 0 ? (
-                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
-                        {row.s1Over}
-                      </span>
-                    ) : '-'}
+                  <td className={`border-r border-slate-150 py-2 bg-blue-50/5 ${row.s1Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>
+                    {formatVal(row.s1Over)}
                   </td>
                   <td className="border-r border-slate-150 py-2 bg-blue-100/10 text-blue-900 font-bold">{formatVal(row.s1Total)}</td>
                   
                   {/* Sheet 02 */}
                   <td className="border-r border-slate-150 py-2 text-slate-600 bg-amber-50/5 font-medium">{formatVal(row.s2Under)}</td>
-                  <td className="border-r border-slate-150 py-2 bg-amber-50/5">
-                    {row.s2Over > 0 ? (
-                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
-                        {row.s2Over}
-                      </span>
-                    ) : '-'}
+                  <td className={`border-r border-slate-150 py-2 bg-amber-50/5 ${row.s2Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>
+                    {formatVal(row.s2Over)}
                   </td>
                   <td className="border-r border-slate-150 py-2 bg-amber-100/10 text-amber-900 font-bold">{formatVal(row.s2Total)}</td>
                   
                   {/* Sheet 03 */}
                   <td className="border-r border-slate-150 py-2 text-slate-600 bg-purple-50/5 font-medium">{formatVal(row.s3Under)}</td>
-                  <td className="border-r border-slate-150 py-2 bg-purple-50/5">
-                    {row.s3Over > 0 ? (
-                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
-                        {row.s3Over}
-                      </span>
-                    ) : '-'}
+                  <td className={`border-r border-slate-150 py-2 bg-purple-50/5 ${row.s3Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>
+                    {formatVal(row.s3Over)}
                   </td>
                   <td className="border-r border-slate-150 py-2 bg-purple-100/10 text-purple-900 font-bold">{formatVal(row.s3Total)}</td>
                   
                   {/* Total summary */}
                   <td className="border-r border-slate-200 py-2 bg-indigo-50/5 text-slate-600 font-medium">{formatVal(row.underKpi)}</td>
-                  <td className="border-r border-slate-200 py-2 bg-indigo-50/5">
-                    {row.overKpi > 0 ? (
-                      <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold border border-red-200">
-                        {row.overKpi}
-                      </span>
-                    ) : '-'}
+                  <td className={`border-r border-slate-200 py-2 bg-indigo-50/5 ${row.overKpi > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>
+                    {formatVal(row.overKpi)}
                   </td>
                   <td className="py-2 bg-indigo-100/10 text-indigo-950 font-black">{formatVal(row.total)}</td>
                 </tr>
