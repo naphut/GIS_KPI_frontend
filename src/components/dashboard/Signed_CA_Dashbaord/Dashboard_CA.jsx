@@ -1215,9 +1215,7 @@ const Dashboard_CA = () => {
                 <th colSpan="9" className="bg-amber-600 border-r border-amber-700 border-b border-amber-700/60 py-2 font-bold uppercase tracking-wider text-[9.5px]">
                   STOCK IN RECEIPT
                 </th>
-                <th rowSpan="2" colSpan="3" className="bg-red-600 border-b border-red-700/60 py-2 font-bold uppercase tracking-wider text-[9.5px] align-middle">
-                  TOTAL
-                </th>
+                <th colSpan="3" className="bg-red-700 border-b border-red-800 py-1 font-bold text-red-200 uppercase tracking-wider text-[8.5px] align-middle text-center">KPI TARGETS</th>
               </tr>
               <tr className="text-white text-[9px]">
                 <th colSpan="2" className="bg-blue-700 border-r border-blue-800/60 border-b border-blue-800/40 py-1.5 font-bold">Unsigned</th>
@@ -1239,30 +1237,32 @@ const Dashboard_CA = () => {
                 <th colSpan="3" className="bg-amber-50 text-amber-800 border-r border-amber-200 border-b border-amber-200/60 py-1">KPI = 7DAYS</th>
                 <th colSpan="3" className="bg-amber-50 text-amber-800 border-r border-amber-200 border-b border-amber-200/60 py-1">KPI = 7DAYS</th>
                 
-                <th rowSpan="2" className="bg-red-700 border-r border-red-800 py-2 font-bold text-white uppercase tracking-wider text-[9px] align-middle leading-tight px-1 text-center">Under KPI</th>
-                <th rowSpan="2" className="bg-red-700 border-r border-red-800 py-2 font-bold text-white uppercase tracking-wider text-[9px] align-middle leading-tight px-1 text-center">Over KPI</th>
-                <th rowSpan="2" className="bg-red-800 py-2 font-bold text-white uppercase tracking-wider text-[9px] align-middle leading-tight px-1 text-center">Total</th>
+                <th colSpan="3" className="bg-red-700 border-r border-red-800 py-1 font-bold text-red-200 uppercase tracking-wider text-[8.5px] align-middle text-center">KPI TARGETS</th>
               </tr>
               <tr className="bg-slate-100 text-slate-650 text-[8.5px] font-black border-b border-slate-300">
-                <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/40">Day &gt; 1</th>
+                <th className="border-r border-blue-100 py-1.5 text-red-700 bg-red-100 font-extrabold">Day &gt; 1</th>
                 <th className="border-r border-blue-200 py-1.5 text-blue-900 bg-blue-100/40">Total</th>
                 <th className="border-r border-blue-100 py-1.5 text-blue-750 bg-blue-50/40">Day &lt;= 4</th>
-                <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/40">Day &gt; 4</th>
+                <th className="border-r border-blue-100 py-1.5 text-red-700 bg-red-100 font-extrabold">Day &gt; 4</th>
                 <th className="border-r border-blue-200 py-1.5 text-blue-900 bg-blue-100/40">Total</th>
                 <th className="border-r border-blue-100 py-1.5 text-blue-750 bg-blue-50/40">Day &lt;= 4</th>
-                <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/40">Day &gt; 4</th>
+                <th className="border-r border-blue-100 py-1.5 text-red-700 bg-red-100 font-extrabold">Day &gt; 4</th>
                 <th className="border-r border-blue-250 py-1.5 text-blue-900 bg-blue-100/40">Total</th>
                 <th className="border-r border-slate-200 py-1.5 bg-blue-200/50 text-blue-955">Total</th>
 
-                <th className="border-r border-amber-100 py-1.5 text-red-650 bg-amber-50/40">Day &gt; 1</th>
+                <th className="border-r border-amber-100 py-1.5 text-red-700 bg-red-100 font-extrabold">Day &gt; 1</th>
                 <th className="border-r border-amber-200 py-1.5 text-amber-900 bg-amber-100/40">Total</th>
                 <th className="border-r border-amber-100 py-1.5 text-amber-750 bg-amber-50/40">Day &lt;= 4</th>
-                <th className="border-r border-amber-100 py-1.5 text-red-650 bg-amber-50/40">Day &gt; 4</th>
+                <th className="border-r border-amber-100 py-1.5 text-red-700 bg-red-100 font-extrabold">Day &gt; 4</th>
                 <th className="border-r border-amber-200 py-1.5 text-amber-900 bg-amber-100/40">Total</th>
                 <th className="border-r border-amber-100 py-1.5 text-amber-750 bg-amber-50/40">Day &lt;= 4</th>
-                <th className="border-r border-amber-100 py-1.5 text-red-650 bg-amber-50/40">Day &gt; 4</th>
+                <th className="border-r border-amber-100 py-1.5 text-red-700 bg-red-100 font-extrabold">Day &gt; 4</th>
                 <th className="border-r border-amber-250 py-1.5 text-amber-900 bg-amber-100/40">Total</th>
                 <th className="border-r border-slate-200 py-1.5 bg-amber-200/50 text-amber-955">Total</th>
+
+                <th className="border-r border-red-200 py-1.5 bg-red-700 text-white font-bold text-[8.5px]">Under KPI</th>
+                <th className="border-r border-red-200 py-1.5 bg-red-700 text-white font-bold text-[8.5px]">Over KPI</th>
+                <th className="py-1.5 bg-red-800 text-white font-bold text-[8.5px]">Total</th>
               </tr>
               
               <tr className="bg-slate-50 text-slate-800 font-black text-[10px] border-b border-slate-300 shadow-inner">
