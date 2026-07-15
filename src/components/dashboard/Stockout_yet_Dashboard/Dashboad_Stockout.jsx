@@ -87,6 +87,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const [activeM3Items, setActiveM3Items] = useState([]);
   const [screenshotPartText, setScreenshotPartText] = useState("");
   const [screenshotTitle, setScreenshotTitle] = useState("CONFIRMED HAND OVER REPORT");
+  const [summaryImageMode, setSummaryImageMode] = useState(false);
+  const [isSelectingForSummary, setIsSelectingForSummary] = useState(false);
 
   // Update time every minute
   useEffect(() => {
@@ -870,6 +872,315 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     return tasks;
   };
 
+  const getSummaryRows = () => {
+    const rows = [];
+    allUnits.forEach(unit => {
+      const m1Items = getUnitM1Items(unit);
+      const m2Items = getUnitM2Items(unit);
+      const m3Items = getUnitM3Items(unit);
+      
+      const teamsSet = new Set();
+      m1Items.forEach(item => { if (item.groupReceiver) teamsSet.add(item.groupReceiver.trim()); });
+      m2Items.forEach(item => { if (item.recipient) teamsSet.add(item.recipient.trim()); });
+      m3Items.forEach(item => { if (item.unitConfirm) teamsSet.add(item.unitConfirm.trim()); });
+      
+      const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
+      
+      teams.forEach(team => {
+        const s1Under = m1Items.filter(item => item.groupReceiver?.trim() === team && (parseInt(item.daysDiff) || 0) <= 4).length;
+        const s1Over = m1Items.filter(item => item.groupReceiver?.trim() === team && (parseInt(item.daysDiff) || 0) > 4).length;
+        
+        const s2Under = m2Items.filter(item => item.recipient?.trim() === team && (parseInt(item.daysDiff) || 0) <= 3).length;
+        const s2Over = m2Items.filter(item => item.recipient?.trim() === team && (parseInt(item.daysDiff) || 0) > 3).length;
+        
+        const s3Under = m3Items.filter(item => item.unitConfirm?.trim() === team && (parseInt(item.daysDiff) || 0) <= 3).length;
+        const s3Over = m3Items.filter(item => item.unitConfirm?.trim() === team && (parseInt(item.daysDiff) || 0) > 3).length;
+        
+        const underKpi = s1Under + s2Under + s3Under;
+        const overKpi = s1Over + s2Over + s3Over;
+        const total = underKpi + overKpi;
+        
+        rows.push({
+          unit,
+          team,
+          s1Under,
+          s1Over,
+          s1Total: s1Under + s1Over,
+          s2Under,
+          s2Over,
+          s2Total: s2Under + s2Over,
+          s3Under,
+          s3Over,
+          s3Total: s3Under + s3Over,
+          underKpi,
+          overKpi,
+          total
+        });
+      });
+    });
+    return rows;
+  };
+
+  const renderSummaryReport = () => {
+    if (!summaryImageMode || !screenshotUnit) return null;
+    
+    const rows = getSummaryRows();
+    const totalS1Under = rows.reduce((sum, r) => sum + r.s1Under, 0);
+    const totalS1Over = rows.reduce((sum, r) => sum + r.s1Over, 0);
+    const totalS1Total = totalS1Under + totalS1Over;
+    
+    const totalS2Under = rows.reduce((sum, r) => sum + r.s2Under, 0);
+    const totalS2Over = rows.reduce((sum, r) => sum + r.s2Over, 0);
+    const totalS2Total = totalS2Under + totalS2Over;
+    
+    const totalS3Under = rows.reduce((sum, r) => sum + r.s3Under, 0);
+    const totalS3Over = rows.reduce((sum, r) => sum + r.s3Over, 0);
+    const totalS3Total = totalS3Under + totalS3Over;
+    
+    const totalUnder = totalS1Under + totalS2Under + totalS3Under;
+    const totalOver = totalS1Over + totalS2Over + totalS3Over;
+    const totalAll = totalUnder + totalOver;
+    
+    const formatVal = (val) => val === 0 ? '-' : val;
+    
+    return (
+      <div
+        id="telegram-summary-report"
+        style={{
+          position: 'absolute',
+          left: '0',
+          top: '0',
+          zIndex: -9999,
+          pointerEvents: 'none',
+          width: '1200px',
+          background: '#ffffff',
+          padding: '24px',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+        }}
+      >
+        <div className="flex justify-between items-center pb-4 border-b border-slate-200 mb-5">
+          <div>
+            <h1 className="text-xl font-black text-slate-800 tracking-tight">📊 STOCKOUT OVERALL SUMMARY REPORT</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Summary of all active remaining stockout items grouped by team/unit</p>
+          </div>
+          <div className="text-right text-xs text-slate-500">
+            <div>Generated: <strong>{new Date().toLocaleDateString('en-GB')}</strong></div>
+            <div>Time: <strong>{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong></div>
+          </div>
+        </div>
+
+        <div className="overflow-hidden border border-slate-200 rounded-xl shadow-sm">
+          <table className="min-w-full text-center border-collapse table-fixed text-[10px] font-medium text-slate-700">
+            <thead>
+              <tr className="bg-red-600 text-white font-bold text-[10px] border-b border-red-700">
+                <th rowSpan="2" className="border-r border-red-700 w-[35px] py-2">No</th>
+                <th rowSpan="2" className="border-r border-red-700 w-[60px] py-2">Units Code</th>
+                <th rowSpan="2" className="border-r border-red-700 w-[180px] py-2 text-left px-3">Units name</th>
+                <th colSpan="3" className="border-r border-red-700 py-1">Sheet 01<br/>Stock out not Confirm goods</th>
+                <th colSpan="3" className="border-r border-red-700 py-1">Sheet 02<br/>Stock out not create hand over for using</th>
+                <th colSpan="3" className="border-r border-red-700 py-1">Sheet 03<br/>Hand over not Confirmed</th>
+                <th colSpan="3" className="py-1">Total</th>
+              </tr>
+              <tr className="bg-red-600 text-white font-bold text-[9px] border-b border-slate-200">
+                <th colSpan="3" className="border-r border-red-700 py-1">KPI = 4 DAYS</th>
+                <th colSpan="3" className="border-r border-red-700 py-1">KPI = 3 DAYS</th>
+                <th colSpan="3" className="border-r border-red-700 py-1">KPI = 3 DAYS</th>
+                <th colSpan="3" className="py-1"></th>
+              </tr>
+              <tr className="bg-red-600 text-white font-bold text-[9px] border-b border-slate-300">
+                <th className="border-r border-red-700 py-1" style={{display: 'none'}}></th>
+                <th className="border-r border-red-700 py-1" style={{display: 'none'}}></th>
+                <th className="border-r border-red-700 py-1" style={{display: 'none'}}></th>
+                
+                <th className="border-r border-red-700 py-1">Day &lt;= 4</th>
+                <th className="border-r border-red-700 py-1">Day &gt; 4</th>
+                <th className="border-r border-red-700 py-1">Total</th>
+                
+                <th className="border-r border-red-700 py-1">Day &lt;= 3</th>
+                <th className="border-r border-red-700 py-1">Day &gt; 3</th>
+                <th className="border-r border-red-700 py-1">Total</th>
+                
+                <th className="border-r border-red-700 py-1">Day &lt;= 3</th>
+                <th className="border-r border-red-700 py-1">Day &gt; 3</th>
+                <th className="border-r border-red-700 py-1">Total</th>
+                
+                <th className="border-r border-red-700 py-1">Under KPI</th>
+                <th className="border-r border-red-700 py-1">Over KPI</th>
+                <th className="py-1">Total</th>
+              </tr>
+              
+              <tr className="bg-slate-100 text-slate-900 font-extrabold text-[10px] border-b border-slate-300">
+                <td colSpan="3" className="border-r border-slate-300 text-center py-2 uppercase tracking-wider">Total</td>
+                <td className="border-r border-slate-300 py-2">{formatVal(totalS1Under)}</td>
+                <td className={`border-r border-slate-300 py-2 ${totalS1Over > 0 ? 'bg-red-50 text-red-700' : ''}`}>{formatVal(totalS1Over)}</td>
+                <td className="border-r border-slate-300 py-2 bg-slate-200/50">{formatVal(totalS1Total)}</td>
+                
+                <td className="border-r border-slate-300 py-2">{formatVal(totalS2Under)}</td>
+                <td className={`border-r border-slate-300 py-2 ${totalS2Over > 0 ? 'bg-red-50 text-red-700' : ''}`}>{formatVal(totalS2Over)}</td>
+                <td className="border-r border-slate-300 py-2 bg-slate-200/50">{formatVal(totalS2Total)}</td>
+                
+                <td className="border-r border-slate-300 py-2">{formatVal(totalS3Under)}</td>
+                <td className={`border-r border-slate-300 py-2 ${totalS3Over > 0 ? 'bg-red-50 text-red-700' : ''}`}>{formatVal(totalS3Over)}</td>
+                <td className="border-r border-slate-300 py-2 bg-slate-200/50">{formatVal(totalS3Total)}</td>
+                
+                <td className="border-r border-slate-300 py-2 bg-slate-200/30">{formatVal(totalUnder)}</td>
+                <td className={`border-r border-slate-300 py-2 ${totalOver > 0 ? 'bg-red-100 text-red-800' : ''}`}>{formatVal(totalOver)}</td>
+                <td className="py-2 bg-slate-200 font-black">{formatVal(totalAll)}</td>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 bg-white">
+              {rows.map((row, idx) => (
+                <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                  <td className="border-r border-slate-200 py-1.5 font-bold text-slate-400">{idx + 1}</td>
+                  <td className="border-r border-slate-200 py-1.5 font-bold text-slate-800">{row.unit}</td>
+                  <td className="border-r border-slate-200 py-1.5 text-left px-3 font-semibold text-slate-800 break-all">{row.team}</td>
+                  
+                  <td className="border-r border-slate-200 py-1.5">{formatVal(row.s1Under)}</td>
+                  <td className={`border-r border-slate-200 py-1.5 ${row.s1Over > 0 ? 'bg-red-50 text-red-700 font-bold' : ''}`}>{formatVal(row.s1Over)}</td>
+                  <td className="border-r border-slate-200 py-1.5 bg-slate-50/50 font-bold">{formatVal(row.s1Total)}</td>
+                  
+                  <td className="border-r border-slate-200 py-1.5">{formatVal(row.s2Under)}</td>
+                  <td className={`border-r border-slate-200 py-1.5 ${row.s2Over > 0 ? 'bg-red-50 text-red-700 font-bold' : ''}`}>{formatVal(row.s2Over)}</td>
+                  <td className="border-r border-slate-200 py-1.5 bg-slate-50/50 font-bold">{formatVal(row.s2Total)}</td>
+                  
+                  <td className="border-r border-slate-200 py-1.5">{formatVal(row.s3Under)}</td>
+                  <td className={`border-r border-slate-200 py-1.5 ${row.s3Over > 0 ? 'bg-red-50 text-red-700 font-bold' : ''}`}>{formatVal(row.s3Over)}</td>
+                  <td className="border-r border-slate-200 py-1.5 bg-slate-50/50 font-bold">{formatVal(row.s3Total)}</td>
+                  
+                  <td className="border-r border-slate-200 py-1.5 bg-slate-50/20">{formatVal(row.underKpi)}</td>
+                  <td className={`border-r border-slate-200 py-1.5 ${row.overKpi > 0 ? 'bg-red-100 text-red-800 font-black' : ''}`}>{formatVal(row.overKpi)}</td>
+                  <td className="py-1.5 bg-slate-100 font-black text-slate-900">{formatVal(row.total)}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan="15" className="py-10 text-center text-slate-400 font-medium bg-slate-50/50">
+                    🎉 No active remaining items in system! All modules completed.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const sendSummaryImageScreenshot = async (unit) => {
+    if (isSending) return;
+    
+    if (!hasGroupId(unit)) {
+      alert(`⚠️ No group ID configured for ${unit}. Please add it first.`);
+      return;
+    }
+    
+    setIsSending(true);
+    setShowProgressModal(true);
+    setSendProgress({
+      current: 1,
+      total: 1,
+      unit: unit,
+      status: 'sending'
+    });
+    setSendResults(null);
+    
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      setScreenshotUnit(unit);
+      setSummaryImageMode(true);
+
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      const element = document.getElementById('telegram-summary-report');
+      if (!element) {
+        throw new Error('Summary report element not found in DOM');
+      }
+
+      const offsetHeight = element.offsetHeight || 600;
+      
+      const canvas = await html2canvas(element, {
+        useCORS: true,
+        scale: 3.0,
+        backgroundColor: '#ffffff',
+        width: 1200,
+        height: offsetHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight,
+        logging: false,
+        onclone: (clonedDoc) => {
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            #telegram-summary-report * {
+              -webkit-font-smoothing: antialiased !important;
+              -moz-osx-font-smoothing: grayscale !important;
+              text-rendering: optimizeLegibility !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
+      });
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob || blob.size < 1000) {
+        throw new Error('Failed to generate summary image');
+      }
+
+      const caption = `📊 <b>STOCKOUT OVERALL SUMMARY REPORT - TARGET GROUP: ${unit}</b>\n<i>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</i>`;
+
+      const result = await sendPhotoToTelegram(
+        unit,
+        blob,
+        caption,
+        abortControllerRef.current.signal
+      );
+
+      if (result && result.success) {
+        setSendProgress({
+          current: 1,
+          total: 1,
+          unit: unit,
+          status: 'success'
+        });
+        setSendResults({
+          total: 1,
+          success: 1,
+          failed: 0
+        });
+        alert(`✅ Summary image sent successfully to ${unit} group!`);
+      } else {
+        throw new Error(result?.error || 'Failed to send summary photo to Telegram');
+      }
+    } catch (error) {
+      console.error('Error sending summary image:', error);
+      const isAbort = abortControllerRef.current.signal.aborted;
+      if (!isAbort) {
+        setSendProgress({
+          current: 0,
+          total: 1,
+          unit: unit,
+          status: 'failed',
+          error: error.message
+        });
+        setSendResults({
+          total: 1,
+          success: 0,
+          failed: 1
+        });
+        alert(`❌ Error sending summary image: ${error.message}`);
+      }
+    } finally {
+      setIsSending(false);
+      setScreenshotUnit(null);
+      setSummaryImageMode(false);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
+    }
+  };
+
   // Send single unit screenshot
   const sendReportToTelegramScreenshot = async (unit) => {
     if (isSending) return;
@@ -1458,6 +1769,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                   <button
                     onClick={() => {
                       setScreenshotMode(false);
+                      setIsSelectingForSummary(false);
                       setShowUnitSelector(!showUnitSelector);
                     }}
                     disabled={isSending}
@@ -1471,6 +1783,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                   <button
                     onClick={() => {
                       setScreenshotMode(true);
+                      setIsSelectingForSummary(false);
                       setShowUnitSelector(!showUnitSelector);
                     }}
                     disabled={isSending}
@@ -1478,6 +1791,20 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                   >
                     <span>📸</span>
                     Send to Unit Screenshot
+                  </button>
+
+                  {/* Summary Image */}
+                  <button
+                    onClick={() => {
+                      setScreenshotMode(false);
+                      setIsSelectingForSummary(true);
+                      setShowUnitSelector(!showUnitSelector);
+                    }}
+                    disabled={isSending}
+                    className="px-4 py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-xl hover:from-rose-600 hover:to-rose-700 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 shadow-md shadow-rose-200 font-semibold text-sm"
+                  >
+                    <span>🖼</span>
+                    Summary Image
                   </button>
                 </div>
               </div>
@@ -1568,7 +1895,9 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                           onClick={() => {
                             setSelectedUnit(unit);
                             if (isConfigured) {
-                              if (screenshotMode) {
+                              if (isSelectingForSummary) {
+                                sendSummaryImageScreenshot(unit);
+                              } else if (screenshotMode) {
                                 sendReportToTelegramScreenshot(unit);
                               } else {
                                 sendReportToTelegram(unit);
@@ -1779,6 +2108,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         {renderComponent()}
         {renderProgressModal()}
         {createPortal(renderScreenshotReport(), document.body)}
+        {createPortal(renderSummaryReport(), document.body)}
       </div>
     );
   }
@@ -1794,6 +2124,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         </main>
       </div>
       {createPortal(renderScreenshotReport(), document.body)}
+      {createPortal(renderSummaryReport(), document.body)}
     </div>
   );
 };
