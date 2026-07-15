@@ -82,6 +82,9 @@ const Dashboard_CA = () => {
     return data;
   });
 
+  const [summaryImageMode, setSummaryImageMode] = useState(false);
+  const [isSelectingForSummary, setIsSelectingForSummary] = useState(false);
+
   // KPI Targets State
   const [targets, setTargets] = useState(() => {
     const saved = getStorageData(STORAGE_KEYS.KPI_TARGETS);
@@ -883,6 +886,463 @@ const Dashboard_CA = () => {
     }
   };
 
+  const getSummaryRows = () => {
+    const rows = [];
+    const unitsToProcess = screenshotUnit ? [screenshotUnit] : allUnits;
+    
+    unitsToProcess.forEach(unit => {
+      const outItems = stockOutData.filter(item => item.unit === unit);
+      const inItems = stockInData.filter(item => item.unit === unit);
+      
+      const teamsSet = new Set();
+      outItems.forEach(item => {
+        const teamName = (item.exportWarehouse || item.unitEntering || '').trim();
+        if (teamName) teamsSet.add(teamName);
+      });
+      inItems.forEach(item => {
+        const teamName = (item.warehouse || '').trim();
+        if (teamName) teamsSet.add(teamName);
+      });
+      
+      const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
+      
+      teams.forEach(team => {
+        const teamOutItems = outItems.filter(item => {
+          const tName = (item.exportWarehouse || item.unitEntering || '').trim();
+          return tName === team;
+        });
+        
+        const teamInItems = inItems.filter(item => {
+          const tName = (item.warehouse || '').trim();
+          return tName === team;
+        });
+        
+        const isStatus = (item, status) => {
+          const s = (item.statusCA || '').toLowerCase();
+          if (status === 'unsigned') return s.includes('unsigned') || s === '';
+          if (status === 'signing') return s.includes('signing') || s.includes('is signing');
+          if (status === 'cancel') return s.includes('cancel') || s.includes('cancelled');
+          return false;
+        };
+        
+        // Stock out
+        const sOutUnsignedOver = teamOutItems.filter(item => isStatus(item, 'unsigned') && (parseInt(item.daysDiff) || 0) > 1).length;
+        const sOutUnsignedTotal = teamOutItems.filter(item => isStatus(item, 'unsigned')).length;
+        
+        const sOutSigningUnder = teamOutItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) <= 4).length;
+        const sOutSigningOver = teamOutItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) > 4).length;
+        const sOutSigningTotal = teamOutItems.filter(item => isStatus(item, 'signing')).length;
+        
+        const sOutCancelUnder = teamOutItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) <= 4).length;
+        const sOutCancelOver = teamOutItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) > 4).length;
+        const sOutCancelTotal = teamOutItems.filter(item => isStatus(item, 'cancel')).length;
+        
+        const sOutTotal = sOutUnsignedTotal + sOutSigningTotal + sOutCancelTotal;
+        
+        // Stock in
+        const sInUnsignedOver = teamInItems.filter(item => isStatus(item, 'unsigned') && (parseInt(item.daysDiff) || 0) > 1).length;
+        const sInUnsignedTotal = teamInItems.filter(item => isStatus(item, 'unsigned')).length;
+        
+        const sInSigningUnder = teamInItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) <= 4).length;
+        const sInSigningOver = teamInItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) > 4).length;
+        const sInSigningTotal = teamInItems.filter(item => isStatus(item, 'signing')).length;
+        
+        const sInCancelUnder = teamInItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) <= 4).length;
+        const sInCancelOver = teamInItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) > 4).length;
+        const sInCancelTotal = teamInItems.filter(item => isStatus(item, 'cancel')).length;
+        
+        const sInTotal = sInUnsignedTotal + sInSigningTotal + sInCancelTotal;
+        
+        // Totals
+        const outUnderKpi = (sOutUnsignedTotal - sOutUnsignedOver) + sOutSigningUnder + sOutCancelUnder;
+        const inUnderKpi = (sInUnsignedTotal - sInUnsignedOver) + sInSigningUnder + sInCancelUnder;
+        const underKpi = outUnderKpi + inUnderKpi;
+        
+        const outOverKpi = sOutUnsignedOver + sOutSigningOver + sOutCancelOver;
+        const inOverKpi = sInUnsignedOver + sInSigningOver + sInCancelOver;
+        const overKpi = outOverKpi + inOverKpi;
+        
+        const total = underKpi + overKpi;
+        
+        rows.push({
+          unit,
+          team,
+          sOutUnsignedOver,
+          sOutUnsignedTotal,
+          sOutSigningUnder,
+          sOutSigningOver,
+          sOutSigningTotal,
+          sOutCancelUnder,
+          sOutCancelOver,
+          sOutCancelTotal,
+          sOutTotal,
+          sInUnsignedOver,
+          sInUnsignedTotal,
+          sInSigningUnder,
+          sInSigningOver,
+          sInSigningTotal,
+          sInCancelUnder,
+          sInCancelOver,
+          sInCancelTotal,
+          sInTotal,
+          underKpi,
+          overKpi,
+          total
+        });
+      });
+    });
+    return rows;
+  };
+
+  const sendSummaryImageScreenshot = async (unit) => {
+    if (isSending) return;
+    
+    if (!hasGroupId(unit)) {
+      alert(`⚠️ No group ID configured for ${unit}. Please add it first.`);
+      return;
+    }
+    
+    setIsSending(true);
+    setShowProgressModal(true);
+    setSendProgress({
+      current: 1,
+      total: 1,
+      unit: unit,
+      status: 'sending'
+    });
+    setSendResults(null);
+    
+    abortControllerRef.current = new AbortController();
+    
+    try {
+      setScreenshotUnit(unit);
+      setSummaryImageMode(true);
+
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      const element = document.getElementById('telegram-summary-report');
+      if (!element) {
+        throw new Error('Summary report element not found in DOM');
+      }
+
+      const offsetHeight = element.offsetHeight || 600;
+      
+      const canvas = await html2canvas(element, {
+        useCORS: true,
+        scale: 3.0,
+        backgroundColor: '#ffffff',
+        width: 1200,
+        height: offsetHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: document.documentElement.offsetWidth,
+        windowHeight: document.documentElement.offsetHeight,
+        logging: false,
+        onclone: (clonedDoc) => {
+          const style = clonedDoc.createElement('style');
+          style.innerHTML = `
+            #telegram-summary-report * {
+              -webkit-font-smoothing: antialiased !important;
+              -moz-osx-font-smoothing: grayscale !important;
+              text-rendering: optimizeLegibility !important;
+            }
+          `;
+          clonedDoc.head.appendChild(style);
+        }
+      });
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob || blob.size < 1000) {
+        throw new Error('Failed to generate summary image');
+      }
+
+      const result = await sendPhotoToTelegram(
+        unit,
+        blob,
+        '',
+        abortControllerRef.current.signal
+      );
+
+      if (result && result.success) {
+        completeStore(STORAGE_KEYS.EXPORT_CA_DATA);
+        completeStore(STORAGE_KEYS.IMPORT_CA_DATA);
+        setSendProgress({
+          current: 1,
+          total: 1,
+          unit: unit,
+          status: 'success'
+        });
+        setSendResults({
+          total: 1,
+          success: 1,
+          failed: 0
+        });
+      } else {
+        throw new Error(result?.error || 'Failed to send summary image');
+      }
+    } catch (err) {
+      console.error('Error sending summary image:', err);
+      setSendProgress({
+        current: 1,
+        total: 1,
+        unit: unit,
+        status: 'failed',
+        error: err.message
+      });
+      setSendResults({
+        total: 1,
+        success: 0,
+        failed: 1
+      });
+    } finally {
+      setScreenshotUnit(null);
+      setSummaryImageMode(false);
+      setIsSelectingForSummary(false);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
+    }
+  };
+
+  const renderSummaryReport = () => {
+    if (!summaryImageMode || !screenshotUnit) return null;
+    
+    const rows = getSummaryRows();
+    
+    // Grand Totals Stock Out
+    const totalOutUnsignedOver = rows.reduce((sum, r) => sum + r.sOutUnsignedOver, 0);
+    const totalOutUnsignedTotal = rows.reduce((sum, r) => sum + r.sOutUnsignedTotal, 0);
+    const totalOutSigningUnder = rows.reduce((sum, r) => sum + r.sOutSigningUnder, 0);
+    const totalOutSigningOver = rows.reduce((sum, r) => sum + r.sOutSigningOver, 0);
+    const totalOutSigningTotal = rows.reduce((sum, r) => sum + r.sOutSigningTotal, 0);
+    const totalOutCancelUnder = rows.reduce((sum, r) => sum + r.sOutCancelUnder, 0);
+    const totalOutCancelOver = rows.reduce((sum, r) => sum + r.sOutCancelOver, 0);
+    const totalOutCancelTotal = rows.reduce((sum, r) => sum + r.sOutCancelTotal, 0);
+    const totalOutTotal = rows.reduce((sum, r) => sum + r.sOutTotal, 0);
+
+    // Grand Totals Stock In
+    const totalInUnsignedOver = rows.reduce((sum, r) => sum + r.sInUnsignedOver, 0);
+    const totalInUnsignedTotal = rows.reduce((sum, r) => sum + r.sInUnsignedTotal, 0);
+    const totalInSigningUnder = rows.reduce((sum, r) => sum + r.sInSigningUnder, 0);
+    const totalInSigningOver = rows.reduce((sum, r) => sum + r.sInSigningOver, 0);
+    const totalInSigningTotal = rows.reduce((sum, r) => sum + r.sInSigningTotal, 0);
+    const totalInCancelUnder = rows.reduce((sum, r) => sum + r.sInCancelUnder, 0);
+    const totalInCancelOver = rows.reduce((sum, r) => sum + r.sInCancelOver, 0);
+    const totalInCancelTotal = rows.reduce((sum, r) => sum + r.sInCancelTotal, 0);
+    const totalInTotal = rows.reduce((sum, r) => sum + r.sInTotal, 0);
+
+    // Grand Totals Overall
+    const totalUnder = rows.reduce((sum, r) => sum + r.underKpi, 0);
+    const totalOver = rows.reduce((sum, r) => sum + r.overKpi, 0);
+    const totalAll = totalUnder + totalOver;
+    
+    const formatVal = (val) => val === 0 ? '-' : val;
+    
+    return (
+      <div
+        id="telegram-summary-report"
+        style={{
+          position: 'absolute',
+          left: '0',
+          top: '0',
+          zIndex: -9999,
+          pointerEvents: 'none',
+          width: '1200px',
+          background: '#f8fafc',
+          padding: '24px',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
+        }}
+      >
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm mb-4 flex justify-between items-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-amber-500 to-purple-500"></div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg">📊</span>
+              <h1 className="text-base font-black text-slate-800 tracking-tight uppercase">
+                CA Signing KPI Summary Report
+              </h1>
+            </div>
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-600 font-bold uppercase">
+              <span>Branch:</span>
+              <span className="bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded-md border border-blue-100 font-black tracking-wider text-[10px]">
+                {screenshotUnit}
+              </span>
+            </div>
+          </div>
+          <div className="text-right text-[10px] font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+            <div>Date: <strong className="text-slate-900">{new Date().toLocaleDateString('en-GB')}</strong></div>
+            <div className="mt-0.5">Time: <strong className="text-slate-900">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong></div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">👥</span>
+            <div>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Active Teams</span>
+              <span className="text-sm font-black text-slate-800 mt-1 block leading-none">{rows.length}</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">✅</span>
+            <div>
+              <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider block leading-none">Under KPI (On-Time)</span>
+              <span className="text-sm font-black text-emerald-600 mt-1 block leading-none">{totalUnder}</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">🚨</span>
+            <div>
+              <span className="text-[9px] font-bold text-red-500 uppercase tracking-wider block leading-none">Over KPI (Delayed)</span>
+              <span className="text-sm font-black text-red-600 mt-1 block leading-none">{totalOver}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm overflow-hidden">
+          <table className="min-w-full text-center border-collapse table-fixed text-[10px] font-bold text-slate-700">
+            <thead>
+              <tr className="text-white text-[10px] border-b border-slate-200">
+                <th rowSpan="4" className="bg-slate-700 border-r border-slate-650 w-[40px] py-2 font-bold uppercase tracking-wider">No</th>
+                <th rowSpan="4" className="bg-slate-700 border-r border-slate-650 w-[60px] py-2 font-bold uppercase tracking-wider">Code branch</th>
+                <th rowSpan="4" className="bg-slate-700 border-r border-slate-650 w-[180px] py-2 text-left px-3 font-bold uppercase tracking-wider">Units name</th>
+                
+                <th colSpan="9" className="bg-blue-600 border-r border-blue-700 py-1.5 font-bold uppercase tracking-wider text-[9.5px]">
+                  STOCK OUT RECEIPT
+                </th>
+                <th colSpan="9" className="bg-amber-600 border-r border-amber-700 py-1.5 font-bold uppercase tracking-wider text-[9.5px]">
+                  STOCK IN RECEIPT
+                </th>
+                <th rowSpan="2" colSpan="3" className="bg-indigo-900 py-1.5 font-bold uppercase tracking-wider text-[9.5px]">
+                  Total
+                </th>
+              </tr>
+              <tr className="text-white text-[9px] border-b border-slate-200">
+                <th colSpan="2" className="bg-blue-700 border-r border-blue-800/60 py-1 font-bold">Unsigned</th>
+                <th colSpan="3" className="bg-blue-700 border-r border-blue-800/60 py-1 font-bold">Is signing</th>
+                <th colSpan="3" className="bg-blue-700 border-r border-blue-800/60 py-1 font-bold">Cancel</th>
+                <th rowSpan="2" className="bg-blue-800 border-r border-blue-900 py-1 font-bold">Total</th>
+
+                <th colSpan="2" className="bg-amber-700 border-r border-amber-800/60 py-1 font-bold">Unsigned</th>
+                <th colSpan="3" className="bg-amber-700 border-r border-amber-800/60 py-1 font-bold">Is signing</th>
+                <th colSpan="3" className="bg-amber-700 border-r border-amber-800/60 py-1 font-bold">Cancel</th>
+                <th rowSpan="2" className="bg-amber-800 border-r border-amber-900 py-1 font-bold">Total</th>
+              </tr>
+              <tr className="text-white text-[8.5px] border-b border-slate-250">
+                <th colSpan="2" className="bg-blue-750 border-r border-blue-800/80 py-1 font-bold text-blue-200">KPI = 1DAYS</th>
+                <th colSpan="3" className="bg-blue-750 border-r border-blue-800/80 py-1 font-bold text-blue-200">KPI = 7DAYS</th>
+                <th colSpan="3" className="bg-blue-750 border-r border-blue-800/80 py-1 font-bold text-blue-200">KPI = 7DAYS</th>
+
+                <th colSpan="2" className="bg-amber-750 border-r border-amber-800/80 py-1 font-bold text-amber-200">KPI = 1DAYS</th>
+                <th colSpan="3" className="bg-amber-750 border-r border-amber-800/80 py-1 font-bold text-amber-200">KPI = 7DAYS</th>
+                <th colSpan="3" className="bg-amber-750 border-r border-amber-800/80 py-1 font-bold text-amber-200">KPI = 7DAYS</th>
+                
+                <th className="bg-indigo-950 border-r border-indigo-900 py-1 font-bold text-indigo-200">Under KPI</th>
+                <th className="bg-indigo-950 border-r border-indigo-900 py-1 font-bold text-indigo-200">Over KPI</th>
+                <th className="bg-indigo-950 py-1 font-bold text-indigo-200">Total</th>
+              </tr>
+              <tr className="bg-slate-100 text-slate-650 text-[8.5px] border-b border-slate-200 font-black">
+                <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/20">Day &gt; 1</th>
+                <th className="border-r border-blue-200 py-1.5 text-slate-800 bg-blue-100/30">Total</th>
+                <th className="border-r border-blue-100 py-1.5 text-blue-700 bg-blue-50/20">Day &lt;= 4</th>
+                <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/20">Day &gt; 4</th>
+                <th className="border-r border-blue-200 py-1.5 text-slate-800 bg-blue-100/30">Total</th>
+                <th className="border-r border-blue-100 py-1.5 text-blue-700 bg-blue-50/20">Day &lt;= 4</th>
+                <th className="border-r border-blue-100 py-1.5 text-red-650 bg-blue-50/20">Day &gt; 4</th>
+                <th className="border-r border-blue-250 py-1.5 text-slate-800 bg-blue-100/30">Total</th>
+                <th className="border-r border-slate-200 py-1.5 bg-blue-200/50 text-blue-950">Total</th>
+
+                <th className="border-r border-amber-100 py-1.5 text-red-650 bg-amber-50/20">Day &gt; 1</th>
+                <th className="border-r border-amber-200 py-1.5 text-slate-800 bg-amber-100/30">Total</th>
+                <th className="border-r border-amber-100 py-1.5 text-amber-700 bg-amber-50/20">Day &lt;= 4</th>
+                <th className="border-r border-amber-100 py-1.5 text-red-650 bg-amber-50/20">Day &gt; 4</th>
+                <th className="border-r border-amber-200 py-1.5 text-slate-800 bg-amber-100/30">Total</th>
+                <th className="border-r border-amber-100 py-1.5 text-amber-770 bg-amber-50/20">Day &lt;= 4</th>
+                <th className="border-r border-amber-100 py-1.5 text-red-650 bg-amber-50/20">Day &gt; 4</th>
+                <th className="border-r border-amber-250 py-1.5 text-slate-800 bg-amber-100/30">Total</th>
+                <th className="border-r border-slate-200 py-1.5 bg-amber-200/50 text-amber-955">Total</th>
+
+                <th className="border-r border-indigo-100 py-1.5 text-indigo-700 bg-indigo-50/20">Under KPI</th>
+                <th className="border-r border-indigo-100 py-1.5 text-red-650 bg-indigo-50/20">Over KPI</th>
+                <th className="py-1.5 bg-indigo-150 text-indigo-950 font-black">Total</th>
+              </tr>
+              
+              <tr className="bg-slate-50 text-slate-800 font-black text-[10px] border-b border-slate-300 shadow-inner">
+                <td colSpan="3" className="border-r border-slate-300 text-center py-2 uppercase tracking-wider text-slate-950">TEAM</td>
+                
+                <td className={`border-r border-blue-100 py-2 bg-blue-50/10 ${totalOutUnsignedOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalOutUnsignedOver)}</td>
+                <td className="border-r border-blue-200 py-2 bg-blue-50/10">{formatVal(totalOutUnsignedTotal)}</td>
+                <td className="border-r border-blue-100 py-2 bg-blue-50/10">{formatVal(totalOutSigningUnder)}</td>
+                <td className={`border-r border-blue-100 py-2 bg-blue-50/10 ${totalOutSigningOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalOutSigningOver)}</td>
+                <td className="border-r border-blue-200 py-2 bg-blue-50/10">{formatVal(totalOutSigningTotal)}</td>
+                <td className="border-r border-blue-100 py-2 bg-blue-50/10">{formatVal(totalOutCancelUnder)}</td>
+                <td className={`border-r border-blue-100 py-2 bg-blue-50/10 ${totalOutCancelOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalOutCancelOver)}</td>
+                <td className="border-r border-blue-250 py-2 bg-blue-50/10">{formatVal(totalOutCancelTotal)}</td>
+                <td className="border-r border-slate-200 py-2 bg-blue-100 text-blue-900 font-black">{formatVal(totalOutTotal)}</td>
+
+                <td className={`border-r border-amber-100 py-2 bg-amber-50/10 ${totalInUnsignedOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalInUnsignedOver)}</td>
+                <td className="border-r border-amber-200 py-2 bg-amber-50/10">{formatVal(totalInUnsignedTotal)}</td>
+                <td className="border-r border-amber-100 py-2 bg-amber-50/10">{formatVal(totalInSigningUnder)}</td>
+                <td className={`border-r border-amber-100 py-2 bg-amber-50/10 ${totalInSigningOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalInSigningOver)}</td>
+                <td className="border-r border-amber-200 py-2 bg-amber-50/10">{formatVal(totalInSigningTotal)}</td>
+                <td className="border-r border-amber-100 py-2 bg-amber-50/10">{formatVal(totalInCancelUnder)}</td>
+                <td className={`border-r border-amber-100 py-2 bg-amber-50/10 ${totalInCancelOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalInCancelOver)}</td>
+                <td className="border-r border-amber-250 py-2 bg-amber-50/10">{formatVal(totalInCancelTotal)}</td>
+                <td className="border-r border-slate-200 py-2 bg-amber-100 text-amber-900 font-black">{formatVal(totalInTotal)}</td>
+
+                <td className="border-r border-indigo-100 py-2 bg-indigo-50/10 text-indigo-800 font-bold">{formatVal(totalUnder)}</td>
+                <td className={`border-r border-indigo-200 py-2 bg-indigo-50/10 ${totalOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalOver)}</td>
+                <td className="py-2 bg-indigo-200 text-indigo-950 font-black text-[10.5px]">{formatVal(totalAll)}</td>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-150 bg-white">
+              {rows.map((row, idx) => (
+                <tr key={idx} className="hover:bg-slate-50/50 transition-colors odd:bg-white even:bg-slate-50/20 text-slate-700">
+                  <td className="border-r border-slate-200 py-1.5 font-bold text-slate-400">{idx + 1}</td>
+                  <td className="border-r border-slate-200 py-1.5 font-bold text-slate-800">{row.unit}</td>
+                  <td className="border-r border-slate-200 py-1.5 text-left px-3 font-semibold text-slate-900 break-all">{row.team}</td>
+                  
+                  <td className={`border-r border-slate-150 py-1.5 bg-blue-50/5 ${row.sOutUnsignedOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.sOutUnsignedOver)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-blue-50/5 font-medium text-slate-650">{formatVal(row.sOutUnsignedTotal)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-blue-50/5 font-medium text-slate-650">{formatVal(row.sOutSigningUnder)}</td>
+                  <td className={`border-r border-slate-150 py-1.5 bg-blue-50/5 ${row.sOutSigningOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.sOutSigningOver)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-blue-50/5 font-medium text-slate-650">{formatVal(row.sOutSigningTotal)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-blue-50/5 font-medium text-slate-650">{formatVal(row.sOutCancelUnder)}</td>
+                  <td className={`border-r border-slate-150 py-1.5 bg-blue-50/5 ${row.sOutCancelOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.sOutCancelOver)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-blue-50/5 font-medium text-slate-650">{formatVal(row.sOutCancelTotal)}</td>
+                  <td className="border-r border-slate-200 py-1.5 bg-blue-100/10 text-blue-900 font-bold">{formatVal(row.sOutTotal)}</td>
+
+                  <td className={`border-r border-slate-150 py-1.5 bg-amber-50/5 ${row.sInUnsignedOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.sInUnsignedOver)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-amber-50/5 font-medium text-slate-650">{formatVal(row.sInUnsignedTotal)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-amber-50/5 font-medium text-slate-650">{formatVal(row.sInSigningUnder)}</td>
+                  <td className={`border-r border-slate-150 py-1.5 bg-amber-50/5 ${row.sInSigningOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.sInSigningOver)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-amber-50/5 font-medium text-slate-650">{formatVal(row.sInSigningTotal)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-amber-50/5 font-medium text-slate-650">{formatVal(row.sInCancelUnder)}</td>
+                  <td className={`border-r border-slate-150 py-1.5 bg-amber-50/5 ${row.sInCancelOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.sInCancelOver)}</td>
+                  <td className="border-r border-slate-150 py-1.5 bg-amber-50/5 font-medium text-slate-650">{formatVal(row.sInCancelTotal)}</td>
+                  <td className="border-r border-slate-200 py-1.5 bg-amber-100/10 text-amber-900 font-bold">{formatVal(row.sInTotal)}</td>
+
+                  <td className="border-r border-slate-200 py-1.5 bg-indigo-50/5 text-slate-600 font-medium">{formatVal(row.underKpi)}</td>
+                  <td className={`border-r border-slate-200 py-1.5 bg-indigo-50/5 ${row.overKpi > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(row.overKpi)}</td>
+                  <td className="py-1.5 bg-indigo-100/10 text-indigo-950 font-black">{formatVal(row.total)}</td>
+                </tr>
+              ))}
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan="24" className="py-12 text-center text-slate-400 font-medium bg-slate-50/50 text-xs">
+                    🎉 Outstanding completion! No pending unsigned CA items found under this branch.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   // Render offscreen screenshot report for Telegram
   const renderScreenshotReport = () => {
     if (!screenshotUnit) return null;
@@ -1289,9 +1749,10 @@ const Dashboard_CA = () => {
               {isSending && screenshotMode && <span className="ml-1 animate-spin">⏳</span>}
             </button>
             
-            {/* Send to Unit Text */}
+             {/* Send to Unit Text */}
             <button
               onClick={() => {
+                setIsSelectingForSummary(false);
                 setScreenshotMode(false);
                 setShowUnitSelector(!showUnitSelector);
               }}
@@ -1305,6 +1766,7 @@ const Dashboard_CA = () => {
             {/* Send to Unit Screenshot */}
             <button
               onClick={() => {
+                setIsSelectingForSummary(false);
                 setScreenshotMode(true);
                 setShowUnitSelector(!showUnitSelector);
               }}
@@ -1313,6 +1775,20 @@ const Dashboard_CA = () => {
             >
               <span>📸</span>
               Send to Unit Screenshot
+            </button>
+
+            {/* Summary Image */}
+            <button
+              onClick={() => {
+                setIsSelectingForSummary(true);
+                setScreenshotMode(false);
+                setShowUnitSelector(!showUnitSelector);
+              }}
+              disabled={isSending}
+              className="px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-purple-200 font-semibold text-sm"
+            >
+              <span>🖼️</span>
+              Summary Image
             </button>
           </div>
         </div>
@@ -1403,7 +1879,9 @@ const Dashboard_CA = () => {
                     onClick={() => {
                       setTelegramSelectedUnit(unit);
                       if (isConfigured) {
-                        if (screenshotMode) {
+                        if (isSelectingForSummary) {
+                          sendSummaryImageScreenshot(unit);
+                        } else if (screenshotMode) {
                           sendReportToTelegramScreenshot(unit);
                         } else {
                           sendReportToTelegram(unit);
@@ -1851,6 +2329,7 @@ const Dashboard_CA = () => {
       {renderProgressModal()}
 
       {createPortal(renderScreenshotReport(), document.body)}
+      {createPortal(renderSummaryReport(), document.body)}
 
       <style>{`
         @keyframes fadeIn {
