@@ -93,28 +93,20 @@ const calculateDaysDiff = (dateString) => {
   }
 };
 
-// Clean and format warehouse/recipient names to GIS_{PROV}_SOSTEAM{xx}
 export const cleanWarehouseName = (name) => {
   if (!name || name === '-') return '-';
   if (typeof name !== 'string') name = String(name);
   
-  const trimmed = name.trim();
+  const trimmed = name.trim().toUpperCase();
   
-  // Pattern 1: GIS_PROV_..._SOSTEAMxx or GIS_PROV_..._SOS_TEAMxx
-  const regexRotational = /^GIS_([A-Z]{3})_.*_SOS_?TEAM(\d+)$/i;
-  const match = trimmed.match(regexRotational);
+  const match = trimmed.match(/^GIS_([A-Z]{3})_.*SOS_?TEAM(\d+)$/i) || 
+                trimmed.match(/^GIS_([A-Z]{3})_.*SOSTEAM(\d+)$/i) ||
+                trimmed.match(/^GIS_([A-Z]{3})_?SOSTEAM(\d+)$/i) ||
+                trimmed.match(/^GIS_([A-Z]{3})_?SOS_?TEAM(\d+)$/i);
+  
   if (match) {
-    const province = match[1].toUpperCase();
+    const province = match[1];
     const teamNum = match[2];
-    return `GIS_${province}_SOSTEAM${teamNum}`;
-  }
-
-  // Pattern 2: GIS_PROV_SOSTEAMxx (without middle part)
-  const regexSimple = /^GIS_([A-Z]{3})_SOS_?TEAM(\d+)$/i;
-  const matchSimple = trimmed.match(regexSimple);
-  if (matchSimple) {
-    const province = matchSimple[1].toUpperCase();
-    const teamNum = matchSimple[2];
     return `GIS_${province}_SOSTEAM${teamNum}`;
   }
 
