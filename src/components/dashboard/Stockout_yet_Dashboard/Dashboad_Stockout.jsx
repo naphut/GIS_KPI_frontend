@@ -882,21 +882,23 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       const m3Items = getUnitM3Items(unit);
       
       const teamsSet = new Set();
-      m1Items.forEach(item => { if (item.groupReceiver) teamsSet.add(item.groupReceiver.trim()); });
-      m2Items.forEach(item => { if (item.recipient) teamsSet.add(item.recipient.trim()); });
-      m3Items.forEach(item => { if (item.unitConfirm) teamsSet.add(item.unitConfirm.trim()); });
+      m1Items.forEach(item => { teamsSet.add((item.groupReceiver || 'UNASSIGNED').trim()); });
+      m2Items.forEach(item => { teamsSet.add((item.recipient || 'UNASSIGNED').trim()); });
+      m3Items.forEach(item => { teamsSet.add((item.unitConfirm || 'UNASSIGNED').trim()); });
       
       const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
       
       teams.forEach(team => {
-        const s1Under = m1Items.filter(item => item.groupReceiver?.trim() === team && (parseInt(item.daysDiff) || 0) <= 4).length;
-        const s1Over = m1Items.filter(item => item.groupReceiver?.trim() === team && (parseInt(item.daysDiff) || 0) > 4).length;
+        const matchTeam = (val) => (val || 'UNASSIGNED').trim() === team;
         
-        const s2Under = m2Items.filter(item => item.recipient?.trim() === team && (parseInt(item.daysDiff) || 0) <= 3).length;
-        const s2Over = m2Items.filter(item => item.recipient?.trim() === team && (parseInt(item.daysDiff) || 0) > 3).length;
+        const s1Under = m1Items.filter(item => matchTeam(item.groupReceiver) && (parseInt(item.daysDiff) || 0) <= 4).length;
+        const s1Over = m1Items.filter(item => matchTeam(item.groupReceiver) && (parseInt(item.daysDiff) || 0) > 4).length;
         
-        const s3Under = m3Items.filter(item => item.unitConfirm?.trim() === team && (parseInt(item.daysDiff) || 0) <= 3).length;
-        const s3Over = m3Items.filter(item => item.unitConfirm?.trim() === team && (parseInt(item.daysDiff) || 0) > 3).length;
+        const s2Under = m2Items.filter(item => matchTeam(item.recipient) && (parseInt(item.daysDiff) || 0) <= 3).length;
+        const s2Over = m2Items.filter(item => matchTeam(item.recipient) && (parseInt(item.daysDiff) || 0) > 3).length;
+        
+        const s3Under = m3Items.filter(item => matchTeam(item.unitConfirm) && (parseInt(item.daysDiff) || 0) <= 3).length;
+        const s3Over = m3Items.filter(item => matchTeam(item.unitConfirm) && (parseInt(item.daysDiff) || 0) > 3).length;
         
         const underKpi = s1Under + s2Under + s3Under;
         const overKpi = s1Over + s2Over + s3Over;
@@ -961,7 +963,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         }}
       >
         <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm mb-6 flex justify-between items-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-amber-500"></div>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-blue-600 via-amber-500 to-purple-500"></div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-2xl">📊</span>
@@ -970,7 +972,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
               </h1>
             </div>
             <p className="text-xs text-slate-500 mt-1 font-semibold">
-              Performance & delay summary of all active remaining items for branch: <span className="text-red-600 font-bold">{screenshotUnit}</span>
+              Performance & delay summary of all active remaining items for branch: <span className="text-blue-600 font-bold">{screenshotUnit}</span>
             </p>
           </div>
           <div className="text-right text-xs font-semibold text-slate-600 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">
@@ -1014,84 +1016,96 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
           <table className="min-w-full text-center border-collapse table-fixed text-[11px] font-bold text-slate-700">
             <thead>
-              <tr className="bg-gradient-to-r from-red-600 to-rose-700 text-white text-[11px] border-b border-red-700">
-                <th rowSpan="2" className="border-r border-red-700/30 w-[40px] py-3.5 font-bold uppercase tracking-wider">No</th>
-                <th rowSpan="2" className="border-r border-red-700/30 w-[70px] py-3.5 font-bold uppercase tracking-wider">Code</th>
-                <th rowSpan="2" className="border-r border-red-700/30 w-[200px] py-3.5 text-left px-4 font-bold uppercase tracking-wider">Units name</th>
-                <th colSpan="3" className="border-r border-red-700/30 py-2 font-bold uppercase tracking-wider">Sheet 01<br/><span className="text-[9px] font-normal text-white/80">Stock out not Confirm goods</span></th>
-                <th colSpan="3" className="border-r border-red-700/30 py-2 font-bold uppercase tracking-wider">Sheet 02<br/><span className="text-[9px] font-normal text-white/80">Stock out not create hand over</span></th>
-                <th colSpan="3" className="border-r border-red-700/30 py-2 font-bold uppercase tracking-wider">Sheet 03<br/><span className="text-[9px] font-normal text-white/80">Hand over not Confirmed</span></th>
-                <th colSpan="3" className="py-2 font-bold uppercase tracking-wider">Total Summary</th>
+              <tr className="text-white text-[11px] border-b border-slate-200">
+                <th rowSpan="2" className="bg-slate-700 border-r border-slate-650 w-[40px] py-3.5 font-bold uppercase tracking-wider">No</th>
+                <th rowSpan="2" className="bg-slate-700 border-r border-slate-650 w-[70px] py-3.5 font-bold uppercase tracking-wider">Code</th>
+                <th rowSpan="2" className="bg-slate-700 border-r border-slate-650 w-[200px] py-3.5 text-left px-4 font-bold uppercase tracking-wider">Units name</th>
+                
+                <th colSpan="3" className="bg-blue-600 border-r border-blue-700 py-2 font-bold uppercase tracking-wider">
+                  Sheet 01<br/>
+                  <span className="text-[9px] font-normal text-white/80">Stock out not Confirm goods</span>
+                </th>
+                <th colSpan="3" className="bg-amber-600 border-r border-amber-700 py-2 font-bold uppercase tracking-wider">
+                  Sheet 02<br/>
+                  <span className="text-[9px] font-normal text-white/80">Stock out not create hand over</span>
+                </th>
+                <th colSpan="3" className="bg-purple-600 border-r border-purple-700 py-2 font-bold uppercase tracking-wider">
+                  Sheet 03<br/>
+                  <span className="text-[9px] font-normal text-white/80">Hand over not Confirmed</span>
+                </th>
+                <th colSpan="3" className="bg-indigo-900 py-2 font-bold uppercase tracking-wider">
+                  Total Summary
+                </th>
               </tr>
-              <tr className="bg-gradient-to-r from-red-600 to-rose-700 text-white text-[10px] border-b border-red-800/50">
-                <th colSpan="3" className="border-r border-red-700/30 py-1.5 font-black text-amber-300">KPI = 4 DAYS</th>
-                <th colSpan="3" className="border-r border-red-700/30 py-1.5 font-black text-amber-300">KPI = 3 DAYS</th>
-                <th colSpan="3" className="border-r border-red-700/30 py-1.5 font-black text-amber-300">KPI = 3 DAYS</th>
-                <th colSpan="3" className="py-1.5 font-black text-amber-200">KPI TARGETS</th>
+              <tr className="text-white text-[10px] border-b border-slate-200">
+                <th colSpan="3" className="bg-blue-700 border-r border-blue-800 py-1.5 font-black text-blue-200">KPI = 4 DAYS</th>
+                <th colSpan="3" className="bg-amber-700 border-r border-amber-800 py-1.5 font-black text-amber-200">KPI = 3 DAYS</th>
+                <th colSpan="3" className="bg-purple-700 border-r border-purple-800 py-1.5 font-black text-purple-200">KPI = 3 DAYS</th>
+                <th colSpan="3" className="bg-indigo-950 py-1.5 font-black text-indigo-200">KPI TARGETS</th>
               </tr>
               <tr className="bg-slate-100 text-slate-600 text-[9px] border-b border-slate-200 font-bold">
                 <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
                 <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
                 <th className="border-r border-slate-200 py-1.5" style={{display: 'none'}}></th>
                 
-                <th className="border-r border-slate-200 py-2 text-emerald-600 font-bold">Day &lt;= 4</th>
-                <th className="border-r border-slate-200 py-2 text-red-600 font-bold">Day &gt; 4</th>
-                <th className="border-r border-slate-200 py-2 bg-slate-200/40 text-slate-800 font-bold">Total</th>
+                <th className="border-r border-blue-100 py-2 text-blue-700 bg-blue-50/30">Day &lt;= 4</th>
+                <th className="border-r border-blue-100 py-2 text-red-600 bg-blue-50/30">Day &gt; 4</th>
+                <th className="border-r border-blue-200 py-2 bg-blue-100/50 text-blue-900">Total</th>
                 
-                <th className="border-r border-slate-200 py-2 text-emerald-600 font-bold">Day &lt;= 3</th>
-                <th className="border-r border-slate-200 py-2 text-red-600 font-bold">Day &gt; 3</th>
-                <th className="border-r border-slate-200 py-2 bg-slate-200/40 text-slate-800 font-bold">Total</th>
+                <th className="border-r border-amber-100 py-2 text-amber-750 bg-amber-50/30">Day &lt;= 3</th>
+                <th className="border-r border-amber-100 py-2 text-red-600 bg-amber-50/30">Day &gt; 3</th>
+                <th className="border-r border-amber-200 py-2 bg-amber-100/50 text-amber-900">Total</th>
                 
-                <th className="border-r border-slate-200 py-2 text-emerald-600 font-bold">Day &lt;= 3</th>
-                <th className="border-r border-slate-200 py-2 text-red-600 font-bold">Day &gt; 3</th>
-                <th className="border-r border-slate-200 py-2 bg-slate-200/40 text-slate-800 font-bold">Total</th>
+                <th className="border-r border-purple-100 py-2 text-purple-700 bg-purple-50/30">Day &lt;= 3</th>
+                <th className="border-r border-purple-100 py-2 text-red-600 bg-purple-50/30">Day &gt; 3</th>
+                <th className="border-r border-purple-200 py-2 bg-purple-100/50 text-purple-900">Total</th>
                 
-                <th className="border-r border-slate-200 py-2 text-emerald-600 font-bold">Under KPI</th>
-                <th className="border-r border-slate-200 py-2 text-red-600 font-bold">Over KPI</th>
-                <th className="py-2 bg-slate-200/80 text-slate-900 font-black">Overall Total</th>
+                <th className="border-r border-indigo-100 py-2 text-indigo-700 bg-indigo-50/30">Under KPI</th>
+                <th className="border-r border-indigo-100 py-2 text-red-600 bg-indigo-50/30">Over KPI</th>
+                <th className="py-2 bg-indigo-100/50 text-indigo-950 font-black">Overall Total</th>
               </tr>
               
               <tr className="bg-slate-50 text-slate-800 font-black text-[11px] border-b border-slate-300 shadow-inner">
                 <td colSpan="3" className="border-r border-slate-300 text-center py-2.5 uppercase tracking-wider text-slate-950">Grand Total</td>
-                <td className="border-r border-slate-200 py-2.5 text-emerald-700 font-bold">{formatVal(totalS1Under)}</td>
-                <td className="border-r border-slate-200 py-2.5 text-red-700 font-bold">
+                <td className="border-r border-blue-100 py-2.5 text-blue-800 bg-blue-50/20">{formatVal(totalS1Under)}</td>
+                <td className="border-r border-blue-200 py-2.5 bg-blue-50/20">
                   {totalS1Over > 0 ? (
                     <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
                       {totalS1Over}
                     </span>
                   ) : '-'}
                 </td>
-                <td className="border-r border-slate-200 py-2.5 bg-slate-100 text-slate-900">{formatVal(totalS1Total)}</td>
+                <td className="border-r border-slate-200 py-2.5 bg-blue-100/30 text-blue-900 font-black">{formatVal(totalS1Total)}</td>
                 
-                <td className="border-r border-slate-200 py-2.5 text-emerald-700 font-bold">{formatVal(totalS2Under)}</td>
-                <td className="border-r border-slate-200 py-2.5 text-red-700 font-bold">
+                <td className="border-r border-amber-100 py-2.5 text-amber-800 bg-amber-50/20">{formatVal(totalS2Under)}</td>
+                <td className="border-r border-amber-200 py-2.5 bg-amber-50/20">
                   {totalS2Over > 0 ? (
                     <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
                       {totalS2Over}
                     </span>
                   ) : '-'}
                 </td>
-                <td className="border-r border-slate-200 py-2.5 bg-slate-100 text-slate-900">{formatVal(totalS2Total)}</td>
+                <td className="border-r border-slate-200 py-2.5 bg-amber-100/30 text-amber-900 font-black">{formatVal(totalS2Total)}</td>
                 
-                <td className="border-r border-slate-200 py-2.5 text-emerald-700 font-bold">{formatVal(totalS3Under)}</td>
-                <td className="border-r border-slate-200 py-2.5 text-red-700 font-bold">
+                <td className="border-r border-purple-100 py-2.5 text-purple-800 bg-purple-50/20">{formatVal(totalS3Under)}</td>
+                <td className="border-r border-purple-200 py-2.5 bg-purple-50/20">
                   {totalS3Over > 0 ? (
                     <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 border border-red-200">
                       {totalS3Over}
                     </span>
                   ) : '-'}
                 </td>
-                <td className="border-r border-slate-200 py-2.5 bg-slate-100 text-slate-900">{formatVal(totalS3Total)}</td>
+                <td className="border-r border-slate-200 py-2.5 bg-purple-100/30 text-purple-900 font-black">{formatVal(totalS3Total)}</td>
                 
-                <td className="border-r border-slate-200 py-2.5 bg-slate-100/50 text-emerald-700 font-bold">{formatVal(totalUnder)}</td>
-                <td className="border-r border-slate-200 py-2.5 bg-slate-100/50 text-red-700">
+                <td className="border-r border-indigo-100 py-2.5 bg-indigo-50/20 text-indigo-800 font-bold">{formatVal(totalUnder)}</td>
+                <td className="border-r border-indigo-200 py-2.5 bg-indigo-50/20">
                   {totalOver > 0 ? (
-                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-600 text-white shadow-sm font-black">
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-650 text-white font-black shadow-sm">
                       {totalOver}
                     </span>
                   ) : '-'}
                 </td>
-                <td className="py-2.5 bg-slate-200 text-slate-950 font-black text-xs">{formatVal(totalAll)}</td>
+                <td className="py-2.5 bg-indigo-200 text-indigo-950 font-black text-xs">{formatVal(totalAll)}</td>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-150 bg-white">
@@ -1101,46 +1115,49 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                   <td className="border-r border-slate-200 py-2 font-bold text-slate-800">{row.unit}</td>
                   <td className="border-r border-slate-200 py-2 text-left px-4 font-semibold text-slate-900 break-all">{row.team}</td>
                   
-                  <td className="border-r border-slate-150 py-2 text-slate-600 font-medium">{formatVal(row.s1Under)}</td>
-                  <td className="border-r border-slate-150 py-2">
+                  {/* Sheet 01 */}
+                  <td className="border-r border-slate-150 py-2 text-slate-600 bg-blue-50/5 font-medium">{formatVal(row.s1Under)}</td>
+                  <td className="border-r border-slate-150 py-2 bg-blue-50/5">
                     {row.s1Over > 0 ? (
                       <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
-                        {row.s1Over
-                        }
+                        {row.s1Over}
                       </span>
                     ) : '-'}
                   </td>
-                  <td className="border-r border-slate-150 py-2 bg-slate-50/50 text-slate-800 font-bold">{formatVal(row.s1Total)}</td>
+                  <td className="border-r border-slate-150 py-2 bg-blue-100/10 text-blue-900 font-bold">{formatVal(row.s1Total)}</td>
                   
-                  <td className="border-r border-slate-150 py-2 text-slate-600 font-medium">{formatVal(row.s2Under)}</td>
-                  <td className="border-r border-slate-150 py-2">
+                  {/* Sheet 02 */}
+                  <td className="border-r border-slate-150 py-2 text-slate-600 bg-amber-50/5 font-medium">{formatVal(row.s2Under)}</td>
+                  <td className="border-r border-slate-150 py-2 bg-amber-50/5">
                     {row.s2Over > 0 ? (
                       <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
                         {row.s2Over}
                       </span>
                     ) : '-'}
                   </td>
-                  <td className="border-r border-slate-150 py-2 bg-slate-50/50 text-slate-800 font-bold">{formatVal(row.s2Total)}</td>
+                  <td className="border-r border-slate-150 py-2 bg-amber-100/10 text-amber-900 font-bold">{formatVal(row.s2Total)}</td>
                   
-                  <td className="border-r border-slate-150 py-2 text-slate-600 font-medium">{formatVal(row.s3Under)}</td>
-                  <td className="border-r border-slate-150 py-2">
+                  {/* Sheet 03 */}
+                  <td className="border-r border-slate-150 py-2 text-slate-600 bg-purple-50/5 font-medium">{formatVal(row.s3Under)}</td>
+                  <td className="border-r border-slate-150 py-2 bg-purple-50/5">
                     {row.s3Over > 0 ? (
                       <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-bold border border-red-100">
                         {row.s3Over}
                       </span>
                     ) : '-'}
                   </td>
-                  <td className="border-r border-slate-150 py-2 bg-slate-50/50 text-slate-800 font-bold">{formatVal(row.s3Total)}</td>
+                  <td className="border-r border-slate-150 py-2 bg-purple-100/10 text-purple-900 font-bold">{formatVal(row.s3Total)}</td>
                   
-                  <td className="border-r border-slate-200 py-2 bg-slate-50/20 text-slate-600 font-medium">{formatVal(row.underKpi)}</td>
-                  <td className="border-r border-slate-200 py-2 bg-slate-50/20">
+                  {/* Total summary */}
+                  <td className="border-r border-slate-200 py-2 bg-indigo-50/5 text-slate-600 font-medium">{formatVal(row.underKpi)}</td>
+                  <td className="border-r border-slate-200 py-2 bg-indigo-50/5">
                     {row.overKpi > 0 ? (
                       <span className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold border border-red-200">
                         {row.overKpi}
                       </span>
                     ) : '-'}
                   </td>
-                  <td className="py-2 bg-slate-100 text-slate-900 font-black">{formatVal(row.total)}</td>
+                  <td className="py-2 bg-indigo-100/10 text-indigo-950 font-black">{formatVal(row.total)}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
