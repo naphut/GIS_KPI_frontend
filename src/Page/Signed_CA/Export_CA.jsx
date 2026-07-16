@@ -549,9 +549,6 @@ export const Export_CA = () => {
       const warehouse = (item.exportWarehouse || '').toUpperCase().replace(/\s+/g, '');
       const isGIS = warehouse.includes('GIS');
       
-      const status = (item.status || '').toUpperCase().replace(/\s+/g, ' ').trim();
-      const isStatusOK = status.includes('ACTUAL EXPORT ALL') || status.includes('THỰC XUẤT HẾT') || status.includes('THUC XUAT HET');
-      
       const statusCA = (item.statusCA || '').toUpperCase().replace(/\s+/g, ' ').trim();
       const isCAOK = statusCA.includes('UNSIGNED') || 
                      statusCA.includes('IS SIGNING') || 
@@ -561,12 +558,11 @@ export const Export_CA = () => {
                      statusCA.includes('CANCEL') ||
                      statusCA.includes('HỦY') ||
                      statusCA.includes('HUY');
-      
-      return isGIS && isStatusOK && isCAOK;
+      return isGIS && isCAOK;
     });
 
     if (filteredData.length === 0) {
-      showNotification('⚠️ No matching records found! (GIS + Actual Export all + Unsigned/Is signing)', 'warning');
+      showNotification('⚠️ No matching records found! (GIS + Unsigned/Is signing/Cancel)', 'warning');
       return;
     }
 
