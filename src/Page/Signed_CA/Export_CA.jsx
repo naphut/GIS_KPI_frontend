@@ -34,7 +34,8 @@ const allUnits = [
 const getUnitFromWarehouse = (warehouse) => {
   if (!warehouse) return null;
   
-  const normalized = warehouse.toUpperCase().replace(/\s+/g, '');
+  let normalized = warehouse.toUpperCase().replace(/\s+/g, '');
+  normalized = normalized.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
   
   // PNP Planning Department
   if (normalized.includes('PNP_PLA_PLANNING') || normalized.includes('PNP_PLANNING')) {
@@ -93,7 +94,7 @@ const getUnitFromWarehouse = (warehouse) => {
 const getUnitFromNoteCode = (noteCode) => {
   if (!noteCode) return null;
   
-  const upper = noteCode.toUpperCase();
+  const upper = noteCode.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
   
   // ពិនិត្យលំនាំ PXKGIS_XXX ឬ PXKXXX
   const match = upper.match(/(?:PXK|LNK)(?:GIS_)?([A-Z0-9_]+)/);
@@ -103,7 +104,7 @@ const getUnitFromNoteCode = (noteCode) => {
     // FBC → PNPZ1, PNPZ2, KANZ1
     if (codePart.includes('FBC')) {
       if (codePart.startsWith('PNP_')) {
-        const fbcNum = codePart.match(/FBC[^\d]*(\d+)/);
+        const fbcNum = codePart.match(/FBC(\d+)/);
         if (fbcNum) {
           const num = parseInt(fbcNum[1]);
           if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
@@ -151,7 +152,7 @@ const getUnitFromNoteCode = (noteCode) => {
 const getUnitFromCommandCode = (commandCode) => {
   if (!commandCode) return null;
   
-  const upper = commandCode.toUpperCase();
+  const upper = commandCode.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
   
   // ពិនិត្យលំនាំ LXKGIS_XXX ឬ LXKXXX
   const match = upper.match(/(?:PXK|LNK)(?:GIS_)?([A-Z0-9_]+)/);
@@ -161,7 +162,7 @@ const getUnitFromCommandCode = (commandCode) => {
     // FBC → PNPZ1, PNPZ2, KANZ1
     if (codePart.includes('FBC')) {
       if (codePart.startsWith('PNP_')) {
-        const fbcNum = codePart.match(/FBC[^\d]*(\d+)/);
+        const fbcNum = codePart.match(/FBC(\d+)/);
         if (fbcNum) {
           const num = parseInt(fbcNum[1]);
           if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';

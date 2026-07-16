@@ -71,16 +71,18 @@ const getUnitFromRequestCode = (importRequestCode) => {
       
       console.log('🔍 Extracting unit from:', unitCode); // Debug
       
+      const normalizedUnitCode = unitCode.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
+      
       // 🎯 ពិនិត្យ FBC → KANZ1, PNPZ1, PNPZ2
-      if (unitCode.includes('FBC')) {
+      if (normalizedUnitCode.includes('FBC')) {
         // KAN_FBC01 → KANZ1
-        if (unitCode.startsWith('KAN_')) {
+        if (normalizedUnitCode.startsWith('KAN_')) {
           console.log('✅ Found KAN_FBC → KANZ1');
           return 'KANZ1';
         }
         // PNP_FBC01 → PNPZ1 / PNPZ2
-        if (unitCode.startsWith('PNP_')) {
-          const fbcNum = unitCode.match(/FBC[^\d]*(\d+)/);
+        if (normalizedUnitCode.startsWith('PNP_')) {
+          const fbcNum = normalizedUnitCode.match(/FBC(\d+)/);
           if (fbcNum) {
             const num = parseInt(fbcNum[1]);
             // PNPZ1: 01,03,05,06,07,10,11,13,14
@@ -190,7 +192,7 @@ const getUnitFromUnitRequests = (unitRequests) => {
 const getUnitFromUnitReceive = (unitReceive) => {
   if (!unitReceive) return null;
   
-  const upper = unitReceive.toUpperCase();
+  const upper = unitReceive.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
   
   // PLA → KAN, PNP
   if (upper.includes('PLA')) {
@@ -208,7 +210,7 @@ const getUnitFromUnitReceive = (unitReceive) => {
   if (upper.includes('FBC')) {
     if (upper.includes('KAN')) return 'KANZ1';
     if (upper.includes('PNP')) {
-      const fbcNum = upper.match(/FBC[^\d]*(\d+)/);
+      const fbcNum = upper.match(/FBC(\d+)/);
       if (fbcNum) {
         const num = parseInt(fbcNum[1]);
         if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';

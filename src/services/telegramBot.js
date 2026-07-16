@@ -101,10 +101,10 @@ export const cleanWarehouseName = (name, isSignedCA = false) => {
   
   let trimmed = name.trim().toUpperCase();
   
+  // Normalize typos
+  trimmed = trimmed.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
+  
   // 1. Determine Province/Unit code
-  // E.g. GIS_PNP_SOS_TEAM02 -> PNP
-  // E.g. PNP_SOS_TEAM02 -> PNP
-  // E.g. PNPZ1_FBC01 -> PNPZ1
   let province = 'UNK';
   const gisMatch = trimmed.match(/^GIS_([A-Z0-9]+)/i);
   if (gisMatch) {
@@ -124,7 +124,7 @@ export const cleanWarehouseName = (name, isSignedCA = false) => {
   // 3. FBC Team check: Find "FBC" followed by optional non-digits, then digits
   const fbcMatch = trimmed.match(/FBC[^\d]*(\d+)/i);
   if (fbcMatch) {
-    const num = fbcMatch[1].padStart(2, '0');
+    const num = String(parseInt(fbcMatch[1])).padStart(2, '0');
     return isSignedCA 
       ? `GIS_${province}_FBC_TEAM${num}` 
       : `GIS_${province}_FBC${num}`;
@@ -133,7 +133,7 @@ export const cleanWarehouseName = (name, isSignedCA = false) => {
   // 4. SOS Team check: Find "SOS" followed by optional non-digits, then digits
   const sosMatch = trimmed.match(/SOS[^\d]*(\d+)/i);
   if (sosMatch) {
-    const num = sosMatch[1].padStart(2, '0');
+    const num = String(parseInt(sosMatch[1])).padStart(2, '0');
     return isSignedCA 
       ? `GIS_${province}_SOS_TEAM${num}` 
       : `GIS_${province}_SOS${num}`;

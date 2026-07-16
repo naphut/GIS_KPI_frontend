@@ -61,7 +61,7 @@ const extractYearFromDate = (dateString) => {
 const getUnitFromRequestExportCode = (requestExportCode) => {
   if (!requestExportCode) return null;
   
-  const upper = requestExportCode.toUpperCase();
+  const upper = requestExportCode.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
   if (!upper.includes('GIS')) return null;
   
   let unitPart = '';
@@ -94,7 +94,7 @@ const getUnitFromRequestExportCode = (requestExportCode) => {
   if (unitPart.includes('FBC')) {
     if (unitPart.startsWith('KAN_')) return 'KANZ1';
     if (unitPart.startsWith('PNP_')) {
-      const fbcNum = unitPart.match(/FBC[^\d]*(\d+)/);
+      const fbcNum = unitPart.match(/FBC(\d+)/);
       if (fbcNum) {
         const num = parseInt(fbcNum[1]);
         if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
@@ -137,7 +137,7 @@ const getUnitFromRequestExportCode = (requestExportCode) => {
 const getUnitFromCommandExportCode = (commandExportCode) => {
   if (!commandExportCode) return null;
   
-  const upper = commandExportCode.toUpperCase();
+  const upper = commandExportCode.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
   if (!upper.includes('GIS')) return null;
   
   let unitPart = '';
@@ -167,7 +167,7 @@ const getUnitFromCommandExportCode = (commandExportCode) => {
   if (unitPart.includes('FBC')) {
     if (unitPart.startsWith('KAN_')) return 'KANZ1';
     if (unitPart.startsWith('PNP_')) {
-      const fbcNum = unitPart.match(/FBC[^\d]*(\d+)/);
+      const fbcNum = unitPart.match(/FBC(\d+)/);
       if (fbcNum) {
         const num = parseInt(fbcNum[1]);
         if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
@@ -198,7 +198,7 @@ const getUnitFromCommandExportCode = (commandExportCode) => {
 const getUnitFromNoteExportCode = (noteExportCode) => {
   if (!noteExportCode) return null;
   
-  const upper = noteExportCode.toUpperCase();
+  const upper = noteExportCode.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
   
   // GIS_XXX_
   const match = upper.match(/^GIS_([A-Z0-9]+)_/);
@@ -213,7 +213,7 @@ const getUnitFromNoteExportCode = (noteExportCode) => {
   if (upper.includes('FBC')) {
     if (upper.includes('KAN')) return 'KANZ1';
     if (upper.includes('PNP')) {
-      const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
+      const fbcMatch = upper.match(/FBC(\d+)/);
       if (fbcMatch) {
         const num = parseInt(fbcMatch[1]);
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
@@ -248,7 +248,7 @@ const getUnitFromNoteExportCode = (noteExportCode) => {
 const getUnitFromGroupRequest = (groupRequest) => {
   if (!groupRequest) return null;
   
-  const upper = groupRequest.toUpperCase();
+  const upper = groupRequest.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
   
   const match = upper.match(/^GIS_([A-Z0-9]+)_/);
   if (match && match[1]) {
@@ -261,7 +261,7 @@ const getUnitFromGroupRequest = (groupRequest) => {
   if (upper.includes('FBC')) {
     if (upper.includes('KAN')) return 'KANZ1';
     if (upper.includes('PNP')) {
-      const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
+      const fbcMatch = upper.match(/FBC(\d+)/);
       if (fbcMatch) {
         const num = parseInt(fbcMatch[1]);
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';

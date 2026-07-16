@@ -171,7 +171,7 @@ const Import_CA = () => {
   const getUnitFromReceiptCode = (codeReceipt) => {
     if (!codeReceipt) return null;
     
-    const upper = codeReceipt.toUpperCase();
+    const upper = codeReceipt.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
     
     // ឧទាហរណ៍: PNKGIS_PNP_FBC01/26/000003
     // ចាប់យកផ្នែកកណ្តាល: PNP_FBC01
@@ -183,7 +183,7 @@ const Import_CA = () => {
       if (codePart.includes('FBC')) {
         // PNP_FBC01 → PNPZ1
         if (codePart.startsWith('PNP_')) {
-          const fbcNum = codePart.match(/FBC[^\d]*(\d+)/);
+          const fbcNum = codePart.match(/FBC(\d+)/);
           if (fbcNum) {
             const num = parseInt(fbcNum[1]);
             // PNPZ1: 01,03,05,06,07,10,11,13,14
@@ -252,7 +252,7 @@ const Import_CA = () => {
   const getUnitFromCommandCode = (codeCommand) => {
     if (!codeCommand) return null;
     
-    const upper = codeCommand.toUpperCase();
+    const upper = codeCommand.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
     
     // ឧទាហរណ៍: LNKGIS_PNP_FBC01/26/000003
     const match = upper.match(/(?:PNK|LNK)GIS_([A-Z0-9_]+)/);
@@ -262,7 +262,7 @@ const Import_CA = () => {
       // FBC
       if (codePart.includes('FBC')) {
         if (codePart.startsWith('PNP_')) {
-          const fbcNum = codePart.match(/FBC[^\d]*(\d+)/);
+          const fbcNum = codePart.match(/FBC(\d+)/);
           if (fbcNum) {
             const num = parseInt(fbcNum[1]);
             if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) {
@@ -317,7 +317,7 @@ const Import_CA = () => {
   const getUnitFromWarehouse = (warehouse) => {
     if (!warehouse) return null;
     
-    const upper = warehouse.toUpperCase();
+    const upper = warehouse.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
     
     // 1. ពិនិត្យមើលលំនាំ GIS_XXX_ ឬ XXX_
     const match = upper.match(/^GIS_([A-Z0-9]+)_/) || upper.match(/^([A-Z0-9]+)_/);
@@ -333,7 +333,7 @@ const Import_CA = () => {
     // 2. ពិនិត្យ FBC → PNPZ1/PNPZ2/KANZ1
     if (upper.includes('FBC')) {
       if (upper.includes('PNP')) {
-        const fbcNum = upper.match(/FBC[^\d]*(\d+)/);
+        const fbcNum = upper.match(/FBC(\d+)/);
         if (fbcNum) {
           const num = parseInt(fbcNum[1]);
           if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
