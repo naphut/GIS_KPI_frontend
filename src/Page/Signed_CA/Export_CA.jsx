@@ -281,7 +281,10 @@ export const Export_CA = () => {
                sCA.includes('IS SIGNING') || 
                sCA.includes('ISSIGNING') || 
                sCA.includes('TRÌNH KÝ') || 
-               sCA.includes('TRINH KY');
+               sCA.includes('TRINH KY') ||
+               sCA.includes('CANCEL') ||
+               sCA.includes('HỦY') ||
+               sCA.includes('HUY');
       });
       setData(filtered);
       
@@ -422,7 +425,7 @@ export const Export_CA = () => {
   };
 
   const getWarehouseBadge = (warehouse) => {
-    if (warehouse && (warehouse.toUpperCase().includes('GIS') || getUnitFromWarehouse(warehouse) !== null)) {
+    if (warehouse && warehouse.toUpperCase().includes('GIS')) {
       return <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">{warehouse}</span>;
     }
     return <span className="text-gray-600">{warehouse}</span>;
@@ -544,7 +547,7 @@ export const Export_CA = () => {
     }
     const filteredData = newRawData.filter(item => {
       const warehouse = (item.exportWarehouse || '').toUpperCase().replace(/\s+/g, '');
-      const isGIS = warehouse.includes('GIS') || getUnitFromWarehouse(warehouse) !== null;
+      const isGIS = warehouse.includes('GIS');
       
       const status = (item.status || '').toUpperCase().replace(/\s+/g, ' ').trim();
       const isStatusOK = status.includes('ACTUAL EXPORT ALL') || status.includes('THỰC XUẤT HẾT') || status.includes('THUC XUAT HET');
@@ -554,7 +557,10 @@ export const Export_CA = () => {
                      statusCA.includes('IS SIGNING') || 
                      statusCA.includes('ISSIGNING') || 
                      statusCA.includes('TRÌNH KÝ') || 
-                     statusCA.includes('TRINH KY');
+                     statusCA.includes('TRINH KY') ||
+                     statusCA.includes('CANCEL') ||
+                     statusCA.includes('HỦY') ||
+                     statusCA.includes('HUY');
       
       return isGIS && isStatusOK && isCAOK;
     });
@@ -959,11 +965,11 @@ export const Export_CA = () => {
     showNotification('📎 KPI Export completed!', 'success');
   };
 
-  // 🎯 FILTER: Show matching warehouses (GIS or other mapped Units)
+  // 🎯 FILTER: Show matching warehouses (GIS only)
   const filteredData = useMemo(() => {
     let filtered = data;
     filtered = filtered.filter(item => 
-      item.exportWarehouse && (item.exportWarehouse.toUpperCase().includes('GIS') || getUnitFromWarehouse(item.exportWarehouse) !== null)
+      item.exportWarehouse && item.exportWarehouse.toUpperCase().includes('GIS')
     );
     if (searchTerm) {
       filtered = filtered.filter(item =>

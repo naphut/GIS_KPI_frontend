@@ -249,7 +249,10 @@ const Dashboard_CA = () => {
   }, [stockOutData]);
 
   const stockOutUnsigned = useMemo(() => {
-    return stockOutData.filter(item => item.statusCA === 'Unsigned' || !item.statusCA);
+    return stockOutData.filter(item => {
+      const s = (item.statusCA || 'Unsigned').toUpperCase();
+      return s === 'UNSIGNED' || s === 'CANCEL';
+    });
   }, [stockOutData]);
 
   const stockInSigning = useMemo(() => {
@@ -257,7 +260,10 @@ const Dashboard_CA = () => {
   }, [stockInData]);
 
   const stockInUnsigned = useMemo(() => {
-    return stockInData.filter(item => item.statusCA === 'Unsigned' || !item.statusCA);
+    return stockInData.filter(item => {
+      const s = (item.statusCA || 'Unsigned').toUpperCase();
+      return s === 'UNSIGNED' || s === 'CANCEL';
+    });
   }, [stockInData]);
 
   // Calculate statistics

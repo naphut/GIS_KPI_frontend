@@ -63,7 +63,10 @@ const Import_CA = () => {
         return sCA.includes('UNSIGNED') || 
                sCA.includes('IS SIGNING') || 
                sCA.includes('TRÌNH KÝ') || 
-               sCA.includes('TRINH KY');
+               sCA.includes('TRINH KY') ||
+               sCA.includes('CANCEL') ||
+               sCA.includes('HỦY') ||
+               sCA.includes('HUY');
       });
       setData(filtered);
       
@@ -553,7 +556,10 @@ const Import_CA = () => {
       const isValidStatus = sCA.includes('UNSIGNED') || 
                             sCA.includes('IS SIGNING') || 
                             sCA.includes('TRÌNH KÝ') || 
-                            sCA.includes('TRINH KY');
+                            sCA.includes('TRINH KY') ||
+                            sCA.includes('CANCEL') ||
+                            sCA.includes('HỦY') ||
+                            sCA.includes('HUY');
       return isGIS && isValidStatus;
     });
 
