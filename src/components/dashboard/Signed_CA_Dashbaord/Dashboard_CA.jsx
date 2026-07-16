@@ -886,6 +886,151 @@ const Dashboard_CA = () => {
     }
   };
 
+  const sendSummaryImageScreenshotAll = async () => {
+    const units = getConfiguredUnits();
+    if (units.length === 0) {
+      alert('⚠️ No group IDs configured. Please add group IDs first.');
+      return;
+    }
+    
+    if (isSending) return;
+    
+    setIsSending(true);
+    setShowProgressModal(true);
+    setSendResults(null);
+    
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+    
+    let successCount = 0;
+    let failCount = 0;
+    let completedCount = 0;
+    const results = [];
+    
+    try {
+      setSummaryImageMode(true);
+      for (const unit of units) {
+        if (signal.aborted) {
+          results.push({ unit, success: false, error: 'Cancelled', aborted: true });
+          failCount++;
+          completedCount++;
+          continue;
+        }
+        
+        setSendProgress({
+          current: completedCount + 1,
+          total: units.length,
+          unit: unit,
+          status: 'sending'
+        });
+        
+        try {
+          setScreenshotUnit(unit);
+          await new Promise(resolve => setTimeout(resolve, 400));
+          
+          if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+          
+          const element = document.getElementById('telegram-summary-report');
+          if (!element) {
+            throw new Error('Summary report element not found in DOM');
+          }
+          
+          const offsetHeight = element.offsetHeight || 600;
+          
+          const canvas = await html2canvas(element, {
+            useCORS: true,
+            scale: 3.0,
+            backgroundColor: '#ffffff',
+            width: 1200,
+            height: offsetHeight,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: document.documentElement.offsetWidth,
+            windowHeight: document.documentElement.offsetHeight,
+            logging: false,
+            onclone: (clonedDoc) => {
+              const style = clonedDoc.createElement('style');
+              style.innerHTML = `
+                #telegram-summary-report * {
+                  -webkit-font-smoothing: antialiased !important;
+                  -moz-osx-font-smoothing: grayscale !important;
+                  text-rendering: optimizeLegibility !important;
+                }
+              `;
+              clonedDoc.head.appendChild(style);
+            }
+          });
+          
+          if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+          
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
+          });
+          
+          const sendRes = await sendPhotoToTelegram(unit, blob, '', signal);
+          
+          completedCount++;
+          results.push({ unit, ...sendRes });
+          
+          if (sendRes && sendRes.success) {
+            successCount++;
+            setSendProgress({
+              current: completedCount,
+              total: units.length,
+              unit: unit,
+              status: 'success'
+            });
+          } else {
+            failCount++;
+            setSendProgress({
+              current: completedCount,
+              total: units.length,
+              unit: unit,
+              status: 'failed',
+              error: sendRes?.error || 'Unknown error'
+            });
+          }
+        } catch (unitErr) {
+          completedCount++;
+          failCount++;
+          results.push({ unit, success: false, error: unitErr.message });
+          setSendProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'failed',
+            error: unitErr.message
+          });
+        }
+        
+        if (completedCount < units.length && !signal.aborted) {
+          await new Promise(resolve => setTimeout(resolve, 600));
+        }
+      }
+      
+      if (successCount > 0 && !signal.aborted) {
+        completeStore(STORAGE_KEYS.EXPORT_CA_DATA);
+        completeStore(STORAGE_KEYS.IMPORT_CA_DATA);
+      }
+      
+      setSendResults({
+        total: units.length,
+        success: successCount,
+        failed: failCount
+      });
+    } catch (err) {
+      console.error('Error sending all summary images:', err);
+    } finally {
+      setScreenshotUnit(null);
+      setSummaryImageMode(false);
+      setIsSelectingForSummary(false);
+      setIsSending(false);
+      if (!signal.aborted) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
+    }
+  };
+
   const getSummaryRows = () => {
     const rows = [];
     const unitsToProcess = screenshotUnit ? [screenshotUnit] : allUnits;
@@ -1751,6 +1896,22 @@ const Dashboard_CA = () => {
               Send Image All ({configuredCount})
               {isSending && screenshotMode && <span className="ml-1 animate-spin">⏳</span>}
             </button>
+
+            {/* Summary Image all Unit */}
+            <button
+              onClick={sendSummaryImageScreenshotAll}
+              disabled={isSending || configuredCount === 0}
+              className={`px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md disabled:opacity-50 font-semibold text-sm ${
+                configuredCount > 0
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white hover:from-pink-600 hover:to-rose-700 shadow-rose-200'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+              title={configuredCount === 0 ? 'No provinces configured' : 'Send summary image to all configured provinces'}
+            >
+              <span>🖼️</span>
+              Summary Image all Unit ({configuredCount})
+              {isSending && summaryImageMode && <span className="ml-1 animate-spin">⏳</span>}
+            </button>
             
              {/* Send Text Unit (1) */}
             <button
@@ -1790,7 +1951,7 @@ const Dashboard_CA = () => {
               disabled={isSending}
               className="px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-purple-200 font-semibold text-sm"
             >
-              <span>📊</span>
+              <span>🖼️</span>
               Summary Image
             </button>
           </div>
