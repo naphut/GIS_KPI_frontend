@@ -16,32 +16,33 @@ const DEFAULT_TOKEN = '8571996109:AAHiDszOTGk4uEnb0iPKcnNXlGoTSE7K740';
 
 // Group IDs for each province (NEW)
 // Group IDs for each province
+// Group IDs for each province (NEW)
 const GROUP_IDS = {
-  'BAN': '-4064404599',
-  'BAT': '-4040029628',
-  'CHA': '-4049172108',
-  'CHH': '-4051031281',
-  'KAM': '-4095493891',
-  'KAN': '-972214275',
-  'KANZ1': '-4660884501',
-  'KOH': '-4040314167',
-  'KRA': '-4043528749',
-  'MON': '-4098682856',
-  'ODD': '-916660446',
-  PNP: "-5359041682",
-  'PNPZ1': '-1002524347910',
-  'PNPZ2': '-1002766967718',
-'PRE': '-4041390598',
-  'PRH': '-4012609247',
-  'PUR': '-4056509295',
-  'ROT': '-4085028170',
-  'SIE': '-4033369254',
-  'SIH': '-4011071980',
-  'SPE': '-4022650547',
-  'STU': '-4037945549',
-  'SVA': '-4076297232',
-  'TAK': ' -4099541459',
-  'THO': '-4075992457',
+  'BAN': '-5586791976',
+  'BAT': '-1004433153728',
+  'CHA': '-5420693532',
+  'CHH': 'NEW_ID',
+  'KAM': 'NEW_ID',
+  'KAN': '-5236231454',
+  'KANZ1': '-5274252058',
+  'KOH': 'NEW_ID',
+  'KRA': 'NEW_ID',
+  'MON': 'NEW_ID',
+  'ODD': 'NEW_ID',
+  'PNP': '-5359041682',
+  'PNPZ1': 'NEW_ID',
+  'PNPZ2': 'NEW_ID',
+  'PRE': 'NEW_ID',
+  'PRH': 'NEW_ID',
+  'PUR': 'NEW_ID',
+  'ROT': 'NEW_ID',
+  'SIE': 'NEW_ID',
+  'SIH': 'NEW_ID',
+  'SPE': 'NEW_ID',
+  'STU': 'NEW_ID',
+  'SVA': 'NEW_ID',
+  'TAK': 'NEW_ID',
+  'THO': 'NEW_ID',
 };
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
@@ -98,40 +99,54 @@ export const cleanWarehouseName = (name) => {
   if (!name || name === '-') return '-';
   if (typeof name !== 'string') name = String(name);
   
-  const trimmed = name.trim().toUpperCase();
+  let trimmed = name.trim().toUpperCase();
   
-  // 1. Check for FBC Team pattern
-  // Matches: GIS_STU_STOCK_NOC_FBCTEAM01 -> GIS_STU_FBC_TEAM01
-  const fbcMatch = trimmed.match(/^GIS_([A-Z]{3})_.*FBC_?TEAM(\d+)$/i) ||
-                   trimmed.match(/^GIS_([A-Z]{3})_?FBC_?TEAM(\d+)$/i);
+  // 1. Replace planning dept patterns
+  // E.g. BAN_PLA_PLANNING -> BAN_PLA_PLANNING DEPT
+  if (trimmed.includes('PLANNING')) {
+    const match = trimmed.match(/^([A-Z0-9]+)_PLA_/i) || trimmed.match(/^([A-Z0-9]+)_PLANNING/i);
+    if (match) {
+      return `${match[1]}_PLA_PLANNING DEPT`;
+    }
+    return trimmed;
+  }
+
+  // 2. Strip intermediate keywords: STOCK_NOC_, STOCK_XL_, STOCK_ROTATIONAL_TESTED_, etc.
+  trimmed = trimmed.replace(/_(STOCK_NOC|STOCK_XL|STOCK_ROTATIONAL_TESTED|STOCK_ROTATIONAL|STOCK|NOC|XL|ROTATIONAL|TESTED)_/g, '_');
+  trimmed = trimmed.replace(/_STOCK_/g, '_');
+  trimmed = trimmed.replace(/_NOC_/g, '_');
+  trimmed = trimmed.replace(/_XL_/g, '_');
+
+  // 3. Handle FBC team conversion: matches FBC, FBCTEAM, FBC_TEAM, FBC TEAM etc. followed by digits
+  const fbcMatch = trimmed.match(/^GIS_([A-Z0-9]+)_FBC_?(?:TEAM)?_?(\d+)$/i);
   if (fbcMatch) {
-    return `GIS_${fbcMatch[1]}_FBC_TEAM${fbcMatch[2]}`;
-  }
-  
-  // 2. Check for SOS Team pattern with underscore (SOS_TEAM)
-  // Matches: GIS_CHA_SOS_TEAM03 -> GIS_CHA_SOS_TEAM03
-  const sosTeamMatch = trimmed.match(/^GIS_([A-Z]{3})_.*SOS_TEAM(\d+)$/i) ||
-                       trimmed.match(/^GIS_([A-Z]{3})_?SOS_TEAM(\d+)$/i);
-  if (sosTeamMatch) {
-    return `GIS_${sosTeamMatch[1]}_SOS_TEAM${sosTeamMatch[2]}`;
+    const num = fbcMatch[2].padStart(2, '0');
+    return `GIS_${fbcMatch[1]}_FBC${num}`;
   }
 
-  // 3. Check for SOS Team pattern without underscore (SOSTEAM)
-  // Matches: GIS_CHA_STOCK_ROTATIONAL_SOSTEAM03 -> GIS_CHA_SOSTEAM03
-  // Matches: GIS_CHA_STOCK_XL_SOSTEAM04 -> GIS_CHA_SOSTEAM04
-  const sosTeamNoUnderscoreMatch = trimmed.match(/^GIS_([A-Z]{3})_.*SOSTEAM(\d+)$/i) ||
-                                  trimmed.match(/^GIS_([A-Z]{3})_?SOSTEAM(\d+)$/i);
-  if (sosTeamNoUnderscoreMatch) {
-    return `GIS_${sosTeamNoUnderscoreMatch[1]}_SOSTEAM${sosTeamNoUnderscoreMatch[2]}`;
+  // 4. Handle SOS team conversion: matches SOS, SOSTEAM, SOS_TEAM, SOS TEAM etc. followed by digits
+  const sosMatch = trimmed.match(/^GIS_([A-Z0-9]+)_SOS_?(?:TEAM)?_?(\d+)$/i);
+  if (sosMatch) {
+    const num = sosMatch[2].padStart(2, '0');
+    return `GIS_${sosMatch[1]}_SOS${num}`;
   }
 
-  // 4. General fallback SOS Team match
-  const match = trimmed.match(/^GIS_([A-Z]{3})_.*SOS_?TEAM(\d+)$/i) || 
-                trimmed.match(/^GIS_([A-Z]{3})_?SOS_?TEAM(\d+)$/i);
-  if (match) {
-    const province = match[1];
-    const teamNum = match[2];
-    return `GIS_${province}_SOSTEAM${teamNum}`;
+  // 5. Fallback pattern matching: any FBC with digits
+  const fbcFallback = trimmed.match(/FBC_?(?:TEAM)?_?(\d+)/i);
+  if (fbcFallback) {
+    const provinceMatch = trimmed.match(/^GIS_([A-Z0-9]+)/i);
+    const province = provinceMatch ? provinceMatch[1] : 'UNK';
+    const num = fbcFallback[1].padStart(2, '0');
+    return `GIS_${province}_FBC${num}`;
+  }
+
+  // 6. Fallback pattern matching: any SOS with digits
+  const sosFallback = trimmed.match(/SOS_?(?:TEAM)?_?(\d+)/i);
+  if (sosFallback) {
+    const provinceMatch = trimmed.match(/^GIS_([A-Z0-9]+)/i);
+    const province = provinceMatch ? provinceMatch[1] : 'UNK';
+    const num = sosFallback[1].padStart(2, '0');
+    return `GIS_${province}_SOS${num}`;
   }
 
   return trimmed;
