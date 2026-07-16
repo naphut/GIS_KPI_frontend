@@ -97,7 +97,7 @@ const getUnitFromRequestExportCode = (requestExportCode) => {
       const fbcNum = unitPart.match(/FBC(\d+)/);
       if (fbcNum) {
         const num = parseInt(fbcNum[1]);
-        if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+        if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
       }
       return 'PNPZ1';
@@ -170,7 +170,7 @@ const getUnitFromCommandExportCode = (commandExportCode) => {
       const fbcNum = unitPart.match(/FBC(\d+)/);
       if (fbcNum) {
         const num = parseInt(fbcNum[1]);
-        if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+        if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
       }
       return 'PNPZ1';
@@ -217,7 +217,7 @@ const getUnitFromNoteExportCode = (noteExportCode) => {
       if (fbcMatch) {
         const num = parseInt(fbcMatch[1]);
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
-        if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+        if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
       }
       return 'PNPZ1';
     }
@@ -265,7 +265,7 @@ const getUnitFromGroupRequest = (groupRequest) => {
       if (fbcMatch) {
         const num = parseInt(fbcMatch[1]);
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
-        if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) return 'PNPZ1';
+        if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
       }
       return 'PNPZ1';
     }

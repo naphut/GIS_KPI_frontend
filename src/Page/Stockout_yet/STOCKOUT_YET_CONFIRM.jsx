@@ -36,7 +36,7 @@ const getUnitFromGroupReceiver = (groupReceiver) => {
   
   const unitPatterns = [
     // 1. PNPZ1 patterns (specific)
-    { pattern: /GIS_PNP_FBC([0O]?[13567]|10|13|14)/, unit: 'PNPZ1' },
+    { pattern: /GIS_PNP_FBC([0O]?[13567]|10|11|13|14)/, unit: 'PNPZ1' },
     { pattern: /_PNPZ1_/, unit: 'PNPZ1' },
     { pattern: /^PNPZ1\b/, unit: 'PNPZ1' },
     

@@ -83,8 +83,8 @@ const getUnitFromRequestCode = (importRequestCode) => {
           const fbcNum = unitCode.match(/FBC(\d+)/);
           if (fbcNum) {
             const num = parseInt(fbcNum[1]);
-            // PNPZ1: 01,03,05,06,07,10,13,14
-            if ([1, 3, 5, 6, 7, 10, 13, 14].includes(num)) {
+            // PNPZ1: 01,03,05,06,07,10,11,13,14
+            if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) {
               console.log(`✅ Found PNP_FBC${num} → PNPZ1`);
               return 'PNPZ1';
             }
@@ -207,7 +207,15 @@ const getUnitFromUnitReceive = (unitReceive) => {
   // FBC → KANZ1, PNPZ1, PNPZ2
   if (upper.includes('FBC')) {
     if (upper.includes('KAN')) return 'KANZ1';
-    if (upper.includes('PNP')) return 'PNPZ1';
+    if (upper.includes('PNP')) {
+      const fbcNum = upper.match(/FBC(\d+)/);
+      if (fbcNum) {
+        const num = parseInt(fbcNum[1]);
+        if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
+        if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
+      }
+      return 'PNPZ1';
+    }
   }
   
   // ពិនិត្យមើល Unit ផ្សេងទៀត
