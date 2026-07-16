@@ -116,6 +116,14 @@ export const cleanWarehouseName = (name) => {
     }
   }
 
+  // Normalize zone-specific provinces to their base codes for team naming consistency
+  if (province === 'PNPZ' || province === 'PNPZ1' || province === 'PNPZ2') {
+    province = 'PNP';
+  }
+  if (province === 'KANZ' || province === 'KANZ1') {
+    province = 'KAN';
+  }
+
   // 2. Planning Department check
   if (trimmed.includes('PLANNING') || trimmed.includes('_PLA')) {
     return `${province}_PLA_PLANNING DEPT`;
