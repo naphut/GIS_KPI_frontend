@@ -64,11 +64,23 @@ const getUnitFromWarehouse = (warehouse) => {
   if (normalized.includes('KAN_FBC') || normalized.includes('KANFBC')) {
     return 'KANZ1';
   }
+
+  // SOS fallback
+  if (normalized.includes('SOS')) {
+    if (normalized.includes('PNP')) return 'PNP';
+    if (normalized.includes('KAN')) return 'KAN';
+  }
+
+  // PLA fallback
+  if (normalized.includes('PLA')) {
+    if (normalized.includes('PNP')) return 'PNP';
+    if (normalized.includes('KAN')) return 'KAN';
+  }
   
-  // Standard GIS_XXX_ pattern
+  // Standard GIS_XXX_ or XXX_ pattern
   const parts = normalized.split('_');
-  if (parts.length >= 2 && parts[0] === 'GIS') {
-    const unitCode = parts[1];
+  if (parts.length >= 1) {
+    const unitCode = parts[0] === 'GIS' && parts.length >= 2 ? parts[1] : parts[0];
     if (allUnits.includes(unitCode)) return unitCode;
     if (unitCode === 'KANZ') return 'KANZ1';
     if (unitCode === 'PNPZ') return 'PNPZ1';

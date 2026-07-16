@@ -319,8 +319,8 @@ const Import_CA = () => {
     
     const upper = warehouse.toUpperCase();
     
-    // 1. ពិនិត្យមើលលំនាំ GIS_XXX_
-    const match = upper.match(/^GIS_([A-Z0-9]+)_/);
+    // 1. ពិនិត្យមើលលំនាំ GIS_XXX_ ឬ XXX_
+    const match = upper.match(/^GIS_([A-Z0-9]+)_/) || upper.match(/^([A-Z0-9]+)_/);
     if (match && match[1]) {
       const unit = match[1];
       if (allUnits.includes(unit)) {
