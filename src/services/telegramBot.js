@@ -95,7 +95,7 @@ const calculateDaysDiff = (dateString) => {
   }
 };
 
-export const cleanWarehouseName = (name, isSignedCA = false) => {
+export const cleanWarehouseName = (name) => {
   if (!name || name === '-') return '-';
   if (typeof name !== 'string') name = String(name);
   
@@ -121,22 +121,28 @@ export const cleanWarehouseName = (name, isSignedCA = false) => {
     return `${province}_PLA_PLANNING DEPT`;
   }
 
+  // Check if this province uses the _TEAM format
+  // PNP, PNPZ1, PNPZ2, KAN, KANZ1 all start with PNP or KAN
+  const isPnpOrKan = province.startsWith('PNP') || province.startsWith('KAN');
+
   // 3. FBC Team check: Find "FBC" followed by optional non-digits, then digits
   const fbcMatch = trimmed.match(/FBC[^\d]*(\d+)/i);
   if (fbcMatch) {
     const num = String(parseInt(fbcMatch[1])).padStart(2, '0');
-    return isSignedCA 
-      ? `GIS_${province}_FBC_TEAM${num}` 
-      : `GIS_${province}_FBC${num}`;
+    if (isPnpOrKan) {
+      return `GIS_${province}_FBC_TEAM${num}`;
+    }
+    return `GIS_${province}_FBCTEAM${num}`;
   }
 
   // 4. SOS Team check: Find "SOS" followed by optional non-digits, then digits
   const sosMatch = trimmed.match(/SOS[^\d]*(\d+)/i);
   if (sosMatch) {
     const num = String(parseInt(sosMatch[1])).padStart(2, '0');
-    return isSignedCA 
-      ? `GIS_${province}_SOS_TEAM${num}` 
-      : `GIS_${province}_SOS${num}`;
+    if (isPnpOrKan) {
+      return `GIS_${province}_SOS_TEAM${num}`;
+    }
+    return `GIS_${province}_SOSTEAM${num}`;
   }
 
   return trimmed;
@@ -611,7 +617,7 @@ const formatCAMessage = (unit, data, customNote = '') => {
   if (unsignedOutItems.length > 0) {
     const outGroups = {};
     unsignedOutItems.forEach(item => {
-      const u = cleanWarehouseName(item.unitEntering || '-', true);
+      const u = cleanWarehouseName(item.unitEntering || '-');
       if (!outGroups[u]) {
         outGroups[u] = [];
       }
@@ -632,7 +638,7 @@ const formatCAMessage = (unit, data, customNote = '') => {
   if (unsignedInItems.length > 0) {
     const inGroups = {};
     unsignedInItems.forEach(item => {
-      const w = cleanWarehouseName(item.warehouse || '-', true);
+      const w = cleanWarehouseName(item.warehouse || '-');
       if (!inGroups[w]) {
         inGroups[w] = [];
       }
