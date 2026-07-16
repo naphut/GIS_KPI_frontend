@@ -103,7 +103,7 @@ const getUnitFromNoteCode = (noteCode) => {
     // FBC → PNPZ1, PNPZ2, KANZ1
     if (codePart.includes('FBC')) {
       if (codePart.startsWith('PNP_')) {
-        const fbcNum = codePart.match(/FBC(\d+)/);
+        const fbcNum = codePart.match(/FBC[^\d]*(\d+)/);
         if (fbcNum) {
           const num = parseInt(fbcNum[1]);
           if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
@@ -161,7 +161,7 @@ const getUnitFromCommandCode = (commandCode) => {
     // FBC → PNPZ1, PNPZ2, KANZ1
     if (codePart.includes('FBC')) {
       if (codePart.startsWith('PNP_')) {
-        const fbcNum = codePart.match(/FBC(\d+)/);
+        const fbcNum = codePart.match(/FBC[^\d]*(\d+)/);
         if (fbcNum) {
           const num = parseInt(fbcNum[1]);
           if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';

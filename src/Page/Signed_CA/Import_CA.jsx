@@ -183,7 +183,7 @@ const Import_CA = () => {
       if (codePart.includes('FBC')) {
         // PNP_FBC01 → PNPZ1
         if (codePart.startsWith('PNP_')) {
-          const fbcNum = codePart.match(/FBC(\d+)/);
+          const fbcNum = codePart.match(/FBC[^\d]*(\d+)/);
           if (fbcNum) {
             const num = parseInt(fbcNum[1]);
             // PNPZ1: 01,03,05,06,07,10,11,13,14
@@ -262,7 +262,7 @@ const Import_CA = () => {
       // FBC
       if (codePart.includes('FBC')) {
         if (codePart.startsWith('PNP_')) {
-          const fbcNum = codePart.match(/FBC(\d+)/);
+          const fbcNum = codePart.match(/FBC[^\d]*(\d+)/);
           if (fbcNum) {
             const num = parseInt(fbcNum[1]);
             if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) {
@@ -333,7 +333,7 @@ const Import_CA = () => {
     // 2. ពិនិត្យ FBC → PNPZ1/PNPZ2/KANZ1
     if (upper.includes('FBC')) {
       if (upper.includes('PNP')) {
-        const fbcNum = upper.match(/FBC(\d+)/);
+        const fbcNum = upper.match(/FBC[^\d]*(\d+)/);
         if (fbcNum) {
           const num = parseInt(fbcNum[1]);
           if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';

@@ -80,7 +80,7 @@ const getUnitFromRequestCode = (importRequestCode) => {
         }
         // PNP_FBC01 → PNPZ1 / PNPZ2
         if (unitCode.startsWith('PNP_')) {
-          const fbcNum = unitCode.match(/FBC(\d+)/);
+          const fbcNum = unitCode.match(/FBC[^\d]*(\d+)/);
           if (fbcNum) {
             const num = parseInt(fbcNum[1]);
             // PNPZ1: 01,03,05,06,07,10,11,13,14
@@ -208,7 +208,7 @@ const getUnitFromUnitReceive = (unitReceive) => {
   if (upper.includes('FBC')) {
     if (upper.includes('KAN')) return 'KANZ1';
     if (upper.includes('PNP')) {
-      const fbcNum = upper.match(/FBC(\d+)/);
+      const fbcNum = upper.match(/FBC[^\d]*(\d+)/);
       if (fbcNum) {
         const num = parseInt(fbcNum[1]);
         if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';

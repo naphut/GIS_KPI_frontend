@@ -59,16 +59,12 @@ const getUnitFromRecipient = (recipient) => {
   
   // 3. PNP FBC checks (PNPZ1 / PNPZ2)
   if (normalized.includes('PNP_FBC') || normalized.includes('PNP_FBCO') || normalized.includes('PNPFBC')) {
-    const pnpz1Codes = ['FBC01', 'FBC03', 'FBC05', 'FBCO5', 'FBC06', 'FBC07', 'FBC10', 'FBC11', 'FBC13', 'FBC14'];
-    const pnpz2Codes = ['FBC02', 'FBC04', 'FBC08', 'FBC09', 'FBC12'];
-    
-    if (pnpz1Codes.some(code => normalized.includes(code))) {
-      return 'PNPZ1';
+    const fbcNum = normalized.match(/FBC[^\d]*(\d+)/);
+    if (fbcNum) {
+      const num = parseInt(fbcNum[1]);
+      if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
+      if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
     }
-    if (pnpz2Codes.some(code => normalized.includes(code))) {
-      return 'PNPZ2';
-    }
-    // Fallback default for any other PNP FBC to PNPZ1
     return 'PNPZ1';
   }
   

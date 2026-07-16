@@ -94,7 +94,7 @@ const getUnitFromRequestExportCode = (requestExportCode) => {
   if (unitPart.includes('FBC')) {
     if (unitPart.startsWith('KAN_')) return 'KANZ1';
     if (unitPart.startsWith('PNP_')) {
-      const fbcNum = unitPart.match(/FBC(\d+)/);
+      const fbcNum = unitPart.match(/FBC[^\d]*(\d+)/);
       if (fbcNum) {
         const num = parseInt(fbcNum[1]);
         if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
@@ -167,7 +167,7 @@ const getUnitFromCommandExportCode = (commandExportCode) => {
   if (unitPart.includes('FBC')) {
     if (unitPart.startsWith('KAN_')) return 'KANZ1';
     if (unitPart.startsWith('PNP_')) {
-      const fbcNum = unitPart.match(/FBC(\d+)/);
+      const fbcNum = unitPart.match(/FBC[^\d]*(\d+)/);
       if (fbcNum) {
         const num = parseInt(fbcNum[1]);
         if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
@@ -213,7 +213,7 @@ const getUnitFromNoteExportCode = (noteExportCode) => {
   if (upper.includes('FBC')) {
     if (upper.includes('KAN')) return 'KANZ1';
     if (upper.includes('PNP')) {
-      const fbcMatch = upper.match(/FBC(\d+)/);
+      const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
       if (fbcMatch) {
         const num = parseInt(fbcMatch[1]);
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
@@ -261,7 +261,7 @@ const getUnitFromGroupRequest = (groupRequest) => {
   if (upper.includes('FBC')) {
     if (upper.includes('KAN')) return 'KANZ1';
     if (upper.includes('PNP')) {
-      const fbcMatch = upper.match(/FBC(\d+)/);
+      const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
       if (fbcMatch) {
         const num = parseInt(fbcMatch[1]);
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';

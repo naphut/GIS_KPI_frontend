@@ -36,17 +36,17 @@ const getUnitFromGroupReceiver = (groupReceiver) => {
   
   const unitPatterns = [
     // 1. PNPZ1 patterns (specific)
-    { pattern: /GIS_PNP_FBC([0O]?[13567]|10|11|13|14)/, unit: 'PNPZ1' },
+    { pattern: /GIS_PNP_FBC(?:_TEAM)?([0O]?[13567]|10|11|13|14)/, unit: 'PNPZ1' },
     { pattern: /_PNPZ1_/, unit: 'PNPZ1' },
     { pattern: /^PNPZ1\b/, unit: 'PNPZ1' },
     
     // 2. PNPZ2 patterns (specific)
-    { pattern: /GIS_PNP_FBC([0O]?[2489]|12)/, unit: 'PNPZ2' },
+    { pattern: /GIS_PNP_FBC(?:_TEAM)?([0O]?[2489]|12)/, unit: 'PNPZ2' },
     { pattern: /_PNPZ2_/, unit: 'PNPZ2' },
     { pattern: /^PNPZ2\b/, unit: 'PNPZ2' },
     
     // 3. KANZ1 patterns (specific)
-    { pattern: /GIS_KAN_FBC([0O]?[1-7])/, unit: 'KANZ1' },
+    { pattern: /GIS_KAN_FBC(?:_TEAM)?([0O]?[1-7])/, unit: 'KANZ1' },
     { pattern: /_KANZ1_/, unit: 'KANZ1' },
     { pattern: /^KANZ1\b/, unit: 'KANZ1' },
 
