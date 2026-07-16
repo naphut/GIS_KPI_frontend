@@ -101,51 +101,37 @@ export const cleanWarehouseName = (name) => {
   
   let trimmed = name.trim().toUpperCase();
   
-  // 1. Replace planning dept patterns
-  // E.g. BAN_PLA_PLANNING -> BAN_PLA_PLANNING DEPT
-  if (trimmed.includes('PLANNING')) {
-    const match = trimmed.match(/^([A-Z0-9]+)_PLA_/i) || trimmed.match(/^([A-Z0-9]+)_PLANNING/i);
-    if (match) {
-      return `${match[1]}_PLA_PLANNING DEPT`;
+  // 1. Determine Province/Unit code
+  // E.g. GIS_PNP_SOS_TEAM02 -> PNP
+  // E.g. PNP_SOS_TEAM02 -> PNP
+  // E.g. PNPZ1_FBC01 -> PNPZ1
+  let province = 'UNK';
+  const gisMatch = trimmed.match(/^GIS_([A-Z0-9]+)/i);
+  if (gisMatch) {
+    province = gisMatch[1];
+  } else {
+    const directMatch = trimmed.match(/^([A-Z0-9]+)_/i);
+    if (directMatch) {
+      province = directMatch[1];
     }
-    return trimmed;
   }
 
-  // 2. Strip intermediate keywords: STOCK_NOC_, STOCK_XL_, STOCK_ROTATIONAL_TESTED_, etc.
-  trimmed = trimmed.replace(/_(STOCK_NOC|STOCK_XL|STOCK_ROTATIONAL_TESTED|STOCK_ROTATIONAL|STOCK|NOC|XL|ROTATIONAL|TESTED)_/g, '_');
-  trimmed = trimmed.replace(/_STOCK_/g, '_');
-  trimmed = trimmed.replace(/_NOC_/g, '_');
-  trimmed = trimmed.replace(/_XL_/g, '_');
+  // 2. Planning Department check
+  if (trimmed.includes('PLANNING') || trimmed.includes('_PLA')) {
+    return `${province}_PLA_PLANNING DEPT`;
+  }
 
-  // 3. Handle FBC team conversion: matches FBC, FBCTEAM, FBC_TEAM, FBC TEAM etc. followed by digits
-  const fbcMatch = trimmed.match(/^GIS_([A-Z0-9]+)_FBC_?(?:TEAM)?_?(\d+)$/i);
+  // 3. FBC Team check: Find "FBC" followed by optional non-digits, then digits
+  const fbcMatch = trimmed.match(/FBC[^\d]*(\d+)/i);
   if (fbcMatch) {
-    const num = fbcMatch[2].padStart(2, '0');
-    return `GIS_${fbcMatch[1]}_FBC${num}`;
-  }
-
-  // 4. Handle SOS team conversion: matches SOS, SOSTEAM, SOS_TEAM, SOS TEAM etc. followed by digits
-  const sosMatch = trimmed.match(/^GIS_([A-Z0-9]+)_SOS_?(?:TEAM)?_?(\d+)$/i);
-  if (sosMatch) {
-    const num = sosMatch[2].padStart(2, '0');
-    return `GIS_${sosMatch[1]}_SOS${num}`;
-  }
-
-  // 5. Fallback pattern matching: any FBC with digits
-  const fbcFallback = trimmed.match(/FBC_?(?:TEAM)?_?(\d+)/i);
-  if (fbcFallback) {
-    const provinceMatch = trimmed.match(/^GIS_([A-Z0-9]+)/i);
-    const province = provinceMatch ? provinceMatch[1] : 'UNK';
-    const num = fbcFallback[1].padStart(2, '0');
+    const num = fbcMatch[1].padStart(2, '0');
     return `GIS_${province}_FBC${num}`;
   }
 
-  // 6. Fallback pattern matching: any SOS with digits
-  const sosFallback = trimmed.match(/SOS_?(?:TEAM)?_?(\d+)/i);
-  if (sosFallback) {
-    const provinceMatch = trimmed.match(/^GIS_([A-Z0-9]+)/i);
-    const province = provinceMatch ? provinceMatch[1] : 'UNK';
-    const num = sosFallback[1].padStart(2, '0');
+  // 4. SOS Team check: Find "SOS" followed by optional non-digits, then digits
+  const sosMatch = trimmed.match(/SOS[^\d]*(\d+)/i);
+  if (sosMatch) {
+    const num = sosMatch[1].padStart(2, '0');
     return `GIS_${province}_SOS${num}`;
   }
 
