@@ -882,14 +882,23 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       const m3Items = getUnitM3Items(unit);
       
       const teamsSet = new Set();
-      m1Items.forEach(item => { if (item.groupReceiver && item.groupReceiver.trim()) teamsSet.add(item.groupReceiver.trim()); });
-      m2Items.forEach(item => { if (item.recipient && item.recipient.trim()) teamsSet.add(item.recipient.trim()); });
-      m3Items.forEach(item => { if (item.unitConfirm && item.unitConfirm.trim()) teamsSet.add(item.unitConfirm.trim()); });
+      m1Items.forEach(item => {
+        const teamName = cleanWarehouseName(item.groupReceiver || '');
+        if (teamName && teamName !== '-') teamsSet.add(teamName);
+      });
+      m2Items.forEach(item => {
+        const teamName = cleanWarehouseName(item.recipient || '');
+        if (teamName && teamName !== '-') teamsSet.add(teamName);
+      });
+      m3Items.forEach(item => {
+        const teamName = cleanWarehouseName(item.unitConfirm || '');
+        if (teamName && teamName !== '-') teamsSet.add(teamName);
+      });
       
       const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
       
       teams.forEach(team => {
-        const matchTeam = (val) => val && val.trim() === team;
+        const matchTeam = (val) => cleanWarehouseName(val || '') === team;
         
         const s1Under = m1Items.filter(item => matchTeam(item.groupReceiver) && (parseInt(item.daysDiff) || 0) <= 4).length;
         const s1Over = m1Items.filter(item => matchTeam(item.groupReceiver) && (parseInt(item.daysDiff) || 0) > 4).length;
