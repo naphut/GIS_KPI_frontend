@@ -319,18 +319,7 @@ const Import_CA = () => {
     
     const upper = warehouse.toUpperCase();
     
-    // 1. ពិនិត្យមើលលំនាំ GIS_XXX_ ឬ XXX_
-    const match = upper.match(/^GIS_([A-Z0-9]+)_/) || upper.match(/^([A-Z0-9]+)_/);
-    if (match && match[1]) {
-      const unit = match[1];
-      if (allUnits.includes(unit)) {
-        return unit;
-      }
-      if (unit === 'PNPZ') return 'PNPZ1';
-      if (unit === 'KANZ') return 'KANZ1';
-    }
-    
-    // 2. ពិនិត្យ FBC → PNPZ1/PNPZ2/KANZ1
+    // 1. ពិនិត្យ FBC → PNPZ1/PNPZ2/KANZ1
     if (upper.includes('FBC')) {
       if (upper.includes('PNP')) {
         const fbcNum = upper.match(/FBC(\d+)/);
@@ -346,7 +335,7 @@ const Import_CA = () => {
       }
     }
     
-    // 3. ពិនិត្យ SOS → PNP/KAN
+    // 2. ពិនិត្យ SOS → PNP/KAN
     if (upper.includes('SOS')) {
       if (upper.includes('PNP')) {
         return 'PNP';
@@ -356,7 +345,7 @@ const Import_CA = () => {
       }
     }
     
-    // 4. ពិនិត្យ PLA → PNP/KAN
+    // 3. ពិនិត្យ PLA → PNP/KAN
     if (upper.includes('PLA')) {
       if (upper.includes('PNP')) {
         return 'PNP';
@@ -364,6 +353,17 @@ const Import_CA = () => {
       if (upper.includes('KAN')) {
         return 'KAN';
       }
+    }
+    
+    // 4. ពិនិត្យមើលលំនាំ GIS_XXX_ ឬ XXX_
+    const match = upper.match(/^GIS_([A-Z0-9]+)_/) || upper.match(/^([A-Z0-9]+)_/);
+    if (match && match[1]) {
+      const unit = match[1];
+      if (allUnits.includes(unit)) {
+        return unit;
+      }
+      if (unit === 'PNPZ') return 'PNPZ1';
+      if (unit === 'KANZ') return 'KANZ1';
     }
     
     // 5. ពិនិត្យមើល Unit ផ្សេងទៀត
