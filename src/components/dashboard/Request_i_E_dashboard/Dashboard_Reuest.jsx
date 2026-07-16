@@ -1440,7 +1440,7 @@ const Dashboard_Request = () => {
               title={configuredCount === 0 ? 'No provinces configured' : 'Send to all configured provinces'}
             >
               <span>📤</span>
-              Send Text All ({configuredCount})
+              Send Text Receipts All ({configuredCount})
             </button>
 
             <button
@@ -1457,7 +1457,7 @@ const Dashboard_Request = () => {
               title={configuredCount === 0 ? 'No provinces configured' : 'Send screenshot to all configured provinces'}
             >
               <span>📸</span>
-              Send Screenshot All ({configuredCount})
+              Send Detail ({configuredCount})
             </button>
             
             <button
@@ -1468,8 +1468,8 @@ const Dashboard_Request = () => {
               disabled={isSending}
               className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-200"
             >
-              <span>📍</span>
-              Send to Unit
+              <span>📤</span>
+              Send Text Receipts (1)
             </button>
 
             <button
@@ -1481,7 +1481,7 @@ const Dashboard_Request = () => {
               className="px-4 py-2.5 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-violet-200"
             >
               <span>📸</span>
-              Send to Unit Screenshot
+              Send Detail (1)
             </button>
           </div>
         </div>

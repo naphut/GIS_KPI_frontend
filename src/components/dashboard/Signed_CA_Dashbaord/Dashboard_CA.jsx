@@ -1877,7 +1877,7 @@ const Dashboard_CA = () => {
               title={configuredCount === 0 ? 'No provinces configured' : 'Send text to all configured provinces'}
             >
               <span>📤</span>
-              Send Text All ({configuredCount})
+              Send Text Receipts All ({configuredCount})
               {isSending && !screenshotMode && <span className="ml-1 animate-spin">⏳</span>}
             </button>
 
@@ -1893,7 +1893,7 @@ const Dashboard_CA = () => {
               title={configuredCount === 0 ? 'No provinces configured' : 'Send image to all configured provinces'}
             >
               <span>📸</span>
-              Send Image All ({configuredCount})
+              Send Detail ({configuredCount})
               {isSending && screenshotMode && <span className="ml-1 animate-spin">⏳</span>}
             </button>
 
@@ -1924,7 +1924,7 @@ const Dashboard_CA = () => {
               className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-200 font-semibold text-sm"
             >
               <span>📍</span>
-              Send Text Unit (1)
+              Send Text Receipts (1)
             </button>
 
             {/* Send Image Unit (1) */}
@@ -1937,8 +1937,8 @@ const Dashboard_CA = () => {
               disabled={isSending}
               className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-indigo-200 font-semibold text-sm"
             >
-              <span>🖼️</span>
-              Send Image Unit (1)
+              <span>📸</span>
+              Send Detail (1)
             </button>
 
             {/* Summary Image */}

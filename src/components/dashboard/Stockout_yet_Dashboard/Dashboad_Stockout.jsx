@@ -1556,6 +1556,142 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     }
   };
 
+  const sendSummaryImageScreenshotAll = async () => {
+    const configured = getConfiguredUnits();
+    if (configured.length === 0) {
+      alert('⚠️ No group IDs configured. Please add group IDs first.');
+      return;
+    }
+    
+    if (isSending) return;
+    
+    setIsSending(true);
+    setShowProgressModal(true);
+    setSendResults(null);
+    
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+    
+    let successCount = 0;
+    let failCount = 0;
+    let completedCount = 0;
+    
+    try {
+      setSummaryImageMode(true);
+      for (const unit of configured) {
+        if (signal.aborted) {
+          failCount++;
+          completedCount++;
+          continue;
+        }
+        
+        setSendProgress({
+          current: completedCount + 1,
+          total: configured.length,
+          unit: unit,
+          status: 'sending'
+        });
+        
+        try {
+          setScreenshotUnit(unit);
+          await new Promise(resolve => setTimeout(resolve, 400));
+          
+          if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+          
+          const element = document.getElementById('telegram-summary-report');
+          if (!element) {
+            throw new Error('Summary report element not found in DOM');
+          }
+          
+          const offsetHeight = element.offsetHeight || 600;
+          
+          const canvas = await html2canvas(element, {
+            useCORS: true,
+            scale: 3.0,
+            backgroundColor: '#ffffff',
+            width: 1200,
+            height: offsetHeight,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: document.documentElement.offsetWidth,
+            windowHeight: document.documentElement.offsetHeight,
+            logging: false,
+            onclone: (clonedDoc) => {
+              const style = clonedDoc.createElement('style');
+              style.innerHTML = `
+                #telegram-summary-report * {
+                  -webkit-font-smoothing: antialiased !important;
+                  -moz-osx-font-smoothing: grayscale !important;
+                  text-rendering: optimizeLegibility !important;
+                }
+              `;
+              clonedDoc.head.appendChild(style);
+            }
+          });
+          
+          if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+          
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          if (!blob || blob.size < 1000) {
+            throw new Error('Failed to generate summary image');
+          }
+          
+          const result = await sendPhotoToTelegram(unit, blob, '', signal);
+          
+          if (result && result.success) {
+            successCount++;
+            setSendProgress({
+              current: completedCount + 1,
+              total: configured.length,
+              unit: unit,
+              status: 'success'
+            });
+          } else {
+            failCount++;
+            setSendProgress({
+              current: completedCount + 1,
+              total: configured.length,
+              unit: unit,
+              status: 'failed',
+              error: result?.error || 'Failed to send'
+            });
+          }
+        } catch (unitErr) {
+          console.error(`Error sending summary image for ${unit}:`, unitErr);
+          failCount++;
+          setSendProgress({
+            current: completedCount + 1,
+            total: configured.length,
+            unit: unit,
+            status: 'failed',
+            error: unitErr.message
+          });
+        }
+        
+        completedCount++;
+        if (completedCount < configured.length && !signal.aborted) {
+          await new Promise(resolve => setTimeout(resolve, 600));
+        }
+      }
+      
+      setSendResults({
+        total: configured.length,
+        success: successCount,
+        failed: failCount
+      });
+    } catch (error) {
+      console.error('Error during send all summary images:', error);
+    } finally {
+      setIsSending(false);
+      setScreenshotUnit(null);
+      setSummaryImageMode(false);
+      setIsSelectingForSummary(false);
+      if (!signal.aborted) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
+    }
+  };
+
   // Send to single unit
   const sendReportToTelegram = async (unit) => {
     if (isSending) return;
@@ -1816,7 +1952,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                     title={configuredCount === 0 ? 'No provinces configured' : 'Send text report to all configured provinces'}
                   >
                     <span>📤</span>
-                    Send All ({configuredCount})
+                    Send Text Receipts All ({configuredCount})
                   </button>
 
                   {/* Send All Screenshot */}
@@ -1831,7 +1967,22 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                     title={configuredCount === 0 ? 'No provinces configured' : 'Send screenshot report to all configured provinces'}
                   >
                     <span>📸</span>
-                    Send All ({configuredCount}) Screenshot
+                    Send Detail ({configuredCount})
+                  </button>
+
+                  {/* Summary Image all Unit */}
+                  <button
+                    onClick={sendSummaryImageScreenshotAll}
+                    disabled={isSending || configuredCount === 0}
+                    className={`px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md disabled:opacity-50 font-semibold text-sm ${
+                      configuredCount > 0
+                        ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white hover:from-pink-600 hover:to-rose-700 shadow-rose-200'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                    title={configuredCount === 0 ? 'No provinces configured' : 'Send summary image to all configured provinces'}
+                  >
+                    <span>🖼️</span>
+                    Summary Image all Unit ({configuredCount})
                   </button>
                   
                   {/* Send to Unit Text */}
@@ -1844,8 +1995,8 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                     disabled={isSending}
                     className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-200 font-semibold text-sm"
                   >
-                    <span>📍</span>
-                    Send to Unit
+                    <span>📤</span>
+                    Send Text Receipts (1)
                   </button>
 
                   {/* Send to Unit Screenshot */}
@@ -1859,7 +2010,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                     className="px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-purple-200 font-semibold text-sm"
                   >
                     <span>📸</span>
-                    Send to Unit Screenshot
+                    Send Detail (1)
                   </button>
 
                   {/* Summary Image */}
@@ -1872,7 +2023,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
                     disabled={isSending}
                     className="px-4 py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white rounded-xl hover:from-rose-600 hover:to-rose-700 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 shadow-md shadow-rose-200 font-semibold text-sm"
                   >
-                    <span>🖼</span>
+                    <span>🖼️</span>
                     Summary Image
                   </button>
                 </div>
