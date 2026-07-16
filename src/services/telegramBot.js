@@ -95,7 +95,7 @@ const calculateDaysDiff = (dateString) => {
   }
 };
 
-export const cleanWarehouseName = (name) => {
+export const cleanWarehouseName = (name, isSignedCA = false) => {
   if (!name || name === '-') return '-';
   if (typeof name !== 'string') name = String(name);
   
@@ -116,14 +116,6 @@ export const cleanWarehouseName = (name) => {
     }
   }
 
-  // Normalize zone-specific provinces to their base codes for team naming consistency
-  if (province === 'PNPZ' || province === 'PNPZ1' || province === 'PNPZ2') {
-    province = 'PNP';
-  }
-  if (province === 'KANZ' || province === 'KANZ1') {
-    province = 'KAN';
-  }
-
   // 2. Planning Department check
   if (trimmed.includes('PLANNING') || trimmed.includes('_PLA')) {
     return `${province}_PLA_PLANNING DEPT`;
@@ -133,14 +125,18 @@ export const cleanWarehouseName = (name) => {
   const fbcMatch = trimmed.match(/FBC[^\d]*(\d+)/i);
   if (fbcMatch) {
     const num = fbcMatch[1].padStart(2, '0');
-    return `GIS_${province}_FBC${num}`;
+    return isSignedCA 
+      ? `GIS_${province}_FBC_TEAM${num}` 
+      : `GIS_${province}_FBC${num}`;
   }
 
   // 4. SOS Team check: Find "SOS" followed by optional non-digits, then digits
   const sosMatch = trimmed.match(/SOS[^\d]*(\d+)/i);
   if (sosMatch) {
     const num = sosMatch[1].padStart(2, '0');
-    return `GIS_${province}_SOS${num}`;
+    return isSignedCA 
+      ? `GIS_${province}_SOS_TEAM${num}` 
+      : `GIS_${province}_SOS${num}`;
   }
 
   return trimmed;
@@ -615,7 +611,7 @@ const formatCAMessage = (unit, data, customNote = '') => {
   if (unsignedOutItems.length > 0) {
     const outGroups = {};
     unsignedOutItems.forEach(item => {
-      const u = cleanWarehouseName(item.unitEntering || '-');
+      const u = cleanWarehouseName(item.unitEntering || '-', true);
       if (!outGroups[u]) {
         outGroups[u] = [];
       }
@@ -636,7 +632,7 @@ const formatCAMessage = (unit, data, customNote = '') => {
   if (unsignedInItems.length > 0) {
     const inGroups = {};
     unsignedInItems.forEach(item => {
-      const w = cleanWarehouseName(item.warehouse || '-');
+      const w = cleanWarehouseName(item.warehouse || '-', true);
       if (!inGroups[w]) {
         inGroups[w] = [];
       }

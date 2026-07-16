@@ -896,11 +896,11 @@ const Dashboard_CA = () => {
       
       const teamsSet = new Set();
       outItems.forEach(item => {
-        const teamName = cleanWarehouseName(item.exportWarehouse || item.unitEntering || '');
+        const teamName = cleanWarehouseName(item.exportWarehouse || item.unitEntering || '', true);
         if (teamName && teamName !== '-') teamsSet.add(teamName);
       });
       inItems.forEach(item => {
-        const teamName = cleanWarehouseName(item.warehouse || '');
+        const teamName = cleanWarehouseName(item.warehouse || '', true);
         if (teamName && teamName !== '-') teamsSet.add(teamName);
       });
       
@@ -908,12 +908,12 @@ const Dashboard_CA = () => {
       
       teams.forEach(team => {
         const teamOutItems = outItems.filter(item => {
-          const tName = cleanWarehouseName(item.exportWarehouse || item.unitEntering || '');
+          const tName = cleanWarehouseName(item.exportWarehouse || item.unitEntering || '', true);
           return tName === team;
         });
         
         const teamInItems = inItems.filter(item => {
-          const tName = cleanWarehouseName(item.warehouse || '');
+          const tName = cleanWarehouseName(item.warehouse || '', true);
           return tName === team;
         });
         
@@ -1472,7 +1472,7 @@ const Dashboard_CA = () => {
                     <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
                       <td className="border-r border-slate-100 px-2 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
                       <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-800 tracking-tighter font-mono">{item.code}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-700 truncate max-w-[125px]">{cleanWarehouseName(item.unitEntering || '-')}</td>
+                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-700 truncate max-w-[125px]">{cleanWarehouseName(item.unitEntering || '-', true)}</td>
                       <td className="border-r border-slate-100 px-2 py-1 font-medium">
                         {item.statusCA === 'Is signing' ? (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 text-[8.5px] font-bold">Is signing ⚠️</span>
@@ -1519,7 +1519,7 @@ const Dashboard_CA = () => {
                     <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
                       <td className="border-r border-slate-100 px-2 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
                       <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-800 tracking-tighter font-mono">{item.code}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-700 truncate max-w-[125px]">{cleanWarehouseName(item.warehouse || '-')}</td>
+                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-700 truncate max-w-[125px]">{cleanWarehouseName(item.warehouse || '-', true)}</td>
                       <td className="border-r border-slate-100 px-2 py-1 font-medium">
                         {item.statusCA === 'Is signing' ? (
                           <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 text-[8.5px] font-bold">Is signing ⚠️</span>
