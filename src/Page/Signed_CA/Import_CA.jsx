@@ -890,6 +890,7 @@ const Import_CA = () => {
       });
     }
     return filtered;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, searchTerm]);
 
   const totalItems = filteredData.length;
