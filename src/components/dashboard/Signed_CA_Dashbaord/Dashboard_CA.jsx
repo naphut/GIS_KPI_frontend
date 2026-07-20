@@ -10,7 +10,10 @@ import {
   saveTemplate,
   deleteTemplate,
   sendPhotoToTelegram,
-  cleanWarehouseName
+  sendDocumentToTelegram,
+  generateSignedCAExcelBlob,
+  cleanWarehouseName,
+  getTeamFromWarehouse
 } from '../../../services/telegramBot';
 import { loadFromDb, saveToDb, completeStore } from '../../../services/dbStore';
 import html2canvas from 'html2canvas';
@@ -237,6 +240,8 @@ const Dashboard_CA = () => {
   const [sendResults, setSendResults] = useState(null);
   const [screenshotUnit, setScreenshotUnit] = useState(null);
   const [screenshotMode, setScreenshotMode] = useState(false);
+  const [openBatchDropdown, setOpenBatchDropdown] = useState(false);
+  const [openSingleDropdown, setOpenSingleDropdown] = useState(false);
 
   const allUnits = getAllUnits();
   const configured = getConfiguredUnits();
@@ -414,11 +419,12 @@ const Dashboard_CA = () => {
           return !s.includes('signed') || s.includes('unsigned');
         })
         .map(item => ({
+          ...item,
           code: item.exportNoteCode || item.code || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate),
-          warehouse: item.exportWarehouse || '-',
+          warehouse: item.exportWarehouse || item.warehouse || '-',
           statusCA: item.statusCA || 'Unsigned',
-          creator: item.createRequester || '-',
+          creator: item.createRequester || item.requester || item.creator || '-',
           unitEntering: item.unitEntering || '-'
         }));
 
@@ -428,6 +434,7 @@ const Dashboard_CA = () => {
           return !s.includes('signed') || s.includes('unsigned');
         })
         .map(item => ({
+          ...item,
           code: item.codeReceipt || item.code || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.date),
           warehouse: item.warehouse || '-',
@@ -560,6 +567,14 @@ const Dashboard_CA = () => {
       alert(`⚠️ No group ID configured for ${unit}. Please add it first.`);
       return;
     }
+
+    const reportData = getReportData();
+    const unitData = reportData?.units?.[unit];
+    const totalItems = (unitData?.unsignedOutItems?.length || 0) + (unitData?.unsignedInItems?.length || 0);
+    if (totalItems === 0) {
+      alert(`ℹ️ No pending items to send for ${unit}. (គ្មានទិន្នន័យត្រូវផ្ញើទេ)`);
+      return;
+    }
     
     setIsSending(true);
     setShowProgressModal(true);
@@ -577,7 +592,20 @@ const Dashboard_CA = () => {
       const data = getReportData();
       const result = await sendCAToTelegram(unit, data, customNote, abortControllerRef.current.signal);
       
-      if (result && result.success) {
+      if (result && result.skipped) {
+        setSendProgress({
+          current: 1,
+          total: 1,
+          unit: unit,
+          status: 'skipped'
+        });
+        setSendResults({
+          total: 1,
+          success: 0,
+          failed: 0
+        });
+        alert(`ℹ️ No pending items to send for ${unit}. (គ្មានទិន្នន័យត្រូវផ្ញើទេ)`);
+      } else if (result && result.success) {
         completeStore(STORAGE_KEYS.EXPORT_CA_DATA);
         completeStore(STORAGE_KEYS.IMPORT_CA_DATA);
         setSendProgress({
@@ -634,6 +662,14 @@ const Dashboard_CA = () => {
       alert(`⚠️ No group ID configured for ${unit}. Please add it first.`);
       return;
     }
+
+    const reportData = getReportData();
+    const unitData = reportData?.units?.[unit];
+    const totalItems = (unitData?.unsignedOutItems?.length || 0) + (unitData?.unsignedInItems?.length || 0);
+    if (totalItems === 0) {
+      alert(`ℹ️ No pending items to send for ${unit}. (គ្មានទិន្នន័យត្រូវផ្ញើទេ)`);
+      return;
+    }
     
     setIsSending(true);
     setShowProgressModal(true);
@@ -650,7 +686,7 @@ const Dashboard_CA = () => {
     
     try {
       setScreenshotUnit(unit);
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 60));
       
       if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
       
@@ -659,15 +695,10 @@ const Dashboard_CA = () => {
         throw new Error('Screenshot element not found in DOM.');
       }
       
-      const rect = element.getBoundingClientRect();
-      const elHeight = rect.height || 600;
-      let scale = 3.0;
-      if (elHeight > 1800) scale = 2.0;
-      else if (elHeight > 1200) scale = 2.5;
-      
       const canvas = await html2canvas(element, {
-        width: 480,
-        scale: scale,
+        width: 500,
+        windowWidth: 500,
+        scale: 2.5,
         useCORS: true,
         logging: false,
         backgroundColor: '#f8fafc',
@@ -690,11 +721,21 @@ const Dashboard_CA = () => {
       if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
       
       const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/jpeg', 0.94);
       });
       
-      const caption = `📊 <b>TASK ASSET REPORT - BRANCH: ${unit}</b>`;
-      const result = await sendPhotoToTelegram(unit, blob, caption, signal);
+      const result = await sendPhotoToTelegram(unit, blob, '', signal);
+
+      // Also generate & send 2-sheet Signed CA Excel document (.xlsx)
+      try {
+        const unsignedOutItems = unitData?.unsignedOutItems || [];
+        const unsignedInItems = unitData?.unsignedInItems || [];
+        const excelBlob = generateSignedCAExcelBlob(unsignedOutItems, unsignedInItems, unit);
+        const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
+      } catch (excelErr) {
+        console.error('Error sending Signed CA Excel file:', excelErr);
+      }
       
       if (result && result.success) {
         completeStore(STORAGE_KEYS.EXPORT_CA_DATA);
@@ -769,11 +810,26 @@ const Dashboard_CA = () => {
     const results = [];
     
     try {
+      const reportData = getReportData();
       for (const unit of units) {
         if (signal.aborted) {
           results.push({ unit, success: false, error: 'Cancelled', aborted: true });
           failCount++;
           completedCount++;
+          continue;
+        }
+
+        const unitData = reportData?.units?.[unit];
+        const totalItems = (unitData?.unsignedOutItems?.length || 0) + (unitData?.unsignedInItems?.length || 0);
+        if (totalItems === 0) {
+          completedCount++;
+          results.push({ unit, success: true, skipped: true, error: 'No pending items (Skipped)' });
+          setSendProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'skipped'
+          });
           continue;
         }
         
@@ -786,7 +842,7 @@ const Dashboard_CA = () => {
         
         try {
           setScreenshotUnit(unit);
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 60));
           
           if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
           
@@ -795,15 +851,10 @@ const Dashboard_CA = () => {
             throw new Error('Screenshot element not found in DOM.');
           }
           
-          const rect = element.getBoundingClientRect();
-          const elHeight = rect.height || 600;
-          let scale = 3.0;
-          if (elHeight > 1800) scale = 2.0;
-          else if (elHeight > 1200) scale = 2.5;
-          
           const canvas = await html2canvas(element, {
-            width: 480,
-            scale: scale,
+            width: 500,
+            windowWidth: 500,
+            scale: 2.5,
             useCORS: true,
             logging: false,
             backgroundColor: '#f8fafc',
@@ -826,11 +877,21 @@ const Dashboard_CA = () => {
           if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
           
           const blob = await new Promise((resolve, reject) => {
-            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/jpeg', 0.94);
           });
           
-          const caption = `📊 <b>TASK ASSET REPORT - BRANCH: ${unit}</b>`;
-          const sendRes = await sendPhotoToTelegram(unit, blob, caption, signal);
+          const sendRes = await sendPhotoToTelegram(unit, blob, '', signal);
+
+          // Also generate & send 2-sheet Signed CA Excel document (.xlsx)
+          try {
+            const unsignedOutItems = unitData?.unsignedOutItems || [];
+            const unsignedInItems = unitData?.unsignedInItems || [];
+            const excelBlob = generateSignedCAExcelBlob(unsignedOutItems, unsignedInItems, unit);
+            const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
+          } catch (excelErr) {
+            console.error('Error sending Signed CA Excel file:', excelErr);
+          }
           
           completedCount++;
           results.push({ unit, ...sendRes });
@@ -867,7 +928,7 @@ const Dashboard_CA = () => {
         }
         
         if (completedCount < units.length && !signal.aborted) {
-          await new Promise(resolve => setTimeout(resolve, 600));
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
       
@@ -1505,15 +1566,9 @@ const Dashboard_CA = () => {
     const unitData = reportData.units[unit];
     if (!unitData) return null;
 
-    const targetMorning = unitData.targetMorning || 0;
-    const targetEvening = unitData.targetEvening || 0;
-    const remain = unitData.remain || 0;
-    const result = unitData.result || 0;
-    const ratio = unitData.ratio || 0;
-    const inSystem = unitData.inSystem || 0;
-
     const unsignedOutItems = unitData.unsignedOutItems || [];
     const unsignedInItems = unitData.unsignedInItems || [];
+    const remain = unsignedOutItems.length + unsignedInItems.length;
 
     const now = new Date();
     const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -1544,7 +1599,7 @@ const Dashboard_CA = () => {
     return (
       <div 
         id="telegram-screenshot-report" 
-        className="w-[480px] bg-slate-50 p-4 font-sans relative flex flex-col gap-3 text-left"
+        className="w-[500px] bg-slate-50 p-3 font-sans relative flex flex-col gap-2.5 text-left border border-slate-300 rounded-xl shadow-xs"
         style={{
           position: 'fixed',
           top: '-9999px',
@@ -1553,157 +1608,117 @@ const Dashboard_CA = () => {
           boxSizing: 'border-box'
         }}
       >
-        {/* Header */}
-        <div className="bg-gradient-to-br from-blue-700 to-indigo-800 rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
-          <div className="absolute right-0 bottom-0 translate-x-4 translate-y-4 w-28 h-28 bg-white/5 rounded-full blur-xl pointer-events-none" />
-          <div className="flex justify-between items-start">
-            <span className="text-[9px] bg-white/15 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border border-white/10 backdrop-blur-xs">
-              📊 Task Asset Report
+        {/* Compact Excel Header Bar */}
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 px-3 py-1.5 rounded-lg text-white flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-black tracking-tight flex items-center gap-1">
+              📍 BRANCH: <span className="text-yellow-300 font-extrabold">{unit}</span>
             </span>
-            <span className="text-[9px] text-indigo-200/90 font-medium">
-              🕐 {timeStr} | 📅 {dateStr}
+            <span className="text-[8.5px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-md border border-rose-400/40 shadow-2xs">
+              ⏳ Remain: {remain}
             </span>
           </div>
-          <h2 className="text-lg font-black mt-2 tracking-tight flex items-center gap-1.5">
-            📍 BRANCH : <span className="text-yellow-300 font-extrabold">{unit}</span>
-          </h2>
-        </div>
-
-        {/* Overall KPI Summary Cards */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-xs">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-            📈 KPI SUMMARY (CA)
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-slate-50/70 border-t-2 border-slate-400 rounded-xl p-2 text-center">
-              <div className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Target ព្រឹក/ល្ងាច</div>
-              <div className="text-[11px] font-black text-slate-700 mt-0.5">{targetMorning} / {targetEvening}</div>
-            </div>
-            <div className="bg-emerald-50/30 border-t-2 border-emerald-500 rounded-xl p-2 text-center">
-              <div className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider">Result</div>
-              <div className="text-[11px] font-black text-emerald-600 mt-0.5">{result}</div>
-            </div>
-            <div className="bg-rose-50/30 border-t-2 border-rose-500 rounded-xl p-2 text-center">
-              <div className="text-[8px] text-rose-600 font-bold uppercase tracking-wider">Remain</div>
-              <div className="text-[11px] font-black text-rose-600 mt-0.5">{remain}</div>
-            </div>
-            <div className="bg-blue-50/30 border-t-2 border-blue-500 rounded-xl p-2 text-center col-span-1.5">
-              <div className="text-[8px] text-blue-600 font-bold uppercase tracking-wider">Ratio</div>
-              <div className="text-[11px] font-black text-blue-600 mt-0.5">{ratio.toFixed(1)}%</div>
-            </div>
-            <div className="bg-indigo-50/30 border-t-2 border-indigo-500 rounded-xl p-2 text-center col-span-1.5">
-              <div className="text-[8px] text-indigo-600 font-bold uppercase tracking-wider">In System</div>
-              <div className="text-[11px] font-black text-indigo-600 mt-0.5">{inSystem}</div>
-            </div>
-          </div>
+          <span className="text-[8.5px] text-slate-300 font-medium">
+            🕐 {timeStr} | 📅 {dateStr}
+          </span>
         </div>
 
         {/* Export CA Section */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-xs">
-          <h3 className="text-[11px] font-black text-slate-800 flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
-            <span className="flex items-center gap-1.5 text-slate-700">📤 EXPORT CA</span>
-            <span className={unsignedOutItems.length === 0 ? "text-emerald-600 font-extrabold text-[9px] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100" : "text-blue-700 font-extrabold text-[9px] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"}>
+        <div className="border border-slate-300 bg-white rounded-lg overflow-hidden shadow-2xs">
+          <div className="bg-slate-100 px-2.5 py-1 border-b border-slate-300 text-[9.5px] font-black text-slate-800 flex justify-between items-center">
+            <span className="flex items-center gap-1 text-slate-800">📤 EXPORT CA</span>
+            <span className={unsignedOutItems.length === 0 ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-extrabold text-[8px]" : "text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-extrabold text-[8px]"}>
               {unsignedOutItems.length === 0 ? "✅ Completed" : `📋 ${unsignedOutItems.length} Items`}
             </span>
-          </h3>
+          </div>
           {unsignedOutItems.length > 0 ? (
-            <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
-              <table className="min-w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[9.5px] font-bold border-b border-slate-200">
-                    <th className="border-r border-slate-200 px-2 py-1 text-center w-7">ល.រ</th>
-                    <th className="border-r border-slate-200 px-2 py-1">Code</th>
-                    <th className="border-r border-slate-200 px-2 py-1 text-left w-[125px]">Unit Entering</th>
-                    <th className="border-r border-slate-200 px-2 py-1 text-left w-[80px]">Status CA</th>
-                    <th className="px-2 py-1 text-center w-12">Days ⚠️</th>
+            <table className="w-full text-left border-collapse table-fixed text-[8.5px]">
+              <thead>
+                <tr className="bg-slate-700 text-white font-bold border-b border-slate-300 text-[8.5px]">
+                  <th className="border-r border-slate-600 px-1 py-1 text-center w-7">#</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-left w-[185px]">Code</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[145px]">TEAM</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[75px]">Status CA</th>
+                  <th className="px-1 py-1 text-center w-[44px]">Days ⚠️</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {unsignedOutItems.map((item, index) => (
+                  <tr key={index} className="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/50">
+                    <td className="border-r border-slate-200 px-1 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
+                    <td className="border-r border-slate-200 px-1.5 py-1 font-bold text-slate-900 font-mono truncate">{item.code}</td>
+                    <td className="border-r border-slate-200 px-1.5 py-1 font-bold text-slate-700 text-center truncate">{item.team || getTeamFromWarehouse(item.unitEntering || item.exportWarehouse || '-')}</td>
+                    <td className="border-r border-slate-200 px-1 py-1 text-center font-medium">
+                      {item.statusCA === 'Is signing' ? (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[7.5px] font-bold">Is signing ⚠️</span>
+                      ) : (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[7.5px] font-bold">{item.statusCA || 'Unsigned'}</span>
+                      )}
+                    </td>
+                    <td className="px-1 py-1 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
                   </tr>
-                </thead>
-                <tbody className="text-[9px] text-slate-600 divide-y divide-slate-100">
-                  {unsignedOutItems.map((item, index) => (
-                    <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
-                      <td className="border-r border-slate-100 px-2 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-800 tracking-tighter font-mono">{item.code}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-700 truncate max-w-[125px]">{cleanWarehouseName(item.unitEntering || '-')}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-medium">
-                        {item.statusCA === 'Is signing' ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 text-[8.5px] font-bold">Is signing ⚠️</span>
-                        ) : (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 text-[8.5px] font-bold">{item.statusCA || 'Unsigned'}</span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl py-3 text-center text-emerald-600 font-bold text-[11px] flex flex-col items-center gap-1">
-              <span>🎉 All items cleared!</span>
-              <span className="text-[9px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
+            <div className="py-2 text-center text-emerald-700 font-bold text-[9px] bg-emerald-50/30">
+              🎉 All items cleared!
             </div>
           )}
         </div>
 
         {/* Import CA Section */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-xs">
-          <h3 className="text-[11px] font-black text-slate-800 flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
-            <span className="flex items-center gap-1.5 text-slate-700">📥 IMPORT CA</span>
-            <span className={unsignedInItems.length === 0 ? "text-emerald-600 font-extrabold text-[9px] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100" : "text-blue-700 font-extrabold text-[9px] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"}>
+        <div className="border border-slate-300 bg-white rounded-lg overflow-hidden shadow-2xs">
+          <div className="bg-slate-100 px-2.5 py-1 border-b border-slate-300 text-[9.5px] font-black text-slate-800 flex justify-between items-center">
+            <span className="flex items-center gap-1 text-slate-800">📥 IMPORT CA</span>
+            <span className={unsignedInItems.length === 0 ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-extrabold text-[8px]" : "text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-extrabold text-[8px]"}>
               {unsignedInItems.length === 0 ? "✅ Completed" : `📋 ${unsignedInItems.length} Items`}
             </span>
-          </h3>
+          </div>
           {unsignedInItems.length > 0 ? (
-            <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
-              <table className="min-w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[9.5px] font-bold border-b border-slate-200">
-                    <th className="border-r border-slate-200 px-2 py-1 text-center w-7">ល.រ</th>
-                    <th className="border-r border-slate-200 px-2 py-1">Code</th>
-                    <th className="border-r border-slate-200 px-2 py-1 text-left w-[125px]">Export Warehouse</th>
-                    <th className="border-r border-slate-200 px-2 py-1 text-left w-[80px]">Status CA</th>
-                    <th className="px-2 py-1 text-center w-12">Days ⚠️</th>
+            <table className="w-full text-left border-collapse table-fixed text-[8.5px]">
+              <thead>
+                <tr className="bg-slate-700 text-white font-bold border-b border-slate-300 text-[8.5px]">
+                  <th className="border-r border-slate-600 px-1 py-1 text-center w-7">#</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-left w-[185px]">Code</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[145px]">TEAM</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[75px]">Status CA</th>
+                  <th className="px-1 py-1 text-center w-[44px]">Days ⚠️</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {unsignedInItems.map((item, index) => (
+                  <tr key={index} className="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/50">
+                    <td className="border-r border-slate-200 px-1 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
+                    <td className="border-r border-slate-200 px-1.5 py-1 font-bold text-slate-900 font-mono truncate">{item.code}</td>
+                    <td className="border-r border-slate-200 px-1.5 py-1 font-bold text-slate-700 text-center truncate">{item.team || getTeamFromWarehouse(item.warehouse || '-')}</td>
+                    <td className="border-r border-slate-200 px-1 py-1 text-center font-medium">
+                      {item.statusCA === 'Is signing' ? (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[7.5px] font-bold">Is signing ⚠️</span>
+                      ) : (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[7.5px] font-bold">{item.statusCA || 'Unsigned'}</span>
+                      )}
+                    </td>
+                    <td className="px-1 py-1 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
                   </tr>
-                </thead>
-                <tbody className="text-[9px] text-slate-600 divide-y divide-slate-100">
-                  {unsignedInItems.map((item, index) => (
-                    <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
-                      <td className="border-r border-slate-100 px-2 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-800 tracking-tighter font-mono">{item.code}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-700 truncate max-w-[125px]">{cleanWarehouseName(item.warehouse || '-')}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-medium">
-                        {item.statusCA === 'Is signing' ? (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100 text-[8.5px] font-bold">Is signing ⚠️</span>
-                        ) : (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-100 text-[8.5px] font-bold">{item.statusCA || 'Unsigned'}</span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl py-4 text-center text-emerald-600 font-bold text-xs flex flex-col items-center gap-1">
-              <span>🎉 All items cleared!</span>
-              <span className="text-[9.5px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
+            <div className="py-2 text-center text-emerald-700 font-bold text-[9px] bg-emerald-50/30">
+              🎉 All items cleared!
             </div>
           )}
         </div>
 
         {customNote && customNote.trim() && (
-          <div className="bg-amber-50/40 border border-amber-100 rounded-3xl p-5 shadow-xs">
-            <h4 className="text-[10.5px] font-black text-amber-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-2.5 shadow-2xs">
+            <h4 className="text-[9.5px] font-black text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1">
               📝 NOTE
             </h4>
-            <p className="text-[10.5px] font-semibold text-slate-600 leading-relaxed whitespace-pre-wrap">{customNote.trim()}</p>
+            <p className="text-[9.5px] font-semibold text-slate-600 leading-relaxed whitespace-pre-wrap">{customNote.trim()}</p>
           </div>
         )}
-
-        <div className="text-center text-[9.5px] font-bold text-slate-400/80 mt-1 flex items-center justify-center gap-1">
-          <span>📊 Report generated from Dashboard CA</span>
-        </div>
       </div>
     );
   };
@@ -1871,95 +1886,152 @@ const Dashboard_CA = () => {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            {/* Send Text All */}
-            <button
-              onClick={sendToAll}
-              disabled={isSending || configuredCount === 0}
-              className={`px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md disabled:opacity-50 font-semibold text-sm ${
-                configuredCount > 0
-                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-200'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              title={configuredCount === 0 ? 'No provinces configured' : 'Send text to all configured provinces'}
-            >
-              <span>📤</span>
-              Send Text Receipts All ({configuredCount})
-              {isSending && !screenshotMode && <span className="ml-1 animate-spin">⏳</span>}
-            </button>
+            {/* 1. Batch Actions Dropdown (Send All) */}
+            <div className="relative inline-block text-left">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenBatchDropdown(!openBatchDropdown);
+                  setOpenSingleDropdown(false);
+                }}
+                disabled={isSending || configuredCount === 0}
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-extrabold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-sm"
+              >
+                <span>🚀</span>
+                <span>Send All ({configuredCount})</span>
+                <span className={`transition-transform duration-200 text-[10px] ml-1 ${openBatchDropdown ? 'rotate-180' : ''}`}>▼</span>
+              </button>
 
-            {/* Send Image All */}
-            <button
-              onClick={sendToAllScreenshot}
-              disabled={isSending || configuredCount === 0}
-              className={`px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md disabled:opacity-50 font-semibold text-sm ${
-                configuredCount > 0
-                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 shadow-purple-200'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              title={configuredCount === 0 ? 'No provinces configured' : 'Send image to all configured provinces'}
-            >
-              <span>📸</span>
-              Send Detail ({configuredCount})
-              {isSending && screenshotMode && <span className="ml-1 animate-spin">⏳</span>}
-            </button>
+              {openBatchDropdown && (
+                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    🌐 Batch Operations ({configuredCount} Provinces)
+                  </div>
+                  <div className="py-1 space-y-1">
+                    <button
+                      onClick={() => {
+                        setOpenBatchDropdown(false);
+                        setScreenshotMode(false);
+                        setIsSelectingForSummary(false);
+                        sendToAll();
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">📤</span>
+                      <div>
+                        <div className="font-black text-slate-800">Send Text Receipts All ({configuredCount})</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Send text receipts to all 25 units</div>
+                      </div>
+                    </button>
 
-            {/* Summary Image all Unit */}
-            <button
-              onClick={sendSummaryImageScreenshotAll}
-              disabled={isSending || configuredCount === 0}
-              className={`px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md disabled:opacity-50 font-semibold text-sm ${
-                configuredCount > 0
-                  ? 'bg-gradient-to-r from-pink-500 to-rose-600 text-white hover:from-pink-600 hover:to-rose-700 shadow-rose-200'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              title={configuredCount === 0 ? 'No provinces configured' : 'Send summary image to all configured provinces'}
-            >
-              <span>🖼️</span>
-              Summary Image all Unit ({configuredCount})
-              {isSending && summaryImageMode && <span className="ml-1 animate-spin">⏳</span>}
-            </button>
-            
-             {/* Send Text Unit (1) */}
-            <button
-              onClick={() => {
-                setIsSelectingForSummary(false);
-                setScreenshotMode(false);
-                setShowUnitSelector(!showUnitSelector);
-              }}
-              disabled={isSending}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-200 font-semibold text-sm"
-            >
-              <span>📍</span>
-              Send Text Receipts (1)
-            </button>
+                    <button
+                      onClick={() => {
+                        setOpenBatchDropdown(false);
+                        setScreenshotMode(true);
+                        setIsSelectingForSummary(false);
+                        sendToAllScreenshot();
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">📸</span>
+                      <div>
+                        <div className="font-black text-slate-800">Send Detail ({configuredCount})</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Send Detail Screenshot + Excel file</div>
+                      </div>
+                    </button>
 
-            {/* Send Image Unit (1) */}
-            <button
-              onClick={() => {
-                setIsSelectingForSummary(false);
-                setScreenshotMode(true);
-                setShowUnitSelector(!showUnitSelector);
-              }}
-              disabled={isSending}
-              className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-indigo-200 font-semibold text-sm"
-            >
-              <span>📸</span>
-              Send Detail (1)
-            </button>
+                    <button
+                      onClick={() => {
+                        setOpenBatchDropdown(false);
+                        setIsSelectingForSummary(true);
+                        sendSummaryImageScreenshotAll();
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">🖼️</span>
+                      <div>
+                        <div className="font-black text-slate-800">Summary Image all Unit ({configuredCount})</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Send Excel Matrix Table Screenshot</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
-            {/* Summary Image */}
-            <button
-              onClick={() => {
-                setIsSelectingForSummary(true);
-                setScreenshotMode(false);
-                setShowUnitSelector(!showUnitSelector);
-              }}
-              disabled={isSending}
-              className="px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-purple-200 font-semibold text-sm"
-            >
-              <span>🖼️</span>
-              Summary Image
-            </button>
+            {/* 2. Single Unit Actions Dropdown (Send 1) */}
+            <div className="relative inline-block text-left">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenSingleDropdown(!openSingleDropdown);
+                  setOpenBatchDropdown(false);
+                }}
+                disabled={isSending}
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-sm"
+              >
+                <span>🎯</span>
+                <span>Send Single Branch (1)</span>
+                <span className={`transition-transform duration-200 text-[10px] ml-1 ${openSingleDropdown ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+
+              {openSingleDropdown && (
+                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    📍 Single Unit Operations (1 Province)
+                  </div>
+                  <div className="py-1 space-y-1">
+                    <button
+                      onClick={() => {
+                        setOpenSingleDropdown(false);
+                        setScreenshotMode(false);
+                        setIsSelectingForSummary(false);
+                        setShowUnitSelector(true);
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">📤</span>
+                      <div>
+                        <div className="font-black text-slate-800">Send Text Receipts (1)</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Select 1 province to send text</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setOpenSingleDropdown(false);
+                        setScreenshotMode(true);
+                        setIsSelectingForSummary(false);
+                        setShowUnitSelector(true);
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">📸</span>
+                      <div>
+                        <div className="font-black text-slate-800">Send Detail (1)</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Select 1 province to send Detail + Excel</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setOpenSingleDropdown(false);
+                        setIsSelectingForSummary(true);
+                        setScreenshotMode(false);
+                        setShowUnitSelector(true);
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-purple-50 hover:text-purple-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">🖼️</span>
+                      <div>
+                        <div className="font-black text-slate-800">Summary Image (1)</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Select 1 province to send Summary Image</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -166,7 +166,7 @@ const Sidebar = ({ onSelect, selected }) => {
       
       {/* ─── NAVIGATION ─── */}
       <nav className="flex-1 p-4 overflow-y-auto scrollbar-thin">
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {menuItems.map((item) => (
             <div key={item.id}>
               {item.isGroup ? (
@@ -178,29 +178,33 @@ const Sidebar = ({ onSelect, selected }) => {
                       toggleFn();
                       onSelect(item.id);
                     }}
-                    className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl transition-all duration-200 group ${
+                    className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-2xl transition-all duration-300 group ${
                       isGroupActive(item) || selected === item.id || isGroupOpen(item.id)
-                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-200'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 hover:shadow-sm'
+                        ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-xs'
                     }`}
                   >
-                    <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-500 transition-colors flex-shrink-0 w-5 text-right">
+                    <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md transition-colors flex-shrink-0 ${
+                      isGroupActive(item) || selected === item.id || isGroupOpen(item.id)
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'
+                    }`}>
                       {item.number}
                     </span>
                     <span className="text-lg flex-shrink-0">{item.icon}</span>
-                    <span className="text-xs font-semibold flex-1 text-left truncate">
+                    <span className="text-xs font-extrabold flex-1 text-left truncate tracking-tight uppercase">
                       {item.label}
                     </span>
-                    <span className={`transition-transform duration-300 text-xs flex-shrink-0 ${isGroupOpen(item.id) ? 'rotate-180' : ''}`}>
+                    <span className={`transition-transform duration-300 text-[10px] flex-shrink-0 ${isGroupOpen(item.id) ? 'rotate-180' : ''}`}>
                       ▼
                     </span>
                     {(isGroupActive(item) || selected === item.id || isGroupOpen(item.id)) && (
-                      <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse flex-shrink-0"></span>
+                      <span className="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0"></span>
                     )}
                   </button>
                   
                   {/* Group Children */}
-                  <div className={`ml-6 space-y-1 overflow-hidden transition-all duration-300 ${
+                  <div className={`ml-4 pl-2 border-l-2 border-slate-100 space-y-1.5 overflow-hidden transition-all duration-300 ${
                     isGroupOpen(item.id) ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0'
                   }`}>
                     {item.children.map((child) => (
@@ -216,28 +220,30 @@ const Sidebar = ({ onSelect, selected }) => {
                             setIsRestockOpen(true);
                           }
                         }}
-                        className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg transition-all duration-200 group ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 group ${
                           selected === child.id
-                            ? 'bg-blue-50 text-blue-700 font-medium border-l-3 border-blue-500 shadow-sm'
-                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                            ? 'bg-indigo-50/90 text-indigo-700 font-extrabold border-l-4 border-indigo-600 shadow-xs'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                         }`}
                       >
-                        <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-500 transition-colors flex-shrink-0 w-5 text-right">
+                        <span className={`text-[9.5px] font-mono font-bold transition-colors flex-shrink-0 ${
+                          selected === child.id ? 'text-indigo-600' : 'text-slate-400 group-hover:text-slate-600'
+                        }`}>
                           {child.number}
                         </span>
                         <span className="text-base flex-shrink-0">{child.icon}</span>
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs font-medium truncate block">
+                          <span className="text-xs font-bold truncate block">
                             {child.label}
                           </span>
                           {child.desc && (
-                            <span className="text-[9px] text-gray-400 truncate block">
+                            <span className="text-[9px] text-slate-400 truncate block font-medium">
                               {child.desc}
                             </span>
                           )}
                         </div>
                         {selected === child.id && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0"></span>
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 flex-shrink-0"></span>
                         )}
                       </button>
                     ))}
@@ -247,21 +253,25 @@ const Sidebar = ({ onSelect, selected }) => {
                 /* Main Menu Item */
                 <button
                   onClick={() => onSelect(item.id)}
-                  className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl transition-all duration-200 group ${
+                  className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-2xl transition-all duration-300 group ${
                     selected === item.id
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-200'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-800 hover:shadow-sm'
+                      ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-xs'
                   }`}
                 >
-                  <span className="text-[10px] font-bold text-gray-400 group-hover:text-gray-500 transition-colors flex-shrink-0 w-5 text-right">
+                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md transition-colors flex-shrink-0 ${
+                    selected === item.id
+                      ? 'bg-white/20 text-white'
+                      : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200 group-hover:text-slate-700'
+                  }`}>
                     {item.number}
                   </span>
                   <span className="text-lg flex-shrink-0">{item.icon}</span>
-                  <span className="text-xs font-semibold flex-1 text-left truncate">
+                  <span className="text-xs font-extrabold flex-1 text-left truncate tracking-tight uppercase">
                     {item.label}
                   </span>
                   {selected === item.id && (
-                    <span className="w-2 h-2 rounded-full bg-white/80 animate-pulse flex-shrink-0"></span>
+                    <span className="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0"></span>
                   )}
                 </button>
               )}
@@ -270,55 +280,52 @@ const Sidebar = ({ onSelect, selected }) => {
         </div>
 
         {/* ─── BOTTOM SECTION ─── */}
-        <div className="mt-6 pt-5 border-t border-gray-100">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+        <div className="mt-6 pt-5 border-t border-slate-100">
+          <div className="bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/40 rounded-2xl p-4 border border-blue-100 shadow-xs">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Active Modules</div>
-                <div className="text-2xl font-bold text-gray-800 mt-0.5">3</div>
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Active Modules</div>
+                <div className="text-2xl font-black text-slate-800 mt-0.5 tracking-tight">3</div>
               </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-lg shadow-md">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white text-lg shadow-md shadow-indigo-200">
                 📊
               </div>
             </div>
-            <div className="mt-2 flex gap-1">
-              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-[9px] font-medium rounded-full">📋</span>
-              <span className="px-2 py-0.5 bg-green-100 text-green-700 text-[9px] font-medium rounded-full">✅</span>
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[9px] font-medium rounded-full">🔄</span>
+            <div className="mt-2.5 flex items-center gap-1.5">
+              <span className="px-2 py-0.5 bg-blue-100/80 text-blue-800 text-[10px] font-black rounded-lg border border-blue-200/50">📋</span>
+              <span className="px-2 py-0.5 bg-emerald-100/80 text-emerald-800 text-[10px] font-black rounded-lg border border-emerald-200/50">✅</span>
+              <span className="px-2 py-0.5 bg-purple-100/80 text-purple-800 text-[10px] font-black rounded-lg border border-purple-200/50">🔄</span>
             </div>
           </div>
         </div>
 
         {/* ─── SETTINGS & HELP ─── */}
-        <div className="mt-4 pt-3 border-t border-gray-100 flex gap-1">
-          <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-gray-500 hover:bg-gray-50 rounded-xl transition-colors group">
+        <div className="mt-4 pt-3 border-t border-slate-100 flex gap-1.5">
+          <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl transition-all group border border-slate-100 hover:border-slate-200 cursor-pointer">
             <span className="text-lg">⚙️</span>
-            <span className="text-[10px] font-medium group-hover:text-gray-700">Settings</span>
+            <span className="text-[11px] font-bold group-hover:text-slate-900">Settings</span>
           </button>
-          <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-gray-500 hover:bg-gray-50 rounded-xl transition-colors group">
+          <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl transition-all group border border-slate-100 hover:border-slate-200 cursor-pointer">
             <span className="text-lg">❓</span>
-            <span className="text-[10px] font-medium group-hover:text-gray-700">Help</span>
+            <span className="text-[11px] font-bold group-hover:text-slate-900">Help</span>
           </button>
         </div>
       </nav>
 
       {/* ─── FOOTER ─── */}
-      <div className="p-4 border-t border-gray-100 bg-gray-50/80">
+      <div className="p-4 border-t border-slate-100 bg-slate-50/80">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="relative">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
               <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping opacity-75"></div>
             </div>
-            <span className="text-[10px] font-medium text-gray-600">System Online</span>
+            <span className="text-[10px] font-bold text-slate-700">System Online</span>
           </div>
-          <span className="text-[9px] text-gray-400 font-medium">v3.0.1</span>
+          <span className="text-[9px] text-slate-400 font-bold bg-white px-2 py-0.5 rounded-full border border-slate-200">v3.0.1</span>
         </div>
-        <div className="mt-1.5 text-[8px] text-gray-400">
+        <div className="mt-1.5 text-[8px] text-slate-400 font-medium">
           © 2026 KPI Pro Management
-        </div>
-        <div className="mt-1 text-[8px] font-semibold text-gray-500">
-          Developed by RET NAPHUT 06/15/2026
         </div>
       </div>
 

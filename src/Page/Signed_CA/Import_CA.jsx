@@ -137,6 +137,7 @@ const Import_CA = () => {
     { key: 'statusCA', label: 'Status CA', width: 'w-24' },
     { key: 'unit', label: 'Unit', width: 'w-20' },
     { key: 'daysDiff', label: 'Days', width: 'w-16' },
+    { key: 'team', label: 'TEAM', width: 'w-36' },
     { key: 'year', label: 'Year', width: 'w-16' },
   ];
 
@@ -170,236 +171,153 @@ const Import_CA = () => {
   // 🎯 UNIT EXTRACTION LOGIC
   // ============================================================
 
+  // 0. ចាប់យក Unit សម្រាប់ PNP / KAN (PNPZ1, PNPZ2, PNP, KANZ1, KAN)
+  const getUnitFromText = (text) => {
+    if (!text) return null;
+    const upper = String(text).toUpperCase();
+    const isPNP = upper.includes('PNP');
+    const isKAN = upper.includes('KAN');
+
+    if (isPNP) {
+      if (upper.includes('FBC') || upper.includes('FB_TEAM')) {
+        const match = upper.match(/FBC[^\d]*(\d+)/i) || upper.match(/FB_?TEAM_?(\d+)/i);
+        if (match) {
+          const num = String(parseInt(match[1], 10)).padStart(2, '0');
+          if (['02', '04', '08', '09', '12'].includes(num)) return 'PNPZ2';
+          if (['01', '03', '05', '06', '07', '10', '11', '13', '14'].includes(num)) return 'PNPZ1';
+        }
+        return 'PNPZ1';
+      }
+      return 'PNP';
+    }
+
+    if (isKAN) {
+      if (upper.includes('FBC') || upper.includes('FB_TEAM')) {
+        return 'KANZ1';
+      }
+      return 'KAN';
+    }
+
+    return null;
+  };
+
   // 1. ចាប់យក Unit ពី Code of receipt note
   const getUnitFromReceiptCode = (codeReceipt) => {
     if (!codeReceipt) return null;
+    const textUnit = getUnitFromText(codeReceipt);
+    if (textUnit) return textUnit;
     
     const upper = codeReceipt.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
-    
-    // ឧទាហរណ៍: PNKGIS_PNP_FBC01/26/000003
-    // ចាប់យកផ្នែកកណ្តាល: PNP_FBC01
-    const match = upper.match(/(?:PNK|LNK)GIS_([A-Z0-9_]+)/);
+    const match = upper.match(/(?:PNK|LNK|PXK|LXK)GIS_([A-Z0-9_]+)/) || upper.match(/(?:PNK|LNK|PXK|LXK)([A-Z0-9_]+)/);
     if (match && match[1]) {
-      const codePart = match[1]; // PNP_FBC01, KAN_SOS01, PNP_PLA
-  
-      // ពិនិត្យមើល FBC (PNPZ1, PNPZ2, KANZ1)
-      if (codePart.includes('FBC')) {
-        // PNP_FBC01 → PNPZ1
-        if (codePart.startsWith('PNP_')) {
-          const fbcNum = codePart.match(/FBC(\d+)/);
-          if (fbcNum) {
-            const num = parseInt(fbcNum[1]);
-            // PNPZ1: 01,03,05,06,07,10,11,13,14
-            if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) {
-              return 'PNPZ1';
-            }
-            // PNPZ2: 02,04,08,09,12
-            if ([2, 4, 8, 9, 12].includes(num)) {
-              return 'PNPZ2';
-            }
-          }
-          return 'PNPZ1'; // default
-        }
-        // KAN_FBC01 → KANZ1
-        if (codePart.startsWith('KAN_')) {
-          return 'KANZ1';
-        }
-      }
-      
-      // ពិនិត្យមើល SOS (PNP, KAN)
-      if (codePart.includes('SOS')) {
-        if (codePart.startsWith('PNP_')) {
-          return 'PNP';
-        }
-        if (codePart.startsWith('KAN_')) {
-          return 'KAN';
-        }
-      }
-      
-      // PLA (PNP, KAN)
-      if (codePart.includes('PLA')) {
-        if (codePart.startsWith('PNP_')) {
-          return 'PNP';
-        }
-        if (codePart.startsWith('KAN_')) {
-          return 'KAN';
-        }
-      }
-      
-      // TEC
-      if (codePart.includes('TEC')) {
-        if (codePart.startsWith('PNP_')) {
-          return 'PNP';
-        }
-        if (codePart.startsWith('KAN_')) {
-          return 'KAN';
-        }
-      }
-      
-      // ចាប់យក Unit ដំបូង
+      const codePart = match[1];
       const unitMatch = codePart.match(/^([A-Z]+)/);
       if (unitMatch && unitMatch[1]) {
         const unit = unitMatch[1];
-        if (allUnits.includes(unit)) {
-          return unit;
-        }
+        if (allUnits.includes(unit)) return unit;
         if (unit === 'PNPZ') return 'PNPZ1';
         if (unit === 'KANZ') return 'KANZ1';
       }
     }
-    
     return null;
   };
 
   // 2. ចាប់យក Unit ពី Code of command
   const getUnitFromCommandCode = (codeCommand) => {
     if (!codeCommand) return null;
+    const textUnit = getUnitFromText(codeCommand);
+    if (textUnit) return textUnit;
     
     const upper = codeCommand.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
-    
-    // ឧទាហរណ៍: LNKGIS_PNP_FBC01/26/000003
-    const match = upper.match(/(?:PNK|LNK)GIS_([A-Z0-9_]+)/);
+    const match = upper.match(/(?:PNK|LNK|PXK|LXK)(?:GIS_)?([A-Z0-9_]+)/);
     if (match && match[1]) {
       const codePart = match[1];
-      
-      // FBC
-      if (codePart.includes('FBC')) {
-        if (codePart.startsWith('PNP_')) {
-          const fbcNum = codePart.match(/FBC(\d+)/);
-          if (fbcNum) {
-            const num = parseInt(fbcNum[1]);
-            if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) {
-              return 'PNPZ1';
-            }
-            if ([2, 4, 8, 9, 12].includes(num)) {
-              return 'PNPZ2';
-            }
-          }
-          return 'PNPZ1';
-        }
-        if (codePart.startsWith('KAN_')) {
-          return 'KANZ1';
-        }
-      }
-      
-      // SOS
-      if (codePart.includes('SOS')) {
-        if (codePart.startsWith('PNP_')) {
-          return 'PNP';
-        }
-        if (codePart.startsWith('KAN_')) {
-          return 'KAN';
-        }
-      }
-      
-      // PLA
-      if (codePart.includes('PLA')) {
-        if (codePart.startsWith('PNP_')) {
-          return 'PNP';
-        }
-        if (codePart.startsWith('KAN_')) {
-          return 'KAN';
-        }
-      }
-      
       const unitMatch = codePart.match(/^([A-Z]+)/);
       if (unitMatch && unitMatch[1]) {
         const unit = unitMatch[1];
-        if (allUnits.includes(unit)) {
-          return unit;
-        }
+        if (allUnits.includes(unit)) return unit;
         if (unit === 'PNPZ') return 'PNPZ1';
         if (unit === 'KANZ') return 'KANZ1';
       }
     }
-    
     return null;
   };
 
   // 3. ចាប់យក Unit ពី Warehouse
   const getUnitFromWarehouse = (warehouse) => {
     if (!warehouse) return null;
+    const textUnit = getUnitFromText(warehouse);
+    if (textUnit) return textUnit;
     
     const upper = warehouse.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
-    
-    // 1. ពិនិត្យ FBC → PNPZ1/PNPZ2/KANZ1
-    if (upper.includes('FBC')) {
-      if (upper.includes('PNP')) {
-        const fbcNum = upper.match(/FBC(\d+)/);
-        if (fbcNum) {
-          const num = parseInt(fbcNum[1]);
-          if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
-          if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
-        }
-        return 'PNPZ1';
-      }
-      if (upper.includes('KAN')) {
-        return 'KANZ1';
-      }
-    }
-    
-    // 2. ពិនិត្យ SOS → PNP/KAN
-    if (upper.includes('SOS')) {
-      if (upper.includes('PNP')) {
-        return 'PNP';
-      }
-      if (upper.includes('KAN')) {
-        return 'KAN';
-      }
-    }
-    
-    // 3. ពិនិត្យ PLA → PNP/KAN
-    if (upper.includes('PLA')) {
-      if (upper.includes('PNP')) {
-        return 'PNP';
-      }
-      if (upper.includes('KAN')) {
-        return 'KAN';
-      }
-    }
-    
-    // 4. ពិនិត្យមើលលំនាំ GIS_XXX_ ឬ XXX_
     const match = upper.match(/^GIS_([A-Z0-9]+)_/) || upper.match(/^([A-Z0-9]+)_/);
     if (match && match[1]) {
       const unit = match[1];
-      if (allUnits.includes(unit)) {
-        return unit;
-      }
+      if (allUnits.includes(unit)) return unit;
       if (unit === 'PNPZ') return 'PNPZ1';
       if (unit === 'KANZ') return 'KANZ1';
     }
-    
-    // 5. ពិនិត្យមើល Unit ផ្សេងទៀត
     for (const unit of allUnits) {
-      if (upper.includes(`_${unit}_`) || upper.includes(`GIS_${unit}_`)) {
-        return unit;
-      }
+      if (upper.includes(`_${unit}_`) || upper.includes(`GIS_${unit}_`)) return unit;
     }
-    
     return null;
   };
 
   // 4. មុខងារចាប់យក Unit សំខាន់ (Main)
   const getUnit = (codeReceipt, codeCommand, warehouse) => {
-    // អាទិភាពទី 1: ចាប់ពី Code of receipt note
+    const textUnit = getUnitFromText(codeReceipt) || getUnitFromText(codeCommand) || getUnitFromText(warehouse);
+    if (textUnit) return textUnit;
+
     const unitFromReceipt = getUnitFromReceiptCode(codeReceipt);
-    if (unitFromReceipt && allUnits.includes(unitFromReceipt)) {
-      return unitFromReceipt;
-    }
+    if (unitFromReceipt && allUnits.includes(unitFromReceipt)) return unitFromReceipt;
     
-    // អាទិភាពទី 2: ចាប់ពី Code of command
     const unitFromCommand = getUnitFromCommandCode(codeCommand);
-    if (unitFromCommand && allUnits.includes(unitFromCommand)) {
-      return unitFromCommand;
-    }
+    if (unitFromCommand && allUnits.includes(unitFromCommand)) return unitFromCommand;
     
-    // អាទិភាពទី 3: ចាប់ពី Warehouse
     const unitFromWarehouse = getUnitFromWarehouse(warehouse);
-    if (unitFromWarehouse && allUnits.includes(unitFromWarehouse)) {
-      return unitFromWarehouse;
-    }
+    if (unitFromWarehouse && allUnits.includes(unitFromWarehouse)) return unitFromWarehouse;
     
     return 'OTHER';
+  };
+
+  // 5. មុខងារចាប់យក TEAM ពី Warehouse
+  const getTeamFromWarehouse = (warehouse) => {
+    if (!warehouse || warehouse === '-') return '-';
+    const upper = String(warehouse).trim().toUpperCase();
+
+    let province = '';
+    const gisMatch = upper.match(/^GIS_([A-Z0-9]+)_/);
+    if (gisMatch) {
+      province = gisMatch[1];
+    } else {
+      const directMatch = upper.match(/^([A-Z0-9]+)_/);
+      if (directMatch) province = directMatch[1];
+    }
+    if (!province) province = 'UNK';
+
+    if (upper.includes('PLANNING') || upper.includes('_PLA')) {
+      return `GIS_${province}_PLA_PLANNING DEPT`;
+    }
+
+    const fbcMatch = upper.match(/FBC[^\d]*(\d+)/i);
+    if (fbcMatch) {
+      const num = String(parseInt(fbcMatch[1], 10)).padStart(2, '0');
+      if (upper.includes('FBCTEAM') || upper.includes('FB_TEAM')) {
+        return `GIS_${province}_FBCTEAM${num}`;
+      }
+      return `GIS_${province}_FBC_TEAM${num}`;
+    }
+
+    const sosMatch = upper.match(/SOS[^\d]*(\d+)/i);
+    if (sosMatch) {
+      const num = String(parseInt(sosMatch[1], 10)).padStart(2, '0');
+      if (upper.includes('SOSTEAM') || upper.includes('SOS_TEAM')) {
+        return `GIS_${province}_SOS_TEAM${num}`;
+      }
+      return `GIS_${province}_SOS_TEAM${num}`;
+    }
+
+    return upper;
   };
 
   const getStatusCABadge = (statusCA) => {
@@ -574,6 +492,7 @@ const Import_CA = () => {
     const processedNewData = gisData.map((item, index) => {
       // 🎯 ប្រើមុខងារ getUnit ថ្មី
       const unit = getUnit(item.codeReceipt, item.codeCommand, item.warehouse);
+      const team = getTeamFromWarehouse(item.warehouse);
       const daysDiff = calculateDaysDiff(item.date);
       const year = extractYearFromDate(item.date);
       const isCompleted = item.status?.includes('Actual Import finished') || item.status?.includes('Đã thực nhập hết');
@@ -590,6 +509,7 @@ const Import_CA = () => {
         status: item.status || '',
         statusCA: item.statusCA || '',
         unit: unit,
+        team: team,
         daysDiff: daysDiff,
         isCompleted: isCompleted
       };
@@ -877,7 +797,8 @@ const Import_CA = () => {
       'Status': item.status,
       'Status CA': item.statusCA,
       'Unit': item.unit,
-      'Days': item.daysDiff
+      'Days': item.daysDiff,
+      'TEAM': item.team || getTeamFromWarehouse(item.warehouse)
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     
@@ -947,17 +868,26 @@ const Import_CA = () => {
       item.warehouse && item.warehouse.toUpperCase().includes('GIS')
     );
     if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.codeReceipt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.codeCommand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.warehouse?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.creator?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.date?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.year?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.unit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.statusCA?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const term = searchTerm.trim().toLowerCase();
+      const isTermUnit = allUnits.some(u => u.toLowerCase() === term) || term === 'other';
+
+      filtered = filtered.filter(item => {
+        if (isTermUnit) {
+          return (item.unit || '').toLowerCase() === term;
+        }
+        return (
+          item.codeReceipt?.toLowerCase().includes(term) ||
+          item.codeCommand?.toLowerCase().includes(term) ||
+          item.warehouse?.toLowerCase().includes(term) ||
+          item.creator?.toLowerCase().includes(term) ||
+          item.date?.toLowerCase().includes(term) ||
+          String(item.year || '').toLowerCase().includes(term) ||
+          item.unit?.toLowerCase().includes(term) ||
+          item.team?.toLowerCase().includes(term) ||
+          item.status?.toLowerCase().includes(term) ||
+          item.statusCA?.toLowerCase().includes(term)
+        );
+      });
     }
     return filtered;
   }, [data, searchTerm]);
@@ -1605,6 +1535,7 @@ const Import_CA = () => {
                     </td>
                     <td className="px-2 py-1.5 text-center"><span className="inline-flex px-1.5 py-0.5 rounded text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">{item.unit}</span></td>
                     <td className="px-2 py-1.5 text-center"><span className={`inline-flex px-1.5 py-0.5 rounded text-xs font-semibold ${getDaysColor(item.daysDiff)}`}>{item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} {Math.abs(item.daysDiff) === 1 ? 'day' : 'days'}</span></td>
+                    <td className="px-2 py-1.5 text-center"><span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 font-mono">{item.team || getTeamFromWarehouse(item.warehouse)}</span></td>
                     <td className="px-2 py-1.5 text-center font-mono font-bold text-blue-600">{item.year || '-'}</td>
                   </tr>
                 );

@@ -1034,20 +1034,29 @@ export const Restock_out = () => {
       item.unit && VALID_UNITS.includes(item.unit)
     );
     if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.requestExportCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.commandExportCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.noteExportCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.groupRequest?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.createDate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.stockOut?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.stockReceive?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.receivingUnit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.creator?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.statusCA?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.unit?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const term = searchTerm.trim().toLowerCase();
+      const isTermUnit = VALID_UNITS.some(u => u.toLowerCase() === term) || term === 'other';
+
+      filtered = filtered.filter(item => {
+        if (isTermUnit) {
+          return (item.unit || '').toLowerCase() === term;
+        }
+        return (
+          item.requestExportCode?.toLowerCase().includes(term) ||
+          item.commandExportCode?.toLowerCase().includes(term) ||
+          item.noteExportCode?.toLowerCase().includes(term) ||
+          item.groupRequest?.toLowerCase().includes(term) ||
+          item.createDate?.toLowerCase().includes(term) ||
+          item.stockOut?.toLowerCase().includes(term) ||
+          item.stockReceive?.toLowerCase().includes(term) ||
+          item.receivingUnit?.toLowerCase().includes(term) ||
+          item.creator?.toLowerCase().includes(term) ||
+          item.status?.toLowerCase().includes(term) ||
+          item.statusCA?.toLowerCase().includes(term) ||
+          item.unit?.toLowerCase().includes(term) ||
+          item.team?.toLowerCase().includes(term)
+        );
+      });
     }
     return filtered;
   }, [data, searchTerm]);

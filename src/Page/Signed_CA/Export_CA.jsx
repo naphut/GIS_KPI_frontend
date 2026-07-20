@@ -206,36 +206,90 @@ const getUnitFromCommandCode = (commandCode) => {
   return null;
 };
 
+// 0. ចាប់យក Unit សម្រាប់ PNP / KAN (PNPZ1, PNPZ2, PNP, KANZ1, KAN)
+const getUnitFromText = (text) => {
+  if (!text) return null;
+  const upper = String(text).toUpperCase();
+  const isPNP = upper.includes('PNP');
+  const isKAN = upper.includes('KAN');
+
+  if (isPNP) {
+    if (upper.includes('FBC') || upper.includes('FB_TEAM')) {
+      const match = upper.match(/FBC[^\d]*(\d+)/i) || upper.match(/FB_?TEAM_?(\d+)/i);
+      if (match) {
+        const num = String(parseInt(match[1], 10)).padStart(2, '0');
+        if (['02', '04', '08', '09', '12'].includes(num)) return 'PNPZ2';
+        if (['01', '03', '05', '06', '07', '10', '11', '13', '14'].includes(num)) return 'PNPZ1';
+      }
+      return 'PNPZ1';
+    }
+    return 'PNP';
+  }
+
+  if (isKAN) {
+    if (upper.includes('FBC') || upper.includes('FB_TEAM')) {
+      return 'KANZ1';
+    }
+    return 'KAN';
+  }
+
+  return null;
+};
+
 // 4. មុខងារចាប់យក Unit សំខាន់ (Main) - អាទិភាព Warehouse → Note Code → Command Code
 const getUnit = (exportWarehouse, exportNoteCode, exportCommandCode) => {
-  // អាទិភាពទី 1: ចាប់ពី Export Warehouse
+  const textUnit = getUnitFromText(exportWarehouse) || getUnitFromText(exportNoteCode) || getUnitFromText(exportCommandCode);
+  if (textUnit) return textUnit;
+
   const unitFromWarehouse = getUnitFromWarehouse(exportWarehouse);
-  if (unitFromWarehouse && allUnits.includes(unitFromWarehouse)) {
-    // បើជា PNP ឬ KAN ហើយមាន FBC ក្នុង Export Note Code
-    if ((unitFromWarehouse === 'PNP' || unitFromWarehouse === 'KAN') && 
-        exportNoteCode && exportNoteCode.toUpperCase().includes('FBC')) {
-      // ចាប់ពី Export Note Code ដើម្បីបែងចែក PNPZ1/PNPZ2/KANZ1
-      const unitFromNote = getUnitFromNoteCode(exportNoteCode);
-      if (unitFromNote && allUnits.includes(unitFromNote) && unitFromNote !== unitFromWarehouse) {
-        return unitFromNote;
-      }
-    }
-    return unitFromWarehouse;
-  }
-  
-  // អាទិភាពទី 2: ចាប់ពី Export Note Code
+  if (unitFromWarehouse && allUnits.includes(unitFromWarehouse)) return unitFromWarehouse;
+
   const unitFromNote = getUnitFromNoteCode(exportNoteCode);
-  if (unitFromNote && allUnits.includes(unitFromNote)) {
-    return unitFromNote;
-  }
-  
-  // អាទិភាពទី 3: ចាប់ពី Export Command Code
+  if (unitFromNote && allUnits.includes(unitFromNote)) return unitFromNote;
+
   const unitFromCommand = getUnitFromCommandCode(exportCommandCode);
-  if (unitFromCommand && allUnits.includes(unitFromCommand)) {
-    return unitFromCommand;
-  }
-  
+  if (unitFromCommand && allUnits.includes(unitFromCommand)) return unitFromCommand;
+
   return 'OTHER';
+};
+
+export const getTeamFromWarehouse = (warehouse) => {
+  if (!warehouse || warehouse === '-') return '-';
+  const upper = String(warehouse).trim().toUpperCase();
+
+  let province = '';
+  const gisMatch = upper.match(/^GIS_([A-Z0-9]+)_/);
+  if (gisMatch) {
+    province = gisMatch[1];
+  } else {
+    const directMatch = upper.match(/^([A-Z0-9]+)_/);
+    if (directMatch) province = directMatch[1];
+  }
+  if (!province) province = 'UNK';
+
+  if (upper.includes('PLANNING') || upper.includes('_PLA')) {
+    return `GIS_${province}_PLA_PLANNING DEPT`;
+  }
+
+  const fbcMatch = upper.match(/FBC[^\d]*(\d+)/i);
+  if (fbcMatch) {
+    const num = String(parseInt(fbcMatch[1], 10)).padStart(2, '0');
+    if (upper.includes('FBCTEAM') || upper.includes('FB_TEAM')) {
+      return `GIS_${province}_FBCTEAM${num}`;
+    }
+    return `GIS_${province}_FBC_TEAM${num}`;
+  }
+
+  const sosMatch = upper.match(/SOS[^\d]*(\d+)/i);
+  if (sosMatch) {
+    const num = String(parseInt(sosMatch[1], 10)).padStart(2, '0');
+    if (upper.includes('SOSTEAM') || upper.includes('SOS_TEAM')) {
+      return `GIS_${province}_SOS_TEAM${num}`;
+    }
+    return `GIS_${province}_SOS_TEAM${num}`;
+  }
+
+  return upper;
 };
 
 export const Export_CA = () => {
@@ -358,6 +412,7 @@ export const Export_CA = () => {
     { key: 'description', label: 'Description', width: 'w-48' },
     { key: 'unit', label: 'Unit', width: 'w-20' },
     { key: 'daysDiff', label: 'Days', width: 'w-16' },
+    { key: 'team', label: 'TEAM', width: 'w-36' },
     { key: 'year', label: 'Year', width: 'w-16' },
   ];
 
@@ -572,6 +627,7 @@ export const Export_CA = () => {
     const processedNewData = filteredData.map((item, index) => {
       // 🎯 ប្រើមុខងារ getUnit ថ្មី
       const unit = getUnit(item.exportWarehouse, item.exportNoteCode, item.exportCommandCode);
+      const team = getTeamFromWarehouse(item.nameWarehouseEntering || item.exportWarehouse);
       const daysDiff = calculateDaysDiff(item.dateCreate);
       const year = extractYearFromDate(item.dateCreate);
       
@@ -594,6 +650,7 @@ export const Export_CA = () => {
         statusCA: item.statusCA || '',
         description: item.description || '',
         unit: unit,
+        team: team,
         daysDiff: daysDiff,
         year: year,
         isCompleted: true
@@ -899,6 +956,7 @@ export const Export_CA = () => {
       'Description': item.description,
       'Unit': item.unit,
       "Q'ty of day": item.daysDiff,
+      'TEAM': item.team || getTeamFromWarehouse(item.nameWarehouseEntering || item.exportWarehouse),
       'Year': item.year
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -968,20 +1026,30 @@ export const Export_CA = () => {
       item.exportWarehouse && item.exportWarehouse.toUpperCase().includes('GIS')
     );
     if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.exportNoteCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.exportCommandCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.exportRequest?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.createRequester?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.exportWarehouse?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.reasonExport?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.nameWarehouseEntering?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.unitEntering?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.codeConstruction?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.statusCA?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const term = searchTerm.trim().toLowerCase();
+      const isTermUnit = allUnits.some(u => u.toLowerCase() === term) || term === 'other';
+
+      filtered = filtered.filter(item => {
+        if (isTermUnit) {
+          return (item.unit || '').toLowerCase() === term;
+        }
+        return (
+          item.exportNoteCode?.toLowerCase().includes(term) ||
+          item.exportCommandCode?.toLowerCase().includes(term) ||
+          item.exportRequest?.toLowerCase().includes(term) ||
+          item.createRequester?.toLowerCase().includes(term) ||
+          item.exportWarehouse?.toLowerCase().includes(term) ||
+          item.reasonExport?.toLowerCase().includes(term) ||
+          item.nameWarehouseEntering?.toLowerCase().includes(term) ||
+          item.unitEntering?.toLowerCase().includes(term) ||
+          item.codeConstruction?.toLowerCase().includes(term) ||
+          item.unit?.toLowerCase().includes(term) ||
+          item.team?.toLowerCase().includes(term) ||
+          item.status?.toLowerCase().includes(term) ||
+          item.statusCA?.toLowerCase().includes(term) ||
+          item.description?.toLowerCase().includes(term)
+        );
+      });
     }
     return filtered;
   }, [data, searchTerm]);
@@ -1683,6 +1751,7 @@ export const Export_CA = () => {
                     </td>
                     <td className="px-2 py-1.5 text-center"><span className="inline-flex px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">{item.unit}</span></td>
                     <td className="px-2 py-1.5 text-center"><span className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${getDaysColor(item.daysDiff)}`}>{item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} {Math.abs(item.daysDiff) === 1 ? 'day' : 'days'}</span></td>
+                    <td className="px-2 py-1.5 text-center"><span className="inline-flex px-2 py-0.5 rounded text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-100 font-mono">{item.team || getTeamFromWarehouse(item.nameWarehouseEntering || item.exportWarehouse)}</span></td>
                     <td className="px-2 py-1.5 text-center font-mono font-bold text-blue-600">{item.year || '-'}</td>
                   </tr>
                 );

@@ -34,48 +34,107 @@ const getUnitFromRecipient = (recipient) => {
   
   let normalized = recipient.toUpperCase().replace(/\s+/g, '');
   normalized = normalized.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
-  
-  // 1. PNP Planning Department check
-  if (normalized.includes('PNP_PLA_PLANNING') || normalized.includes('PNP_PLANNING')) {
-    return 'PNP';
-  }
-  
-  // 2. KAN Planning Department check
-  if (normalized.includes('KAN_PLA_PLANNING') || normalized.includes('KAN_PLANNING')) {
-    return 'KAN';
-  }
-  
-  // 3. PNP FBC checks (PNPZ1 / PNPZ2)
-  if (normalized.includes('PNP_FBC') || normalized.includes('PNP_FBCO') || normalized.includes('PNPFBC')) {
-    const pnpz1Codes = ['FBC01', 'FBC03', 'FBC05', 'FBCO5', 'FBC06', 'FBC07', 'FBC10', 'FBC11', 'FBC13', 'FBC14'];
-    const pnpz2Codes = ['FBC02', 'FBC04', 'FBC08', 'FBC09', 'FBC12'];
-    
-    if (pnpz1Codes.some(code => normalized.includes(code))) {
-      return 'PNPZ1';
+
+  // Direct unit label overrides
+  if (/_PNPZ1_/.test(normalized) || /^PNPZ1\b/.test(normalized)) return 'PNPZ1';
+  if (/_PNPZ2_/.test(normalized) || /^PNPZ2\b/.test(normalized)) return 'PNPZ2';
+  if (/_KANZ1_/.test(normalized) || /^KANZ1\b/.test(normalized)) return 'KANZ1';
+
+  // Step 1: Extract province from GIS_XXX_ prefix
+  const gisMatch = normalized.match(/^GIS_([A-Z]+)_/);
+  const province = gisMatch ? gisMatch[1] : null;
+
+  // Step 2: Find FBC or SOS number ANYWHERE in the string
+  const fbcMatch = normalized.match(/FBC[^\d]*(\d+)/);
+  const sosMatch = normalized.match(/SOS[^\d]*(\d+)/);
+
+  if (fbcMatch && province) {
+    const num = String(parseInt(fbcMatch[1])).padStart(2, '0');
+    if (province === 'PNP') {
+      const PNPZ1 = ['01','03','05','06','07','10','11','13','14'];
+      const PNPZ2 = ['02','04','08','09','12'];
+      if (PNPZ1.includes(num)) return 'PNPZ1';
+      if (PNPZ2.includes(num)) return 'PNPZ2';
+      return 'PNP';
     }
-    if (pnpz2Codes.some(code => normalized.includes(code))) {
-      return 'PNPZ2';
+    if (province === 'KAN') {
+      const KANZ1 = ['01','02','03','04','05','06','07'];
+      if (KANZ1.includes(num)) return 'KANZ1';
+      return 'KAN';
     }
-    // Fallback default for any other PNP FBC to PNPZ1
-    return 'PNPZ1';
+    if (allUnits.includes(province)) return province;
   }
-  
-  // 4. KAN FBC check (KANZ1)
-  if (normalized.includes('KAN_FBC') || normalized.includes('KANFBC')) {
-    return 'KANZ1';
+
+  if (sosMatch && province) {
+    if (allUnits.includes(province)) return province;
   }
-  
-  // 5. Standard fallback matching logic
-  for (const unit of allUnits) {
-    if (normalized.includes(`GIS_${unit}_`) || normalized.includes(`_${unit}_`) || normalized.startsWith(unit) || normalized.includes(`GIS_${unit}`)) {
+
+  // Planning
+  if (normalized.includes('PLANNING') || normalized.includes('_PLA')) {
+    if (province && allUnits.includes(province)) return province;
+  }
+
+  // Fallback: known province from GIS prefix
+  if (province && allUnits.includes(province)) return province;
+
+  // Last resort
+  const sortedUnits = [...allUnits].sort((a, b) => b.length - a.length);
+  for (const unit of sortedUnits) {
+    if (normalized.includes(`GIS_${unit}_`) || normalized.startsWith(unit + '_') || normalized === unit) {
       return unit;
     }
   }
   
-  if (normalized.includes('KANZ')) return 'KANZ1';
-  if (normalized.includes('PNPZ')) return 'PNPZ1';
-  
   return 'OTHER';
+};
+
+const getTeamFromRecipient = (recipient) => {
+  if (!recipient || recipient === '-') return '-';
+  
+  let upper = recipient.toUpperCase().trim();
+  upper = upper.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
+  
+  // Find FBC or SOS team number
+  let teamNum = '';
+  let teamType = '';
+  
+  const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
+  if (fbcMatch) {
+    teamType = 'FBC';
+    teamNum = String(parseInt(fbcMatch[1])).padStart(2, '0');
+  } else {
+    const sosMatch = upper.match(/SOS[^\d]*(\d+)/);
+    if (sosMatch) {
+      teamType = 'SOS';
+      teamNum = String(parseInt(sosMatch[1])).padStart(2, '0');
+    }
+  }
+  
+  if (teamType && teamNum) {
+    // Extract province from GIS_XXX_ prefix (always PNP or KAN, never PNPZ1/PNPZ2)
+    let province = '';
+    const gisProvince = upper.match(/GIS_([A-Z]+)_/);
+    if (gisProvince) {
+      province = gisProvince[1];
+    } else {
+      const units = [
+        'BAN','BAT','CHA','CHH','KAM','KOH','KRA','MON','ODD',
+        'PNP','PRE','PRH','PUR','ROT','SIE','SIH','SPE','STU',
+        'SVA','TAK','THO','KAN'
+      ].sort((a, b) => b.length - a.length);
+      for (const u of units) {
+        if (new RegExp(`(^|_)${u}($|_)`).test(upper)) { province = u; break; }
+      }
+    }
+    
+    if (province) {
+      return `GIS_${province}_${teamType}${teamNum}`;
+    }
+  }
+  
+  upper = upper.replace(/_TEAM(\d+)/i, '$1');
+  upper = upper.replace(/TEAM(\d+)/i, '$1');
+  return upper;
 };
 
 const StockOutNoteConfirmed = () => {
@@ -115,7 +174,13 @@ const StockOutNoteConfirmed = () => {
   useEffect(() => {
     const fetchDbData = async () => {
       const dbData = await loadFromDb(STORAGE_KEYS.DATA, []);
-      setData(dbData);
+      // Enrich/update with correct unit and team — auto-corrects any wrong stored values
+      const enrichedData = dbData.map(item => ({
+        ...item,
+        unit: getUnitFromRecipient(item.unitConfirm),
+        team: getTeamFromRecipient(item.unitConfirm)
+      }));
+      setData(enrichedData);
       
       const dbCompletion = await loadFromDb(STORAGE_KEYS.COMPLETION, []);
       setCompletionHistory(dbCompletion);
@@ -169,15 +234,16 @@ const StockOutNoteConfirmed = () => {
 
   // Columns
   const columns = [
-    { key: 'no', label: '#', width: 'w-12' },
-    { key: 'code', label: 'Code of handover minutes', width: 'w-32' },
-    { key: 'type', label: 'Type of handover', width: 'w-32' },
-    { key: 'handoverUnit', label: 'Handover unit', width: 'w-36' },
-    { key: 'unitConfirm', label: 'Unit confirm handover', width: 'w-36' },
-    { key: 'date', label: 'Handover date', width: 'w-24' },
-    { key: 'status', label: 'Status', width: 'w-20' },
-    { key: 'daysDiff', label: 'Days', width: 'w-16' },
-    { key: 'unit', label: 'UNIT', width: 'w-20' }
+    { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
+    { key: 'code', label: 'Code of handover minutes', width: 'w-32', align: 'text-left' },
+    { key: 'type', label: 'Type of handover', width: 'w-32', align: 'text-left' },
+    { key: 'handoverUnit', label: 'Handover unit', width: 'w-36', align: 'text-left' },
+    { key: 'unitConfirm', label: 'Unit confirm handover', width: 'w-36', align: 'text-left' },
+    { key: 'date', label: 'Handover date', width: 'w-24', align: 'text-center' },
+    { key: 'status', label: 'Status', width: 'w-20', align: 'text-left' },
+    { key: 'team', label: 'TEAM', width: 'min-w-[150px]', align: 'text-center' },
+    { key: 'daysDiff', label: 'Days', width: 'w-16', align: 'text-center' },
+    { key: 'unit', label: 'UNIT', width: 'w-20', align: 'text-center' }
   ];
 
   // Helper functions
@@ -205,6 +271,7 @@ const StockOutNoteConfirmed = () => {
 
 
 
+  /*
   const isConfirmed = (id, code) => {
     return completionHistory.some(h => h.code === code) || !!confirmedStatus[code];
   };
@@ -223,6 +290,7 @@ const StockOutNoteConfirmed = () => {
       playAlarmSound();
     }
   };
+  */
 
   const playAlarmSound = () => {
     try {
@@ -349,6 +417,7 @@ const StockOutNoteConfirmed = () => {
     
     const processedNewData = filteredData.map((item, index) => {
       const unit = getUnitFromRecipient(item.unitConfirm);
+      const team = getTeamFromRecipient(item.unitConfirm);
       return {
         id: Math.max(...data.map(d => d.id), 0, index) + index + 1,
         no: index + 1,
@@ -359,7 +428,8 @@ const StockOutNoteConfirmed = () => {
         date: item.date,
         status: item.status,
         daysDiff: calculateDaysDiff(item.date),
-        unit: unit
+        unit: unit,
+        team: team
       };
     });
     
@@ -550,7 +620,10 @@ const StockOutNoteConfirmed = () => {
       if (item.id === id) {
         const updated = { ...item, [field]: value };
         if (field === 'date') updated.daysDiff = calculateDaysDiff(value);
-        if (field === 'unitConfirm') updated.unit = getUnitFromRecipient(value);
+        if (field === 'unitConfirm') {
+          updated.unit = getUnitFromRecipient(value);
+          updated.team = getTeamFromRecipient(value);
+        }
         return updated;
       }
       return item;
@@ -585,6 +658,7 @@ const StockOutNoteConfirmed = () => {
     }
   };
 
+  /*
   const deleteRow = (id) => {
     const itemToDelete = data.find(item => item.id === id);
     if (itemToDelete && window.confirm(`Delete this row?`)) {
@@ -598,6 +672,7 @@ const StockOutNoteConfirmed = () => {
       playAlarmSound();
     }
   };
+  */
 
   const updateTarget = (unit, period, newTarget) => {
     updateTargetWithHistory(unit, period, newTarget);
@@ -630,7 +705,9 @@ const StockOutNoteConfirmed = () => {
     const exportData = filteredData.map(item => ({
       'No': item.no, 'Code of handover minutes': item.code, 'Type of handover': item.type,
       'Handover unit': item.handoverUnit, 'Unit confirm handover': item.unitConfirm,
-      'Handover date': item.date, 'Status': item.status, "Days": item.daysDiff
+      'Handover date': item.date, 'Status': item.status,
+      'TEAM': item.team || '-',
+      "Days": item.daysDiff
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     
@@ -706,14 +783,22 @@ const StockOutNoteConfirmed = () => {
     );
     
     if (searchTerm) {
-      filtered = filtered.filter(item =>
-        item.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.handoverUnit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.unitConfirm?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.date?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.unit?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const term = searchTerm.toLowerCase().trim();
+      const isTermUnit = allUnits.some(u => u.toLowerCase() === term) || term === 'other';
+      filtered = filtered.filter(item => {
+        if (isTermUnit) {
+          return item.unit?.toLowerCase() === term;
+        }
+        return (
+          item.code?.toLowerCase().includes(term) ||
+          item.type?.toLowerCase().includes(term) ||
+          item.handoverUnit?.toLowerCase().includes(term) ||
+          item.unitConfirm?.toLowerCase().includes(term) ||
+          item.date?.toLowerCase().includes(term) ||
+          item.unit?.toLowerCase().includes(term) ||
+          item.team?.toLowerCase().includes(term)
+        );
+      });
     }
     return filtered;
   }, [data, searchTerm]);
@@ -835,15 +920,16 @@ const StockOutNoteConfirmed = () => {
     return <span className="text-gray-600">{unitConfirm}</span>;
   };
 
+  /*
   const getStatusBadgeForRow = (status) => {
     if (status && status.toLowerCase() === 'not confirmed') {
-      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-800">⏳ Not confirmed</span>;
+      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-800">Not confirmed</span>;
     }
     if (status && status.toLowerCase() === 'confirmed') {
-      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">✅ Confirmed</span>;
+      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Confirmed</span>;
     }
     if (status && status.toLowerCase() === 'refused to confirm') {
-      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">⚠️ Refused</span>;
+      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Refused</span>;
     }
     return <span className="text-gray-500">{status || '-'}</span>;
   };
@@ -853,16 +939,17 @@ const StockOutNoteConfirmed = () => {
     if (confirmed) {
       return (
         <button onClick={() => toggleConfirm(item.id, item.code, item.unit)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors">
-          ✅ Confirmed
+          Confirmed
         </button>
       );
     }
     return (
       <button onClick={() => toggleConfirm(item.id, item.code, item.unit)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
-        🔄 Mark Confirm
+          Mark Confirm
       </button>
     );
   };
+  */
 
   const alarmCount = alarmItems.length;
 
@@ -1305,18 +1392,17 @@ const StockOutNoteConfirmed = () => {
 
         {/* ─── TABLE WITH STICKY HEADER ─── */}
         <div className="relative overflow-x-auto overflow-y-auto max-h-[calc(100vh-420px)] border-b border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200 table-auto text-[11px]">
-            <thead className="bg-gray-50 sticky top-0 z-10">
+          <table className="min-w-full border-separate border-spacing-0 table-auto text-[11px]">
+            <thead className="bg-gray-50">
               <tr>
                 <th className="px-2 py-2 w-6 bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)]">
                   <input type="checkbox" checked={selectedRows.size === filteredData.length && filteredData.length > 0} onChange={toggleSelectAll} className="rounded" />
                 </th>
                 {columns.map(col => (
-                  <th key={col.key} className={`px-2 py-2 text-left font-semibold text-gray-600 uppercase whitespace-nowrap bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)] ${col.width}`}>
+                  <th key={col.key} className={`px-2 py-2 font-semibold text-gray-600 uppercase whitespace-nowrap bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)] ${col.width} ${col.align || 'text-left'}`}>
                     {col.label}
                   </th>
                 ))}
-                <th className="px-2 py-2 w-10 text-left font-semibold text-gray-600 uppercase bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)]">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -1325,7 +1411,7 @@ const StockOutNoteConfirmed = () => {
                 return (
                   <tr key={item.id} className={`${isAlarm ? 'bg-rose-50' : ''} ${selectedRows.has(item.id) ? 'bg-blue-50' : ''} hover:bg-gray-50 transition-colors`}>
                     <td className="px-2 py-1.5"><input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" /></td>
-                    <td className="px-2 py-1.5 text-gray-500">{item.no}</td>
+                    <td className="px-2 py-1.5 text-gray-500 text-center">{item.no}</td>
                     <td className="px-2 py-1.5">
                       {editingCell?.id === item.id && editingCell?.field === 'code' ? (
                         <input type="text" defaultValue={item.code} autoFocus onBlur={(e) => saveEdit(item.id, 'code', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'code')} className="w-full px-1 py-0.5 border rounded-xl font-mono text-[11px] bg-white" />
@@ -1354,27 +1440,31 @@ const StockOutNoteConfirmed = () => {
                         <div onClick={() => startEdit(item.id, 'unitConfirm', item.unitConfirm)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded">{getUnitConfirmBadge(item.unitConfirm)}</div>
                       )}
                     </td>
-                    <td className="px-2 py-1.5">
+                    <td className="px-2 py-1.5 text-center">
                       {editingCell?.id === item.id && editingCell?.field === 'date' ? (
-                        <input type="text" defaultValue={item.date} autoFocus onBlur={(e) => saveEdit(item.id, 'date', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'date')} className="w-full px-1.5 py-0.5 border rounded-xl font-mono bg-white" />
+                        <input type="text" defaultValue={item.date} autoFocus onBlur={(e) => saveEdit(item.id, 'date', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'date')} className="w-full px-1.5 py-0.5 border rounded-xl font-mono text-[11px] text-center bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'date', item.date)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded font-mono">{item.date || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'date', item.date)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded font-mono text-center">{item.date || '-'}</div>
                       )}
                     </td>
-                    <td className="px-2 py-1.5">{getStatusBadgeForRow(item.status)}</td>
+                    <td className="px-2 py-1.5 text-center text-gray-700 font-medium whitespace-nowrap">
+                      {item.status || '-'}
+                    </td>
+                    <td className="px-2 py-1.5 text-center font-semibold text-gray-700 whitespace-normal break-words">
+                      {item.team || '-'}
+                    </td>
                     <td className="px-2 py-1.5"><span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${getDaysColor(item.daysDiff)}`}>{item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} d</span></td>
                     <td className="px-2 py-1.5">
                       <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-800 border border-gray-200">
                         {item.unit || 'OTHER'}
                       </span>
                     </td>
-                    <td className="px-2 py-1.5"><div className="flex gap-1">{getConfirmStatusBadge(item)}<button onClick={() => deleteRow(item.id)} className="text-rose-500 hover:text-rose-700 p-1 transition-colors">🗑️</button></div></td>
                   </tr>
                 );
               })}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length + 2} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={columns.length + 1} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-3">
                       <div className="text-4xl">📭</div>
                       <p className="text-lg font-medium">No GIS "Not confirmed" records found</p>
@@ -1471,4 +1561,4 @@ const StockOutNoteConfirmed = () => {
   );
 };
 
-export default StockOutNoteConfirmed;
+export default StockOutNoteConfirmed; // trigger rebuild

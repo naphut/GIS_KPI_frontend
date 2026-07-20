@@ -28,77 +28,62 @@ const getStorageData = (key) => {
 };
 
 // Helper function to extract Unit from Group Receiver
+// Uses 2-step approach: province from GIS_XXX_ prefix + FBC/SOS number anywhere in string
+// This correctly handles complex names like GIS_KAN_STOCK_NOC_FBCTEAM01 → KANZ1
 const getUnitFromGroupReceiver = (groupReceiver) => {
   if (!groupReceiver) return null;
   
   let upper = groupReceiver.toUpperCase().replace(/\s+/g, '');
   upper = upper.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
   
-  const unitPatterns = [
-    // 1. PNPZ1 patterns (specific)
-    { pattern: /GIS_PNP_FBC([0O]?[13567]|10|11|13|14)/, unit: 'PNPZ1' },
-    { pattern: /_PNPZ1_/, unit: 'PNPZ1' },
-    { pattern: /^PNPZ1\b/, unit: 'PNPZ1' },
-    
-    // 2. PNPZ2 patterns (specific)
-    { pattern: /GIS_PNP_FBC([0O]?[2489]|12)/, unit: 'PNPZ2' },
-    { pattern: /_PNPZ2_/, unit: 'PNPZ2' },
-    { pattern: /^PNPZ2\b/, unit: 'PNPZ2' },
-    
-    // 3. KANZ1 patterns (specific)
-    { pattern: /GIS_KAN_FBC([0O]?[1-7])/, unit: 'KANZ1' },
-    { pattern: /_KANZ1_/, unit: 'KANZ1' },
-    { pattern: /^KANZ1\b/, unit: 'KANZ1' },
+  // Direct unit label overrides (explicit _PNPZ1_, ^KANZ1, etc.)
+  if (/_PNPZ1_/.test(upper) || /^PNPZ1\b/.test(upper)) return 'PNPZ1';
+  if (/_PNPZ2_/.test(upper) || /^PNPZ2\b/.test(upper)) return 'PNPZ2';
+  if (/_KANZ1_/.test(upper) || /^KANZ1\b/.test(upper)) return 'KANZ1';
 
-    // 4. PNP patterns (general)
-    { pattern: /GIS_PNP_SOS(\d{2})/, unit: 'PNP' },
-    { pattern: /PNP_PLA_PLANNING/, unit: 'PNP' },
-    { pattern: /PNP_PLANNING/, unit: 'PNP' },
-    { pattern: /PNP_PLA/, unit: 'PNP' },
-    { pattern: /_PNP_/, unit: 'PNP' },
-    { pattern: /^PNP\b/, unit: 'PNP' },
-    
-    // 5. KAN patterns (general)
-    { pattern: /GIS_KAN_SOS(\d{2})/, unit: 'KAN' },
-    { pattern: /KAN_PLA_PLANNING/, unit: 'KAN' },
-    { pattern: /KAN_PLANNING/, unit: 'KAN' },
-    { pattern: /KAN_PLA/, unit: 'KAN' },
-    { pattern: /_KAN_/, unit: 'KAN' },
-    { pattern: /^KAN\b/, unit: 'KAN' },
-    
-    // 6. Other units - general patterns
-    { pattern: /GIS_ODD_/, unit: 'ODD' },
-    { pattern: /GIS_STU_/, unit: 'STU' },
-    { pattern: /GIS_BAN_/, unit: 'BAN' },
-    { pattern: /GIS_BAT_/, unit: 'BAT' },
-    { pattern: /GIS_CHA_/, unit: 'CHA' },
-    { pattern: /GIS_CHH_/, unit: 'CHH' },
-    { pattern: /GIS_KAM_/, unit: 'KAM' },
-    { pattern: /GIS_KOH_/, unit: 'KOH' },
-    { pattern: /GIS_KRA_/, unit: 'KRA' },
-    { pattern: /GIS_MON_/, unit: 'MON' },
-    { pattern: /GIS_PRE_/, unit: 'PRE' },
-    { pattern: /GIS_PRH_/, unit: 'PRH' },
-    { pattern: /GIS_PUR_/, unit: 'PUR' },
-    { pattern: /GIS_ROT_/, unit: 'ROT' },
-    { pattern: /GIS_SIE_/, unit: 'SIE' },
-    { pattern: /GIS_SIH_/, unit: 'SIH' },
-    { pattern: /GIS_SPE_/, unit: 'SPE' },
-    { pattern: /GIS_SVA_/, unit: 'SVA' },
-    { pattern: /GIS_TAK_/, unit: 'TAK' },
-    { pattern: /GIS_THO_/, unit: 'THO' },
-  ];
-  
-  // Check each pattern
-  for (const { pattern, unit } of unitPatterns) {
-    if (pattern.test(upper)) {
-      return unit;
+  // Step 1: Extract province from GIS_XXX_ prefix
+  const gisMatch = upper.match(/^GIS_([A-Z]+)_/);
+  const province = gisMatch ? gisMatch[1] : null;
+
+  // Step 2: Find FBC or SOS number ANYWHERE in the string
+  const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
+  const sosMatch = upper.match(/SOS[^\d]*(\d+)/);
+
+  if (fbcMatch && province) {
+    const num = String(parseInt(fbcMatch[1])).padStart(2, '0');
+    if (province === 'PNP') {
+      const PNPZ1 = ['01','03','05','06','07','10','11','13','14'];
+      const PNPZ2 = ['02','04','08','09','12'];
+      if (PNPZ1.includes(num)) return 'PNPZ1';
+      if (PNPZ2.includes(num)) return 'PNPZ2';
+      return 'PNP';
     }
+    if (province === 'KAN') {
+      const KANZ1 = ['01','02','03','04','05','06','07'];
+      if (KANZ1.includes(num)) return 'KANZ1';
+      return 'KAN';
+    }
+    // Other provinces: use province directly if it's a known unit
+    if (allUnits.includes(province)) return province;
   }
-  
-  // Check if it starts with any unit code (GIS_XXX or XXX_)
-  for (const unit of allUnits) {
-    if (upper.includes(`GIS_${unit}_`) || upper.includes(`_${unit}_`) || upper.startsWith(unit)) {
+
+  if (sosMatch && province) {
+    // SOS always maps to base province (PNP SOS → PNP, KAN SOS → KAN)
+    if (allUnits.includes(province)) return province;
+  }
+
+  // Planning department
+  if (upper.includes('PLANNING') || upper.includes('_PLA')) {
+    if (province && allUnits.includes(province)) return province;
+  }
+
+  // Fallback: if we have a known province from GIS prefix, return it
+  if (province && allUnits.includes(province)) return province;
+
+  // Last resort: check if it starts with any unit code
+  const sortedUnits = [...allUnits].sort((a, b) => b.length - a.length);
+  for (const unit of sortedUnits) {
+    if (upper.includes(`GIS_${unit}_`) || upper.startsWith(unit + '_') || upper === unit) {
       return unit;
     }
   }
@@ -107,30 +92,97 @@ const getUnitFromGroupReceiver = (groupReceiver) => {
 };
 
 // Updated getUnit function with groupReceiver priority
-const getUnit = (exportCode, exportNo, groupReceiver) => {
-  // First try to get unit from groupReceiver
+const getUnit = (exportCode, exportNo, groupReceiver, stockReceiver) => {
+  // 1. Try groupReceiver first (most specific)
   const unitFromGroup = getUnitFromGroupReceiver(groupReceiver);
   if (unitFromGroup && allUnits.includes(unitFromGroup)) {
     return unitFromGroup;
   }
   
-  // Fallback: try to get from exportCode or exportNo
+  // 2. Try stockReceiver (e.g. GIS_KAN_STOCK_NOC_FBCTEAM01 → KANZ1)
+  if (stockReceiver && stockReceiver !== '-') {
+    const unitFromStock = getUnitFromGroupReceiver(stockReceiver);
+    if (unitFromStock && allUnits.includes(unitFromStock)) {
+      return unitFromStock;
+    }
+  }
+  
+  // 3. Fallback: try to get from exportCode or exportNo
   const code = (exportCode || exportNo || '').toUpperCase();
   if (!code) return 'OTHER';
   
+  // Check specific zones (longer strings) first so PNPZ1 is not matched as PNP
   const unitMap = {
+    'PNPZ1': 'PNPZ1', 'PNPZ2': 'PNPZ2', 'KANZ1': 'KANZ1',
     'BAN': 'BAN', 'BAT': 'BAT', 'CHA': 'CHA', 'CHH': 'CHH',
-    'KAM': 'KAM', 'KAN': 'KAN', 'KANZ1': 'KANZ1', 'KOH': 'KOH',
-    'KRA': 'KRA', 'MON': 'MON', 'ODD': 'ODD', 'PNP': 'PNP',
-    'PNPZ1': 'PNPZ1', 'PNPZ2': 'PNPZ2', 'PRE': 'PRE', 'PRH': 'PRH',
-    'PUR': 'PUR', 'ROT': 'ROT', 'SIE': 'SIE', 'SIH': 'SIH',
-    'SPE': 'SPE', 'STU': 'STU', 'SVA': 'SVA', 'TAK': 'TAK', 'THO': 'THO'
+    'KAM': 'KAM', 'KAN': 'KAN', 'KOH': 'KOH', 'KRA': 'KRA',
+    'MON': 'MON', 'ODD': 'ODD', 'PNP': 'PNP', 'PRE': 'PRE',
+    'PRH': 'PRH', 'PUR': 'PUR', 'ROT': 'ROT', 'SIE': 'SIE',
+    'SIH': 'SIH', 'SPE': 'SPE', 'STU': 'STU', 'SVA': 'SVA',
+    'TAK': 'TAK', 'THO': 'THO'
   };
   
   for (const [key, value] of Object.entries(unitMap)) {
     if (code.includes(key)) return value;
   }
   return 'OTHER';
+};
+
+const getTeam = (stockReceiver, groupReceiver) => {
+  const group = (groupReceiver || '').trim();
+  const rawTeam = (group && group !== '-') ? group : (stockReceiver || '').trim();
+  if (!rawTeam || rawTeam === '-') return '-';
+  
+  let upper = rawTeam.toUpperCase();
+  upper = upper.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
+  
+  // Find FBC or SOS team number
+  let teamNum = '';
+  let teamType = '';
+  
+  const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
+  if (fbcMatch) {
+    teamType = 'FBC';
+    teamNum = String(parseInt(fbcMatch[1])).padStart(2, '0');
+  } else {
+    const sosMatch = upper.match(/SOS[^\d]*(\d+)/);
+    if (sosMatch) {
+      teamType = 'SOS';
+      teamNum = String(parseInt(sosMatch[1])).padStart(2, '0');
+    }
+  }
+  
+  if (teamType && teamNum) {
+    // Use GIS_XXX_ prefix to get province — avoids false matches
+    // e.g. GIS_KAN_STOCK_ROTATIONAL_... → KAN (not ROT from "ROTATIONAL")
+    let province = '';
+    const gisProvince = upper.match(/^GIS_([A-Z]+)_/);
+    if (gisProvince) {
+      province = gisProvince[1];
+    } else {
+      // Fallback: search unit codes but only as whole words (bounded by _ or start)
+      const units = [
+        'BAN','BAT','CHA','CHH','KAM','KOH','KRA','MON','ODD',
+        'PNP','PRE','PRH','PUR','ROT','SIE','SIH','SPE','STU',
+        'SVA','TAK','THO','KAN'
+      ].sort((a, b) => b.length - a.length);
+      for (const u of units) {
+        // Match unit code only when bounded by _ or at string start/end
+        if (new RegExp(`(^|_)${u}($|_)`).test(upper)) {
+          province = u;
+          break;
+        }
+      }
+    }
+    
+    if (province) {
+      return `GIS_${province}_${teamType}${teamNum}`;
+    }
+  }
+  
+  upper = upper.replace(/_TEAM(\d+)/i, '$1');
+  upper = upper.replace(/TEAM(\d+)/i, '$1');
+  return upper;
 };
 
 const STOCKOUT_YET_CONFIRM = () => {
@@ -145,16 +197,6 @@ const STOCKOUT_YET_CONFIRM = () => {
   const [data, setData] = useState(() => getStorageData(STORAGE_KEYS.DATA) || []);
   const [completionHistory, setCompletionHistory] = useState(() => getStorageData(STORAGE_KEYS.COMPLETION) || []);
   const [searchTerm, setSearchTerm] = useState('');
-  const [columnFilters, setColumnFilters] = useState({
-    exportCode: '',
-    exportNo: '',
-    realExport: '',
-    stockReceiver: '',
-    groupReceiver: '',
-    constructionReceiver: '',
-    unit: '',
-    daysDiff: ''
-  });
   const [filterGIS, setFilterGIS] = useState(true);
   const [showAlarmModal, setShowAlarmModal] = useState(false);
   const [alarmThreshold, setAlarmThreshold] = useState(4);
@@ -182,7 +224,15 @@ const STOCKOUT_YET_CONFIRM = () => {
   useEffect(() => {
     const fetchDbData = async () => {
       const dbData = await loadFromDb(STORAGE_KEYS.DATA, []);
-      setData(dbData);
+      
+      // Enrich/update data with correct unit and full team name
+      // This auto-corrects any previously stored wrong unit values (e.g. KAN → KANZ1)
+      const enrichedData = dbData.map(item => ({
+        ...item,
+        unit: getUnit(item.exportCode, item.exportNo, item.groupReceiver, item.stockReceiver),
+        team: getTeam(item.stockReceiver, item.groupReceiver)
+      }));
+      setData(enrichedData);
       
       const dbCompletion = await loadFromDb(STORAGE_KEYS.COMPLETION, []);
       setCompletionHistory(dbCompletion);
@@ -225,15 +275,16 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   // Columns
   const columns = [
-    { key: 'no', label: '#', width: 'w-12' },
-    { key: 'exportCode', label: 'Warehouse Stock out', width: 'w-32' },
-    { key: 'exportNo', label: 'Export No', width: 'w-32' },
-    { key: 'realExport', label: 'Date', width: 'w-24' },
-    { key: 'stockReceiver', label: 'Stock Receiver', width: 'w-40' },
-    { key: 'groupReceiver', label: 'Group Receiver', width: 'w-40' },
-    { key: 'constructionReceiver', label: 'Construction', width: 'w-44' },
-    { key: 'unit', label: 'Unit', width: 'w-16' },
-    { key: 'daysDiff', label: 'Days', width: 'w-16' }
+    { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
+    { key: 'exportCode', label: 'Warehouse Stock out', width: 'w-32', align: 'text-left' },
+    { key: 'exportNo', label: 'Export No', width: 'w-32', align: 'text-left' },
+    { key: 'realExport', label: 'Date', width: 'w-24', align: 'text-center' },
+    { key: 'stockReceiver', label: 'Stock Receiver', width: 'w-24', align: 'text-left' },
+    { key: 'groupReceiver', label: 'Group Receiver', width: 'w-40', align: 'text-left' },
+    { key: 'constructionReceiver', label: 'Construction', width: 'w-44', align: 'text-left' },
+    { key: 'unit', label: 'Unit', width: 'w-16', align: 'text-center' },
+    { key: 'daysDiff', label: 'Days', width: 'w-16', align: 'text-center' },
+    { key: 'team', label: 'TEAM', width: 'min-w-[150px]', align: 'text-center' }
   ];
 
   // Helper functions
@@ -319,7 +370,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     // Exclude if constructionReceiver contains "GPON" (case insensitive) ONLY for units: SPE, TAK, KAM, CHH
     if (item.constructionReceiver && 
         item.constructionReceiver.toUpperCase().includes('GPON')) {
-      const unit = item.unit || getUnit(item.exportCode, item.exportNo, item.groupReceiver);
+      const unit = item.unit || getUnit(item.exportCode, item.exportNo, item.groupReceiver, item.stockReceiver);
       const excludedGponUnits = ['SPE', 'TAK', 'KAM', 'CHH'];
       if (excludedGponUnits.includes(unit)) {
         return true;
@@ -441,18 +492,23 @@ const STOCKOUT_YET_CONFIRM = () => {
     const currentExportNos = new Set(data.map(item => item.exportNo));
     const newExportNosSet = new Set(filteredRawData.map(item => item.exportNo));
     
-    const processedNewData = filteredRawData.map((item, index) => ({
-      id: Math.max(...data.map(d => d.id), 0, index) + index + 1,
-      no: index + 1,
-      exportCode: item.exportCode,
-      exportNo: item.exportNo,
-      realExport: item.realExport,
-      stockReceiver: item.stockReceiver || '',
-      groupReceiver: item.groupReceiver || '',
-      constructionReceiver: item.constructionReceiver || '',
-      unit: getUnit(item.exportCode, item.exportNo, item.groupReceiver),
-      daysDiff: calculateDaysDiff(item.realExport)
-    }));
+    const processedNewData = filteredRawData.map((item, index) => {
+      const stockRec = item.stockReceiver || '';
+      const groupRec = item.groupReceiver || '';
+      return {
+        id: Math.max(...data.map(d => d.id), 0, index) + index + 1,
+        no: index + 1,
+        exportCode: item.exportCode,
+        exportNo: item.exportNo,
+        realExport: item.realExport,
+        stockReceiver: stockRec,
+        groupReceiver: groupRec,
+        constructionReceiver: item.constructionReceiver || '',
+        unit: getUnit(item.exportCode, item.exportNo, groupRec, stockRec),
+        team: getTeam(stockRec, groupRec),
+        daysDiff: calculateDaysDiff(item.realExport)
+      };
+    });
     
     // Auto-create targets for new units
     const unitsInNewData = {};
@@ -719,11 +775,16 @@ const STOCKOUT_YET_CONFIRM = () => {
       if (item.id === id) return { ...item, [field]: value };
       return item;
     });
-    const computedData = updatedData.map(item => ({
-      ...item,
-      unit: getUnit(item.exportCode, item.exportNo, item.groupReceiver),
-      daysDiff: calculateDaysDiff(item.realExport)
-    }));
+    const computedData = updatedData.map(item => {
+      const stockRec = item.stockReceiver || '';
+      const groupRec = item.groupReceiver || '';
+      return {
+        ...item,
+        unit: getUnit(item.exportCode, item.exportNo, groupRec, stockRec),
+        team: getTeam(stockRec, groupRec),
+        daysDiff: calculateDaysDiff(item.realExport)
+      };
+    });
     setData(computedData);
   };
 
@@ -753,6 +814,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     }
   };
 
+  /*
   const deleteRow = (id) => {
     const itemToDelete = data.find(item => item.id === id);
     if (itemToDelete && window.confirm(`Delete this row?`)) {
@@ -766,6 +828,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       playAlarmSound();
     }
   };
+  */
 
   const updateTarget = (unit, period, newTarget) => updateTargetWithHistory(unit, period, newTarget);
   const handleSort = (sortBy) => {
@@ -795,7 +858,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       'No': item.no, 'Warehouse Stock out': item.exportCode, 'Export No': item.exportNo,
       'Date': item.realExport, 'Stock Receiver': item.stockReceiver,
       'Group Receiver': item.groupReceiver, 'Construction Receiver': item.constructionReceiver,
-      'Unit': item.unit, "Days": item.daysDiff,
+      'Unit': item.unit, "Days": item.daysDiff, 'TEAM': item.team || '-',
       'Status': item.daysDiff > alarmThreshold ? 'ALARM' : 'Normal'
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -868,27 +931,26 @@ const STOCKOUT_YET_CONFIRM = () => {
       );
     }
     if (searchTerm) {
-      filtered = filtered.filter(item => 
-        item.exportCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.exportNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.groupReceiver?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.constructionReceiver?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const term = searchTerm.toLowerCase().trim();
+      const isTermUnit = allUnits.some(u => u.toLowerCase() === term) || term === 'other';
+      
+      filtered = filtered.filter(item => {
+        if (isTermUnit) {
+          return item.unit?.toLowerCase() === term;
+        }
+        return (
+          item.exportCode?.toLowerCase().includes(term) ||
+          item.exportNo?.toLowerCase().includes(term) ||
+          item.groupReceiver?.toLowerCase().includes(term) ||
+          item.constructionReceiver?.toLowerCase().includes(term) ||
+          item.unit?.toLowerCase().includes(term) ||
+          item.team?.toLowerCase().includes(term)
+        );
+      });
     }
 
-    // Apply column-specific filters
-    Object.keys(columnFilters).forEach(key => {
-      const filterVal = columnFilters[key];
-      if (filterVal) {
-        filtered = filtered.filter(item => {
-          const itemVal = item[key] !== undefined && item[key] !== null ? item[key].toString().toLowerCase() : '';
-          return itemVal.includes(filterVal.toLowerCase());
-        });
-      }
-    });
-
     return filtered;
-  }, [data, searchTerm, filterGIS, columnFilters]);
+  }, [data, searchTerm, filterGIS]);
 
   const totalItems = filteredData.length;
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
@@ -1471,23 +1533,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                 <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-16 px-2 py-1 text-sm border rounded-lg text-center bg-white" min="1"/>
                 <span className="text-sm">days</span>
               </div>
-              {Object.values(columnFilters).some(val => val) && (
-                <button 
-                  onClick={() => setColumnFilters({
-                    exportCode: '',
-                    exportNo: '',
-                    realExport: '',
-                    stockReceiver: '',
-                    groupReceiver: '',
-                    constructionReceiver: '',
-                    unit: '',
-                    daysDiff: ''
-                  })}
-                  className="px-3 py-1.5 text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors"
-                >
-                  ✕ Clear Filters
-                </button>
-              )}
+
               <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-48 sm:w-64 px-4 py-2 pl-10 text-sm border rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
               <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
                 <input type="checkbox" checked={filterGIS} onChange={(e) => setFilterGIS(e.target.checked)} className="rounded" />
@@ -1527,36 +1573,19 @@ const STOCKOUT_YET_CONFIRM = () => {
 
         {/* ─── TABLE WITH STICKY HEADER ─── */}
         <div className="relative overflow-x-auto overflow-y-auto max-h-[calc(100vh-420px)] border-b border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200 table-auto text-xs">
-            <thead className="bg-gray-50 sticky top-0 z-10">
+          <table className="min-w-full border-separate border-spacing-0 table-auto text-xs">
+            <thead className="bg-gray-50">
               <tr>
                 <th className="px-2 py-2 w-8 bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)]">
                   <input type="checkbox" checked={selectedRows.size === data.length && data.length > 0} onChange={toggleSelectAll} className="rounded" />
                 </th>
                 {columns.map(col => (
-                  <th key={col.key} className={`px-2 py-2 text-left text-xs font-semibold text-gray-600 uppercase ${col.width} whitespace-nowrap bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)]`}>
+                  <th key={col.key} className={`px-2 py-2 text-xs font-semibold text-gray-600 uppercase ${col.width} whitespace-nowrap bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)] ${col.align || 'text-left'}`}>
                     {col.label}
                   </th>
                 ))}
-                <th className="px-2 py-2 w-10 text-left text-xs font-semibold text-gray-600 uppercase bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)]">Action</th>
               </tr>
-              <tr className="bg-gray-100/50">
-                <th className="px-2 py-1 border-b border-gray-200"></th>
-                {columns.map(col => (
-                  <th key={`filter-${col.key}`} className="px-2 py-1 border-b border-gray-200">
-                    {col.key !== 'no' ? (
-                      <input
-                        type="text"
-                        placeholder={`Filter...`}
-                        value={columnFilters[col.key] || ''}
-                        onChange={(e) => setColumnFilters(prev => ({ ...prev, [col.key]: e.target.value }))}
-                        className="w-full px-2 py-1 border border-gray-200 rounded-lg text-[10px] font-normal bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    ) : null}
-                  </th>
-                ))}
-                <th className="px-2 py-1 border-b border-gray-200"></th>
-              </tr>
+
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedData.map((item) => {
@@ -1579,11 +1608,11 @@ const STOCKOUT_YET_CONFIRM = () => {
                         <div onClick={() => startEdit(item.id, 'exportNo', item.exportNo)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">{item.exportNo || '-'}</div>
                       )}
                     </td>
-                    <td className="px-2 py-1.5 text-xs font-mono text-center">
+                    <td className="px-2 py-1.5 text-center text-xs font-mono">
                       {editingCell?.id === item.id && editingCell?.field === 'realExport' ? (
-                        <input type="text" defaultValue={item.realExport} placeholder="DD/MM/YYYY" autoFocus onBlur={(e) => saveEdit(item.id, 'realExport', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'realExport')} className="w-full px-1.5 py-0.5 border rounded-xl text-xs bg-white" />
+                        <input type="text" defaultValue={item.realExport} placeholder="DD/MM/YYYY" autoFocus onBlur={(e) => saveEdit(item.id, 'realExport', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'realExport')} className="w-full px-1.5 py-0.5 border rounded-xl text-xs text-center bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'realExport', item.realExport)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">{item.realExport || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'realExport', item.realExport)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded text-center transition-colors">{item.realExport || '-'}</div>
                       )}
                     </td>
                     <td className="px-2 py-1.5 text-xs whitespace-normal break-words">
@@ -1615,15 +1644,15 @@ const STOCKOUT_YET_CONFIRM = () => {
                         {item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} {Math.abs(item.daysDiff) === 1 ? 'day' : 'days'}
                       </span>
                     </td>
-                    <td className="px-2 py-1.5 text-center">
-                      <button onClick={() => deleteRow(item.id)} className="text-emerald-600 hover:text-emerald-700 p-1 transition-colors" title="Complete">✅</button>
+                    <td className="px-2 py-1.5 text-center font-semibold text-gray-700 whitespace-nowrap">
+                      {item.team || '-'}
                     </td>
                   </tr>
                 );
               })}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length + 2} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={columns.length + 1} className="px-6 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-3">
                       <div className="text-4xl">📭</div>
                       <p className="text-lg font-medium">No data in system</p>

@@ -21,24 +21,44 @@ const getBackendBaseUrl = () => {
  */
 export const loadFromDb = async (key, fallback = null) => {
   try {
-    const response = await fetch(`${getBackendBaseUrl()}/${key}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(`${getBackendBaseUrl()}/${key}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
     if (response.ok) {
       const data = await response.json();
-      if (data && data.value) {
-        // Cache to localStorage
-        localStorage.setItem(key, data.value);
-        return JSON.parse(data.value);
+      if (data && data.value !== undefined && data.value !== null) {
+        const valStr = typeof data.value === 'string' ? data.value : JSON.stringify(data.value);
+        try {
+          localStorage.setItem(key, valStr);
+        } catch (e) {
+          console.warn(`LocalStorage quota error caching "${key}":`, e);
+        }
+        try {
+          return typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
+        } catch (parseErr) {
+          return data.value;
+        }
       }
     }
   } catch (error) {
-    console.error(`Error loading key "${key}" from DB:`, error);
+    if (error.name !== 'AbortError') {
+      console.warn(`Backend store fetch failed for "${key}", using local fallback:`, error.message);
+    }
   }
 
   // Fallback to local storage (for migration or offline cache)
   try {
     const localSaved = localStorage.getItem(key);
     if (localSaved !== null) {
-      const parsed = JSON.parse(localSaved);
+      let parsed = localSaved;
+      try {
+        parsed = JSON.parse(localSaved);
+      } catch (e) {
+        parsed = localSaved;
+      }
       // Proactively migrate to database in background
       saveToDb(key, parsed).catch(err => console.error(`Migration error for key "${key}":`, err));
       return parsed;
@@ -65,14 +85,18 @@ export const saveToDb = async (key, value) => {
   }
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
     const response = await fetch(getBackendBaseUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         key: key,
         value: jsonString
-      })
+      }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     
     if (response.ok) {
       const data = await response.json();
@@ -82,7 +106,9 @@ export const saveToDb = async (key, value) => {
       return null;
     }
   } catch (error) {
-    console.error(`Network error saving key "${key}" to DB:`, error);
+    if (error.name !== 'AbortError') {
+      console.error(`Network error saving key "${key}" to DB:`, error);
+    }
     return null;
   }
 };

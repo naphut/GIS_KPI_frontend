@@ -1,5 +1,6 @@
 // telegramBot.js - Full Working Version with ALL Exports (Optimized)
 import { loadFromDb } from './dbStore';
+import * as XLSX from 'xlsx';
 
 // ============================================================
 // 📌 CONFIGURATION
@@ -18,31 +19,31 @@ const DEFAULT_TOKEN = '8571996109:AAHiDszOTGk4uEnb0iPKcnNXlGoTSE7K740';
 // Group IDs for each province
 // Group IDs for each province (NEW)
 const GROUP_IDS = {
-  'BAN': '-4064404599',
-  'BAT': '-4040029628',
-  'CHA': '-4049172108',
-  'CHH': '-4051031281',
-  'KAM': '-4095493891',
-  'KAN': '-972214275',
-  'KANZ1': '-4660884501',
-  'KOH': '-4040314167',
-  'KRA': '-4043528749',
-  'MON': '-4098682856',
-  'ODD': '-916660446',
-  PNP: "-5359041682",
-  'PNPZ1': '-1002524347910',
-  'PNPZ2': '-1002766967718',
-'PRE': '-4041390598',
-  'PRH': '-4012609247',
-  'PUR': '-4056509295',
-  'ROT': '-4085028170',
-  'SIE': '-4033369254',
-  'SIH': '-4011071980',
-  'SPE': '-4022650547',
-  'STU': '-4037945549',
-  'SVA': '-4076297232',
-  'TAK': ' -4099541459',
-  'THO': '-4075992457',
+  'BAN': '-5586791976',
+  'BAT': '-1004433153728',
+  'CHA': '-5420693532',
+  'CHH': '-5387431077',
+  'KAM': '-5482545376',
+  'KAN': '-5236231454',
+  'KANZ1': '-5274252058',
+  'KOH': '-5145897116',
+  'KRA': '-5593536064',
+  'MON': '-5319493942',
+  'ODD': '-4995836337',
+  'PNP': '-5359041682',
+  'PNPZ1': '-5588093737',
+  'PNPZ2': '-1004382725579',
+  'PRE': '-5428590077',
+  'PRH': '-5250837883',
+  'PUR': '-5562024723',
+  'ROT': '-5358830807',
+  'SIE': '-5558011159',
+  'SIH': '-5074490053',
+  'SPE': '-5460603162',
+  'STU': '-5339037019',
+  'SVA': '-1004477126515',
+  'TAK': '-5519166799',
+  'THO': '-5163441169',
 };
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
@@ -102,7 +103,14 @@ export const cleanWarehouseName = (name) => {
   let trimmed = name.trim().toUpperCase();
   
   // Normalize typos
-  trimmed = trimmed.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC');
+  trimmed = trimmed
+    .replace(/PNPZI/g, 'PNPZ1')
+    .replace(/PNP_ZI/g, 'PNPZ1')
+    .replace(/PNP-ZI/g, 'PNPZ1')
+    .replace(/KANZ1/g, 'KANZ1')
+    .replace(/TEAMD(\d+)/gi, 'TEAM0$1')
+    .replace(/FB_TEAMC/g, 'FBC')
+    .replace(/FB_TEAM/g, 'FBC');
   
   // 1. Determine Province/Unit code
   let province = 'UNK';
@@ -149,6 +157,100 @@ export const cleanWarehouseName = (name) => {
 };
 
 // ============================================================
+// 📌 TEAM → UNIT EXPLICIT LOOKUP TABLE
+// PNP zone: SOS/PLA/TEC → PNP, FBC01/03/05/06/07/10/11/13/14 → PNPZ1, FBC02/04/08/09/12 → PNPZ2
+// KAN zone: SOS/PLA/TEC → KAN, FBC → KANZ1
+// ============================================================
+
+export const getUnitFromTeam = (teamName) => {
+  if (!teamName || teamName === '-') return null;
+  const upper = teamName.toUpperCase().trim();
+
+  // Priority Check: Match PNPZ1, PNPZ2, KANZ1 BEFORE generic PNP or KAN!
+  if (upper.includes('PNPZ1') || upper.includes('PNP_Z1') || upper.includes('PNP-Z1') || upper.includes('PNP Z1')) return 'PNPZ1';
+  if (upper.includes('PNPZ2') || upper.includes('PNP_Z2') || upper.includes('PNP-Z2') || upper.includes('PNP Z2')) return 'PNPZ2';
+  if (upper.includes('KANZ1') || upper.includes('KAN_Z1') || upper.includes('KAN-Z1') || upper.includes('KAN Z1')) return 'KANZ1';
+
+  const isPNP = upper.includes('PNP');
+  const isKAN = upper.includes('KAN');
+
+  if (isPNP) {
+    if (upper.includes('FBC') || upper.includes('FB_TEAM')) {
+      const match = upper.match(/FBC[^\d]*(\d+)/i) || upper.match(/FB_?TEAM_?(\d+)/i);
+      if (match) {
+        const num = String(parseInt(match[1], 10)).padStart(2, '0');
+        if (['02', '04', '08', '09', '12'].includes(num)) return 'PNPZ2';
+        if (['01', '03', '05', '06', '07', '10', '11', '13', '14'].includes(num)) return 'PNPZ1';
+      }
+      return 'PNPZ1';
+    }
+    return 'PNP';
+  }
+
+  if (isKAN) {
+    if (upper.includes('FBC') || upper.includes('FB_TEAM')) {
+      return 'KANZ1';
+    }
+    return 'KAN';
+  }
+
+  return null;
+};
+
+export const getTeamFromRecipient = (recipient) => {
+  if (!recipient || recipient === '-') return '-';
+  
+  let upper = recipient.toUpperCase().trim();
+  upper = upper.replace(/FB_TEAMC/g, 'FBC')
+               .replace(/FB_TEAM/g, 'FBC')
+               .replace(/FBCO/g, 'FBC')
+               .replace(/FBC012/g, 'FBC12')
+               .replace(/FB012/g, 'FBC12')
+               .replace(/FB(\d+)/g, 'FBC$1');
+  
+  // Find FBC or SOS team number
+  let teamNum = '';
+  let teamType = '';
+  
+  const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
+  if (fbcMatch) {
+    teamType = 'FBC';
+    teamNum = String(parseInt(fbcMatch[1])).padStart(2, '0');
+  } else {
+    const sosMatch = upper.match(/SOS[^\d]*(\d+)/);
+    if (sosMatch) {
+      teamType = 'SOS';
+      teamNum = String(parseInt(sosMatch[1])).padStart(2, '0');
+    }
+  }
+  
+  if (teamType && teamNum) {
+    // Detect province abbreviation from the raw name (always GIS_PNP_... or GIS_KAN_...)
+    let province = '';
+    const gisProvince = upper.match(/GIS_([A-Z]+)_/);
+    if (gisProvince) {
+      province = gisProvince[1]; // e.g. "PNP" or "KAN"
+    } else {
+      const units = [
+        'BAN','BAT','CHA','CHH','KAM','KOH','KRA','MON','ODD',
+        'PNP','PRE','PRH','PUR','ROT','SIE','SIH','SPE','STU',
+        'SVA','TAK','THO','KAN'
+      ].sort((a, b) => b.length - a.length);
+      for (const u of units) {
+        if (new RegExp(`(^|_)${u}($|_)`).test(upper)) { province = u; break; }
+      }
+    }
+    if (province) {
+      return `GIS_${province}_${teamType}${teamNum}`;
+    }
+  }
+  
+  upper = upper.replace(/_TEAM(\d+)/i, '$1');
+  upper = upper.replace(/TEAM(\d+)/i, '$1');
+  return upper;
+};
+
+// ============================================================
 // 📌 GET UNIT DATA FROM DATABASE - STOCKOUT MODULES
 // ============================================================
 
@@ -171,10 +273,35 @@ export const getUnitData = async (unit) => {
     const notconfirmedHistory = await loadFromDb('kpi_notconfirmed_completionHistory', []);
     const notconfirmedConfirmed = await loadFromDb('kpi_notconfirmed_confirmedStatus', {});
 
+    // ─── DYNAMIC ITEM UNIT RESOLVER ───
+    const getItemUnit1 = (item) => {
+      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.groupReceiver && item.groupReceiver !== '-' ? item.groupReceiver : (item.stockReceiver || '-'));
+      const cleanTeam = getTeamFromRecipient(rawTeam);
+      const teamUnit = getUnitFromTeam(cleanTeam);
+      if (teamUnit) return teamUnit;
+      return item.unit || 'OTHER';
+    };
+
+    const getItemUnit2 = (item) => {
+      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.recipient || '-');
+      const cleanTeam = getTeamFromRecipient(rawTeam);
+      const teamUnit = getUnitFromTeam(cleanTeam);
+      if (teamUnit) return teamUnit;
+      return item.unit || 'OTHER';
+    };
+
+    const getItemUnit3 = (item) => {
+      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.unitConfirm || '-');
+      const cleanTeam = getTeamFromRecipient(rawTeam);
+      const teamUnit = getUnitFromTeam(cleanTeam);
+      if (teamUnit) return teamUnit;
+      return item.unit || 'OTHER';
+    };
+
     // ─── FILTER BY UNIT ───
-    const unitStockout = stockoutData.filter(item => item.unit === unit);
-    const unitNocreate = nocreateData.filter(item => item.unit === unit);
-    const unitNotconfirmed = notconfirmedData.filter(item => item.unit === unit);
+    const unitStockout = stockoutData.filter(item => getItemUnit1(item) === unit);
+    const unitNocreate = nocreateData.filter(item => getItemUnit2(item) === unit);
+    const unitNotconfirmed = notconfirmedData.filter(item => getItemUnit3(item) === unit);
 
     const isMorning = new Date().getHours() < 12;
 
@@ -185,7 +312,7 @@ export const getUnitData = async (unit) => {
     const m1Evening = m1EveningConfig > 0 ? m1EveningConfig : (m1Morning * 2);
     const m1Target = isMorning ? m1Morning : (m1Evening > 0 ? m1Evening : m1Morning);
     const m1Total = unitStockout.length;
-    const m1Completed = stockoutHistory.filter(c => c.unit === unit).length;
+    const m1Completed = stockoutHistory.filter(c => c.unit === unit || (c.team && getUnitFromTeam(c.team) === unit)).length;
     const m1Remain = m1Target > 0 ? Math.max(0, m1Target - m1Completed) : m1Total;
     const m1Ratio = m1Target > 0 ? parseFloat(((m1Completed / m1Target) * 100).toFixed(2)) : (m1Remain === 0 && m1Completed === 0 ? 100 : 0);
 
@@ -197,7 +324,8 @@ export const getUnitData = async (unit) => {
         groupReceiver: item.groupReceiver || '-',
         daysDiff: item.daysDiff || calculateDaysDiff(item.realExport || item.date),
         warehouse: item.stockReceiver || item.warehouse || '-',
-        creator: item.creator || '-'
+        creator: item.creator || '-',
+        team: item.team || '-'
       }));
 
     // ─── CALCULATE MODULE 2: NO CREATE HAND OVER ───
@@ -207,11 +335,11 @@ export const getUnitData = async (unit) => {
     const m2Evening = m2EveningConfig > 0 ? m2EveningConfig : (m2Morning * 2);
     const m2Target = isMorning ? m2Morning : (m2Evening > 0 ? m2Evening : m2Morning);
     const m2Total = unitNocreate.length;
-    let m2Completed = nocreateHistory.filter(c => c.unit === unit).length;
+    let m2Completed = nocreateHistory.filter(c => c.unit === unit || (c.team && getUnitFromTeam(c.team) === unit)).length;
     Object.entries(nocreateConfirmed).forEach(([code, confirmed]) => {
       if (confirmed) {
         const item = nocreateData.find(d => d.code === code);
-        if (item && item.unit === unit) m2Completed++;
+        if (item && getItemUnit2(item) === unit) m2Completed++;
       }
     });
     const m2Remain = m2Target > 0 ? Math.max(0, m2Target - m2Completed) : m2Total;
@@ -221,10 +349,14 @@ export const getUnitData = async (unit) => {
       .filter(item => !nocreateHistory.some(c => c.code === item.code) && !nocreateConfirmed[item.code])
       .map(item => ({
         code: item.code || '-',
+        warehouse: item.warehouse || '-',
         recipient: item.recipient || '-',
         creator: item.creator || '-',
+        date: item.date || '-',
+        status: item.status || 'Pending',
         daysDiff: item.daysDiff || calculateDaysDiff(item.date),
-        warehouse: item.warehouse || '-'
+        team: item.team || getTeamFromRecipient(item.recipient || item.warehouse || '-'),
+        unit: item.unit || unit
       }));
 
     // ─── CALCULATE MODULE 3: STOCK OUT NOTE - NOT CONFIRMED ───
@@ -234,11 +366,11 @@ export const getUnitData = async (unit) => {
     const m3Evening = m3EveningConfig > 0 ? m3EveningConfig : (m3Morning * 2);
     const m3Target = isMorning ? m3Morning : (m3Evening > 0 ? m3Evening : m3Morning);
     const m3Total = unitNotconfirmed.length;
-    let m3Completed = notconfirmedHistory.filter(c => c.unit === unit).length;
+    let m3Completed = notconfirmedHistory.filter(c => c.unit === unit || (c.team && getUnitFromTeam(c.team) === unit)).length;
     Object.entries(notconfirmedConfirmed).forEach(([code, confirmed]) => {
       if (confirmed) {
         const item = notconfirmedData.find(d => d.code === code);
-        if (item && item.unit === unit) m3Completed++;
+        if (item && getItemUnit3(item) === unit) m3Completed++;
       }
     });
     const m3Remain = m3Target > 0 ? Math.max(0, m3Target - m3Completed) : m3Total;
@@ -248,10 +380,16 @@ export const getUnitData = async (unit) => {
       .filter(item => !notconfirmedHistory.some(c => c.code === item.code) && !notconfirmedConfirmed[item.code])
       .map(item => ({
         code: item.code || '-',
+        type: item.type || '-',
+        handoverUnit: item.handoverUnit || '-',
         unitConfirm: item.unitConfirm || '-',
+        date: item.date || '-',
+        status: item.status || 'Pending',
         daysDiff: item.daysDiff || calculateDaysDiff(item.date),
         warehouse: item.handoverUnit || item.unitConfirm || '-',
-        creator: item.creator || '-'
+        creator: item.creator || '-',
+        team: item.team || getTeamFromRecipient(item.unitConfirm || item.handoverUnit || '-'),
+        unit: item.unit || unit
       }));
 
     // ─── TOTALS ───
@@ -367,16 +505,11 @@ const getBackendBaseUrl = () => {
 // ============================================================
 
 const formatStockoutMessage = (unit, data, customNote = '') => {
-  const now = new Date();
-  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
   // Get data from parameter or from database
   let unitData = data;
   if (data && data.units && data.units[unit]) {
     unitData = data.units[unit];
   } else if (!data || data.totalTarget === undefined) {
-    // If data not provided, return error message
     return `⚠️ No data available for ${unit}. Please sync data first.`;
   }
 
@@ -384,105 +517,79 @@ const formatStockoutMessage = (unit, data, customNote = '') => {
   const m2Items = unitData.m2Items || [];
   const m3Items = unitData.m3Items || [];
 
-  const totalResult = unitData.totalResult || 0;
-  const totalRemain = unitData.totalRemain || 0;
-  const totalRatio = unitData.totalRatio || 0;
-  const totalInSystem = unitData.totalInSystem || 0;
-  const targetMorning = unitData.targetMorning || 0;
-  const targetEvening = unitData.targetEvening || 0;
+  const totalPending = m1Items.length + m2Items.length + m3Items.length;
 
-  let message = `📊 <b>📋 CONFIRMED HAND OVER REPORT</b>\n`;
-  message += `📍 <b>BRANCH</b> : ${unit}\n`;
-  message += `Time: ${time} | Date: ${date}\n`;
-  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  if (totalPending === 0) {
+    return `✅ <b>No pending items for all teams!</b>`;
+  }
 
-  message += `📈 <b>📊 OVERALL KPI SUMMARY</b>\n`;
-  message += `<code>`;
-  message += `🌅 Target ព្រឹក  : ${String(targetMorning).padEnd(6)} | 🌙 Target ល្ងាច : ${targetEvening}\n`;
-  message += `✅ Result       : ${String(totalResult).padEnd(6)} | 📋 Remain      : ${totalRemain}\n`;
-  message += `📊 Ratio       : ${String((typeof totalRatio === 'number' ? totalRatio.toFixed(1) : totalRatio) + '%').padEnd(6)} | 📦 In System   : ${totalInSystem}\n`;
-  message += `</code>`;
-  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  // Helper to group items by team for a given module
+  const groupByTeam = (items, getTeamFn) => {
+    const map = {};
+    items.forEach(item => {
+      const rawTeam = getTeamFn(item);
+      const team = getTeamFromRecipient(rawTeam);
+      if (!map[team]) map[team] = [];
+      map[team].push(item);
+    });
+    return map;
+  };
 
-  // Module 1
-  message += `<b>📦 1. STOCKOUT YET CONFIRM│ ${m1Items.length === 0 ? '✅' : '📋'}</b>\n`;
+  const parts = [];
+
+  // STEP 1 Section (Stockout Yet Confirm)
   if (m1Items.length > 0) {
-    // Group by Group Receiver + Stock Receiver
-    const m1Groups = {};
-    m1Items.forEach(item => {
-      const rawStockRec = item.stockReceiver || item.warehouse || '-';
-      const stockRec = cleanWarehouseName(rawStockRec);
-      const groupRec = cleanWarehouseName(item.groupReceiver || '-');
-      const key = `${groupRec}_${stockRec}`;
-      if (!m1Groups[key]) {
-        m1Groups[key] = {
-          groupReceiver: groupRec,
-          stockReceiver: stockRec,
-          items: []
-        };
-      }
-      m1Groups[key].items.push(item);
-    });
-
-    Object.values(m1Groups).forEach(group => {
-      message += `[SPLIT]📋 Rec: ${escapeHtml(group.groupReceiver)} / Stock: ${escapeHtml(group.stockReceiver)}\n`;
-      group.items.forEach((item, index) => {
-        const exportNo = item.exportNo || '-';
-        const days = item.daysDiff || 0;
-        message += `  ${index + 1}. <code>${escapeHtml(exportNo)}</code> (${days}d)\n`;
+    const m1Groups = groupByTeam(m1Items, item => item.team && item.team !== '-' ? item.team : (item.groupReceiver || item.warehouse || '-'));
+    const m1Teams = Object.keys(m1Groups).sort((a, b) => a.localeCompare(b));
+    let stepMsg = `🔹 <b>STEP 1</b>\n`;
+    m1Teams.forEach(team => {
+      stepMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
+      m1Groups[team].forEach(item => {
+        const days = parseInt(item.daysDiff) || 0;
+        stepMsg += ` • <code>${escapeHtml(item.exportNo)}(${days}d)</code>\n`;
       });
     });
+    parts.push(stepMsg);
   }
 
-  // Module 2
-  message += `\n<b>📝 2. NO CREATE HAND OVER│ ${m2Items.length === 0 ? '✅' : '📋'}</b>\n`;
+  // STEP 2 Section (No Create Handover)
   if (m2Items.length > 0) {
-    // Group by Recipient
-    const m2Groups = {};
-    m2Items.forEach(item => {
-      const key = cleanWarehouseName(item.recipient || '-');
-      if (!m2Groups[key]) {
-        m2Groups[key] = [];
-      }
-      m2Groups[key].push(item);
-    });
-
-    Object.entries(m2Groups).forEach(([recipient, items]) => {
-      message += `[SPLIT]👤 Recipient: ${escapeHtml(recipient)}\n`;
-      items.forEach((item, index) => {
-        message += `  ${index + 1}. <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d)\n`;
+    const m2Groups = groupByTeam(m2Items, item => item.team || item.recipient);
+    const m2Teams = Object.keys(m2Groups).sort((a, b) => a.localeCompare(b));
+    let stepMsg = `🔸 <b>STEP 2</b>\n`;
+    m2Teams.forEach(team => {
+      stepMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
+      m2Groups[team].forEach(item => {
+        const days = parseInt(item.daysDiff) || 0;
+        stepMsg += ` • <code>${escapeHtml(item.code)}(${days}d)</code>\n`;
       });
     });
+    parts.push(stepMsg);
   }
 
-  // Module 3
-  message += `\n<b>⚠️ 3. STOCK OUT NOTE - NOT CONFIRMED│ ${m3Items.length === 0 ? '✅' : '📋'}</b>\n`;
+  // STEP 3 Section (Handover Not Confirmed)
   if (m3Items.length > 0) {
-    // Group by Unit confirm handover
-    const m3Groups = {};
-    m3Items.forEach(item => {
-      const key = cleanWarehouseName(item.unitConfirm || '-');
-      if (!m3Groups[key]) {
-        m3Groups[key] = [];
-      }
-      m3Groups[key].push(item);
-    });
-
-    Object.entries(m3Groups).forEach(([unitConfirm, items]) => {
-      message += `[SPLIT]🏢 Confirm Unit: ${escapeHtml(unitConfirm)}\n`;
-      items.forEach((item, index) => {
-        message += `  ${index + 1}. <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d)\n`;
+    const m3Groups = groupByTeam(m3Items, item => item.team || item.unitConfirm);
+    const m3Teams = Object.keys(m3Groups).sort((a, b) => a.localeCompare(b));
+    let stepMsg = `🔺 <b>STEP 3</b>\n`;
+    m3Teams.forEach(team => {
+      stepMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
+      m3Groups[team].forEach(item => {
+        const days = parseInt(item.daysDiff) || 0;
+        stepMsg += ` • <code>${escapeHtml(item.code)}(${days}d)</code>\n`;
       });
     });
+    parts.push(stepMsg);
   }
 
-  message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  let message = parts.join('[SPLIT]\n');
+  message += `\n📊 <b>ចំនួនសរុប៖</b> ${totalPending} Items\n`;
+
   if (customNote && customNote.trim()) {
-    message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━━\n📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n`;
   }
-  message += `<i>📊 Report generated from Confirmed Hand Over Dashboard</i>`;
 
-  return message;
+  return message.trim();
 };
 
 // ============================================================
@@ -573,92 +680,117 @@ const formatRestockMessage = (unit, data, customNote = '') => {
   return message;
 };
 
+export const getTeamFromWarehouse = (warehouse) => {
+  if (!warehouse || warehouse === '-') return '-';
+  const upper = String(warehouse).trim().toUpperCase();
+
+  let province = '';
+  const gisMatch = upper.match(/^GIS_([A-Z0-9]+)_/);
+  if (gisMatch) {
+    province = gisMatch[1];
+  } else {
+    const directMatch = upper.match(/^([A-Z0-9]+)_/);
+    if (directMatch) province = directMatch[1];
+  }
+  if (!province) province = 'UNK';
+
+  if (upper.includes('PLANNING') || upper.includes('_PLA')) {
+    return `GIS_${province}_PLA_PLANNING DEPT`;
+  }
+
+  const fbcMatch = upper.match(/FBC[^\d]*(\d+)/i);
+  if (fbcMatch) {
+    const num = String(parseInt(fbcMatch[1], 10)).padStart(2, '0');
+    if (upper.includes('FBCTEAM') || upper.includes('FB_TEAM')) {
+      return `GIS_${province}_FBCTEAM${num}`;
+    }
+    return `GIS_${province}_FBC_TEAM${num}`;
+  }
+
+  const sosMatch = upper.match(/SOS[^\d]*(\d+)/i);
+  if (sosMatch) {
+    const num = String(parseInt(sosMatch[1], 10)).padStart(2, '0');
+    return `GIS_${province}_SOS_TEAM${num}`;
+  }
+
+  const clean = upper.replace(/_TEAM(\d+)/i, '$1').replace(/TEAM(\d+)/i, '$1');
+  return clean;
+};
+
 // ============================================================
 // 📌 FORMAT CA MESSAGE (Export CA + Import CA)
 // ============================================================
 
 const formatCAMessage = (unit, data, customNote = '') => {
-  const now = new Date();
-  const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  const date = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
   let unitData = data;
   if (data && data.units && data.units[unit]) {
     unitData = data.units[unit];
   } else if (!data || data.totalTarget === undefined) {
-    return `⚠️ No data available for ${unit}. Please sync data first.`;
+    return `⚠️ No CA data available for ${unit}. Please sync data first.`;
   }
-
-  const targetMorning = unitData.targetMorning || 0;
-  const targetEvening = unitData.targetEvening || 0;
-  const remain = unitData.remain || 0;
-  const result = unitData.result || 0;
-  const ratio = unitData.ratio || 0;
-  const inSystem = unitData.inSystem || 0;
 
   const unsignedOutItems = unitData.unsignedOutItems || [];
   const unsignedInItems = unitData.unsignedInItems || [];
+  const totalItems = unsignedOutItems.length + unsignedInItems.length;
 
-  let message = `📊 <b>TASK ASSET REPORT</b>\n`;
-  message += `📍 <b>BRANCH</b> : ${unit}\n`;
-  message += `Time: ${time} | Date: ${date}\n`;
-  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  if (totalItems === 0) {
+    return `✅ <b>No unsigned CA items for all teams!</b>`;
+  }
 
-  message += `📈 <b>📋 KPI SUMMARY (CA)</b>\n`;
-  message += `<code>`;
-  message += `🌅 Target ព្រឹក  : ${String(targetMorning).padEnd(6)} | 🌙 Target ល្ងាច : ${targetEvening}\n`;
-  message += `✅ Result       : ${String(result).padEnd(6)} | 📋 Remain      : ${remain}\n`;
-  message += `📊 Ratio       : ${String((typeof ratio === 'number' ? ratio.toFixed(1) : ratio) + '%').padEnd(6)} | 📦 In System   : ${inSystem}\n`;
-  message += `</code>`;
-  message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  let parts = [];
 
   // Export CA
-  message += `📤 <b>EXPORT CA ${unsignedOutItems.length === 0 ? '✅' : '📋'}</b>\n`;
   if (unsignedOutItems.length > 0) {
     const outGroups = {};
     unsignedOutItems.forEach(item => {
-      const u = cleanWarehouseName(item.unitEntering || '-');
-      if (!outGroups[u]) {
-        outGroups[u] = [];
+      const rawTeam = item.team || getTeamFromWarehouse(item.unitEntering || item.exportWarehouse || '-');
+      const team = getTeamFromRecipient(rawTeam);
+      if (!outGroups[team]) {
+        outGroups[team] = [];
       }
-      outGroups[u].push(item);
+      outGroups[team].push(item);
     });
 
-    Object.entries(outGroups).forEach(([unitEntering, items]) => {
-      const statusText = items[0]?.statusCA ? ` (${items[0].statusCA} ⚠️)` : '';
-      message += `[SPLIT]🔸 Unit: ${escapeHtml(unitEntering)}${statusText}\n`;
-      items.forEach((item, index) => {
-        message += `  ${index + 1}. Code: <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d)\n`;
+    const outTeams = Object.keys(outGroups).sort((a, b) => a.localeCompare(b));
+    let exportMsg = `📤 <b>EXPORT CA</b>\n`;
+    outTeams.forEach(team => {
+      exportMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
+      outGroups[team].forEach(item => {
+        const days = parseInt(item.daysDiff) || 0;
+        exportMsg += ` • <code>${escapeHtml(item.code || '-')}(${days}d)</code>\n`;
       });
     });
+    parts.push(exportMsg);
   }
 
   // Import CA
-  message += `\n📥 <b>IMPORT CA ${unsignedInItems.length === 0 ? '✅' : '📋'}</b>\n`;
   if (unsignedInItems.length > 0) {
     const inGroups = {};
     unsignedInItems.forEach(item => {
-      const w = cleanWarehouseName(item.warehouse || '-');
-      if (!inGroups[w]) {
-        inGroups[w] = [];
+      const rawTeam = item.team || getTeamFromWarehouse(item.warehouse || '-');
+      const team = getTeamFromRecipient(rawTeam);
+      if (!inGroups[team]) {
+        inGroups[team] = [];
       }
-      inGroups[w].push(item);
+      inGroups[team].push(item);
     });
 
-    Object.entries(inGroups).forEach(([warehouse, items]) => {
-      const statusText = items[0]?.statusCA ? ` (${items[0].statusCA} ⚠️)` : '';
-      message += `[SPLIT]🔸 Unit: ${escapeHtml(warehouse)}${statusText}\n`;
-      items.forEach((item, index) => {
-        message += `  ${index + 1}. Code: <code>${escapeHtml(item.code || '-')}</code> (${item.daysDiff || 0}d)\n`;
+    const inTeams = Object.keys(inGroups).sort((a, b) => a.localeCompare(b));
+    let importMsg = `📥 <b>IMPORT CA</b>\n`;
+    inTeams.forEach(team => {
+      importMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
+      inGroups[team].forEach(item => {
+        const days = parseInt(item.daysDiff) || 0;
+        importMsg += ` • <code>${escapeHtml(item.code || '-')}(${days}d)</code>\n`;
       });
     });
+    parts.push(importMsg);
   }
 
-  message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
-  if (customNote && customNote.trim()) {
-    message += `📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  let message = parts.join('\n');
+  if (message) {
+    message += `\n📊 <b>ចំនួនសរុប៖</b> ${totalItems} Items`;
   }
-  message += `<i>📊 Report generated from Dashboard CA</i>`;
 
   return message;
 };
@@ -821,6 +953,23 @@ const sendMessageToTelegram = async (unit, message, signal = null) => {
 // ============================================================
 
 export const sendToTelegram = async (unit, data, customNote = '', signal = null) => {
+  let unitData = data;
+  if (data && data.units && data.units[unit]) {
+    unitData = data.units[unit];
+  }
+  const m1Items = unitData?.m1Items || [];
+  const m2Items = unitData?.m2Items || [];
+  const m3Items = unitData?.m3Items || [];
+  const totalPending = m1Items.length + m2Items.length + m3Items.length;
+
+  if (totalPending === 0) {
+    return {
+      success: true,
+      skipped: true,
+      error: `No pending items for ${unit}`
+    };
+  }
+
   const message = formatStockoutMessage(unit, data, customNote);
   return await sendMessageToTelegram(unit, message, signal);
 };
@@ -876,7 +1025,17 @@ export const sendToAllTelegram = async (data, onProgress, customNote = '', signa
       completedCount++;
       results.push({ unit, ...result });
 
-      if (result.success) {
+      if (result.skipped) {
+        if (onProgress) {
+          onProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'skipped',
+            message: `Skipped ${unit} (No data)`
+          });
+        }
+      } else if (result.success) {
         successCount++;
         if (onProgress) {
           onProgress({
@@ -927,16 +1086,33 @@ export const sendToAllTelegram = async (data, onProgress, customNote = '', signa
       success: successCount,
       failed: failCount,
       duration: results.reduce((sum, r) => sum + (r.duration || 0), 0),
-      details: results.map(r => `${r.unit}: ${r.success ? '✅' : '❌'} ${r.error || ''}`)
+      details: results.map(r => `${r.unit}: ${r.skipped ? '⏭️ Skipped (0 items)' : (r.success ? '✅' : '❌')} ${r.error || ''}`)
     }
   };
 };
 
 // ============================================================
+// ============================================================
 // 📌 EXPORT: RESTOCK FUNCTIONS - SEQUENTIAL
 // ============================================================
 
 export const sendRestockToTelegram = async (unit, data, customNote = '', signal = null) => {
+  let unitData = data;
+  if (data && data.units && data.units[unit]) {
+    unitData = data.units[unit];
+  }
+  const unsignedInItems = unitData?.unsignedInItems || [];
+  const unsignedOutItems = unitData?.unsignedOutItems || [];
+  const totalItems = unsignedInItems.length + unsignedOutItems.length;
+
+  if (totalItems === 0) {
+    return {
+      success: true,
+      skipped: true,
+      error: `No pending items for ${unit}`
+    };
+  }
+
   const message = formatRestockMessage(unit, data, customNote);
   return await sendMessageToTelegram(unit, message, signal);
 };
@@ -988,7 +1164,17 @@ export const sendToAllRestockTelegram = async (data, onProgress, customNote = ''
       completedCount++;
       results.push({ unit, ...result });
 
-      if (result.success) {
+      if (result.skipped) {
+        if (onProgress) {
+          onProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'skipped',
+            message: `Skipped ${unit} (No data)`
+          });
+        }
+      } else if (result.success) {
         successCount++;
         if (onProgress) {
           onProgress({
@@ -1038,7 +1224,7 @@ export const sendToAllRestockTelegram = async (data, onProgress, customNote = ''
       success: successCount,
       failed: failCount,
       duration: results.reduce((sum, r) => sum + (r.duration || 0), 0),
-      details: results.map(r => `${r.unit}: ${r.success ? '✅' : '❌'} ${r.error || ''}`)
+      details: results.map(r => `${r.unit}: ${r.skipped ? '⏭️ Skipped (0 items)' : (r.success ? '✅' : '❌')} ${r.error || ''}`)
     }
   };
 };
@@ -1048,6 +1234,22 @@ export const sendToAllRestockTelegram = async (data, onProgress, customNote = ''
 // ============================================================
 
 export const sendCAToTelegram = async (unit, data, customNote = '', signal = null) => {
+  let unitData = data;
+  if (data && data.units && data.units[unit]) {
+    unitData = data.units[unit];
+  }
+  const unsignedInItems = unitData?.unsignedInItems || [];
+  const unsignedOutItems = unitData?.unsignedOutItems || [];
+  const totalItems = unsignedInItems.length + unsignedOutItems.length;
+
+  if (totalItems === 0) {
+    return {
+      success: true,
+      skipped: true,
+      error: `No pending items for ${unit}`
+    };
+  }
+
   const message = formatCAMessage(unit, data, customNote);
   return await sendMessageToTelegram(unit, message, signal);
 };
@@ -1099,7 +1301,17 @@ export const sendToAllCATelegram = async (data, onProgress, customNote = '', sig
       completedCount++;
       results.push({ unit, ...result });
 
-      if (result.success) {
+      if (result.skipped) {
+        if (onProgress) {
+          onProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'skipped',
+            message: `Skipped ${unit} (No data)`
+          });
+        }
+      } else if (result.success) {
         successCount++;
         if (onProgress) {
           onProgress({
@@ -1149,7 +1361,7 @@ export const sendToAllCATelegram = async (data, onProgress, customNote = '', sig
       success: successCount,
       failed: failCount,
       duration: results.reduce((sum, r) => sum + (r.duration || 0), 0),
-      details: results.map(r => `${r.unit}: ${r.success ? '✅' : '❌'} ${r.error || ''}`)
+      details: results.map(r => `${r.unit}: ${r.skipped ? '⏭️ Skipped (0 items)' : (r.success ? '✅' : '❌')} ${r.error || ''}`)
     }
   };
 };
@@ -1305,4 +1517,300 @@ export const sendPhotoToTelegram = async (unit, photoBlob, caption = '', signal 
     console.error(`❌ Error sending photo to ${unit}:`, error);
     return { success: false, error: error.message, duration };
   }
+};
+
+// ============================================================
+// 📌 SEND DOCUMENT (EXCEL FILE) TO TELEGRAM
+// ============================================================
+
+export const sendDocumentToTelegram = async (unit, documentBlob, filename = 'report.xlsx', caption = '', signal = null) => {
+  const startTime = Date.now();
+  try {
+    const groupId = GROUP_IDS[unit];
+    if (!groupId || groupId === '') {
+      return { 
+        success: false, 
+        error: `No group ID configured for ${unit}`,
+        duration: Date.now() - startTime
+      };
+    }
+
+    const token = getBotToken(unit);
+    const directUrl = `https://api.telegram.org/bot${token}/sendDocument`;
+    
+    const formData = new FormData();
+    formData.append('chat_id', groupId);
+    formData.append('document', documentBlob, filename);
+    if (caption) {
+      formData.append('caption', caption);
+      formData.append('parse_mode', 'HTML');
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    const directResponse = await fetch(directUrl, {
+      method: 'POST',
+      body: formData,
+      signal: signal || controller.signal
+    });
+
+    const directResult = await directResponse.json();
+    const duration = Date.now() - startTime;
+    clearTimeout(timeoutId);
+
+    if (directResult.ok) {
+      console.log(`✅ Sent document directly to ${unit} (${duration}ms)`);
+      return { success: true, result: directResult, duration };
+    } else {
+      console.error(`❌ Failed to send document to ${unit}: ${directResult.description}`);
+      return { success: false, error: directResult.description, duration };
+    }
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error(`❌ Error sending document to ${unit}:`, error);
+    return { success: false, error: error.message, duration };
+  }
+};
+
+// ============================================================
+// 📌 GENERATE MULTI-SHEET EXCEL BLOB FOR RESTOCK IN/OUT
+// ============================================================
+
+export const generateRestockExcelBlob = (unsignedOutItems = [], unsignedInItems = [], unit = '') => {
+  const wb = XLSX.utils.book_new();
+
+  const getAutoFitCols = (rows) => {
+    if (!rows || rows.length === 0) return [];
+    const keys = Object.keys(rows[0]);
+    return keys.map(key => {
+      let maxLen = key.length;
+      rows.forEach(row => {
+        const val = row[key] !== undefined && row[key] !== null ? String(row[key]) : '';
+        if (val.length > maxLen) maxLen = val.length;
+      });
+      return { wch: Math.max(maxLen + 4, 15) };
+    });
+  };
+
+  // Sheet 1: RESTOCK OUT (EXPORT REQUEST)
+  const outRows = unsignedOutItems.map((item, idx) => ({
+    "Nº": idx + 1,
+    "Request export code": item.code || item.requestExportCode || '-',
+    "Command export code": item.commandExportCode || item.commandCode || '-',
+    "Note export code": item.noteExportCode || item.noteCode || '-',
+    "Group request": cleanWarehouseName(item.groupRequest || '-'),
+    "Create date": item.createDate || item.createdDate || item.date || '-',
+    "Stock out": cleanWarehouseName(item.stockOut || item.exportWarehouse || '-'),
+    "Stock receive": cleanWarehouseName(item.stockReceive || item.warehouse || '-'),
+    "Receiving Unit": cleanWarehouseName(item.receivingUnit || item.unitReceive || item.unitEntering || '-'),
+    "Creator": item.creator || '-',
+    "Status": item.status || '-',
+    "Status CA": item.statusCA || 'Unsigned',
+    "Unit": item.unit || unit || '-',
+    "Q'ty of day": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "Year": item.year || (item.createDate ? item.createDate.split('/')[2] : '-')
+  }));
+
+  const wsOut = XLSX.utils.json_to_sheet(outRows.length > 0 ? outRows : [
+    { "Nº": "-", "Request export code": "No pending items" }
+  ]);
+  wsOut['!cols'] = getAutoFitCols(outRows.length > 0 ? outRows : [{ "Nº": "-", "Request export code": "No pending items" }]);
+  XLSX.utils.book_append_sheet(wb, wsOut, "RESTOCK OUT (EXPORT REQUEST)");
+
+  // Sheet 2: RESTOCK IN (IMPORT REQUEST)
+  const inRows = unsignedInItems.map((item, idx) => ({
+    "Nº": idx + 1,
+    "Import Request code": item.code || item.importRequestCode || '-',
+    "Import Command code": item.importCommandCode || item.commandCode || '-',
+    "Date Create": item.dateCreate || item.createdDate || item.date || '-',
+    "Import warehouse": cleanWarehouseName(item.importWarehouse || item.warehouse || '-'),
+    "Contract": item.contract || '-',
+    "Creator": item.creator || '-',
+    "Unit Requests": cleanWarehouseName(item.unitRequests || '-'),
+    "Unit Receive": cleanWarehouseName(item.unitReceive || item.receivingUnit || '-'),
+    "Date Delivery": item.dateDelivery || item.deliveryDate || '-',
+    "Status CA": item.statusCA || 'Unsigned',
+    "Unit": item.unit || unit || '-',
+    "Q'ty of day": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "Year": item.year || (item.createDate ? item.createDate.split('/')[2] : '-')
+  }));
+
+  const wsIn = XLSX.utils.json_to_sheet(inRows.length > 0 ? inRows : [
+    { "Nº": "-", "Import Request code": "No pending items" }
+  ]);
+  wsIn['!cols'] = getAutoFitCols(inRows.length > 0 ? inRows : [{ "Nº": "-", "Import Request code": "No pending items" }]);
+  XLSX.utils.book_append_sheet(wb, wsIn, "RESTOCK IN (IMPORT REQUEST)");
+
+  // Generate binary OpenXML .xlsx array buffer with maximum ZIP compression (ultra small KB)
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
+  return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+};
+
+// ============================================================
+// 📌 GENERATE STOCKOUT EXCEL BLOB (3 SHEETS, DEF-COMPRESSED)
+// ============================================================
+
+export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = [], unit = 'ALL') => {
+  const wb = XLSX.utils.book_new();
+
+  const getAutoFitCols = (jsonArray) => {
+    if (!jsonArray || jsonArray.length === 0) return [];
+    const keys = Object.keys(jsonArray[0]);
+    return keys.map(key => {
+      let maxLen = key.toString().length;
+      jsonArray.forEach(row => {
+        const val = row[key];
+        if (val !== null && val !== undefined) {
+          const len = val.toString().length;
+          if (len > maxLen) maxLen = len;
+        }
+      });
+      return { wch: Math.min(Math.max(maxLen + 3, 10), 50) };
+    });
+  };
+
+  // Sheet 1: STOCKOUT YET
+  const sheet1Rows = m1Items.map((item, idx) => ({
+    "#": idx + 1,
+    "Warehouse Stock out": cleanWarehouseName(item.warehouse || item.stockOut || '-'),
+    "Export No": item.exportNo || item.code || item.exportCode || '-',
+    "Date": item.realExport || item.date || item.dateCreate || item.createdDate || '-',
+    "Stock Receiver": cleanWarehouseName(item.stockReceiver || item.receivingUnit || '-'),
+    "Group Receiver": cleanWarehouseName(item.groupReceiver || item.groupRequest || '-'),
+    "Construction": item.constructionReceiver || item.construction || '-',
+    "Unit": item.unit || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "TEAM": cleanWarehouseName(item.team || item.groupReceiver || item.stockReceiver || '-')
+  }));
+
+  const ws1 = XLSX.utils.json_to_sheet(sheet1Rows.length > 0 ? sheet1Rows : [
+    { "#": "-", "Export No": "No pending items" }
+  ]);
+  ws1['!cols'] = getAutoFitCols(sheet1Rows.length > 0 ? sheet1Rows : [{ "#": "-", "Export No": "No pending items" }]);
+  XLSX.utils.book_append_sheet(wb, ws1, "STOCKOUT YET");
+
+  // Sheet 2: STOCKOUT NOTE CONFIRMED
+  const sheet2Rows = m2Items.map((item, idx) => ({
+    "#": idx + 1,
+    "Code of stock-out note": item.code || item.noteCode || '-',
+    "Warehouse": cleanWarehouseName(item.warehouse || item.stockOut || '-'),
+    "Recipient": cleanWarehouseName(item.recipient || item.receivingUnit || '-'),
+    "Creator": item.creator || '-',
+    "Creating date": item.date || item.createDate || item.dateCreate || '-',
+    "TEAM": cleanWarehouseName(item.team || item.recipient || item.warehouse || '-'),
+    "Unit": item.unit || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "Status": item.status || 'Pending'
+  }));
+
+  const ws2 = XLSX.utils.json_to_sheet(sheet2Rows.length > 0 ? sheet2Rows : [
+    { "#": "-", "Code of stock-out note": "No pending items" }
+  ]);
+  ws2['!cols'] = getAutoFitCols(sheet2Rows.length > 0 ? sheet2Rows : [{ "#": "-", "Code of stock-out note": "No pending items" }]);
+  XLSX.utils.book_append_sheet(wb, ws2, "STOCKOUT NOTE CONFIRMED");
+
+  // Sheet 3: NO CREATE HAND OVER
+  const sheet3Rows = m3Items.map((item, idx) => ({
+    "#": idx + 1,
+    "Code of handover minutes": item.code || item.handoverCode || '-',
+    "Type of handover": item.type || item.handoverType || '-',
+    "Handover unit": cleanWarehouseName(item.handoverUnit || item.warehouse || '-'),
+    "Unit confirm handover": cleanWarehouseName(item.confirmUnit || item.receivingUnit || '-'),
+    "Handover date": item.date || item.handoverDate || '-',
+    "Status": item.status || 'Pending',
+    "TEAM": cleanWarehouseName(item.team || item.confirmUnit || item.handoverUnit || '-'),
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "UNIT": item.unit || unit || '-'
+  }));
+
+  const ws3 = XLSX.utils.json_to_sheet(sheet3Rows.length > 0 ? sheet3Rows : [
+    { "#": "-", "Code of handover minutes": "No pending items" }
+  ]);
+  ws3['!cols'] = getAutoFitCols(sheet3Rows.length > 0 ? sheet3Rows : [{ "#": "-", "Code of handover minutes": "No pending items" }]);
+  XLSX.utils.book_append_sheet(wb, ws3, "NO CREATE HAND OVER");
+
+  // Binary OpenXML .xlsx with maximum ZIP compression (ultra small KB)
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
+  return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+};
+
+// ============================================================
+// 📌 GENERATE SIGNED CA EXCEL BLOB (2 SHEETS, DEF-COMPRESSED)
+// ============================================================
+
+export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], unit = 'ALL') => {
+  const wb = XLSX.utils.book_new();
+
+  const getAutoFitCols = (jsonArray) => {
+    if (!jsonArray || jsonArray.length === 0) return [];
+    const keys = Object.keys(jsonArray[0]);
+    return keys.map(key => {
+      let maxLen = key.toString().length;
+      jsonArray.forEach(row => {
+        const val = row[key];
+        if (val !== null && val !== undefined) {
+          const len = val.toString().length;
+          if (len > maxLen) maxLen = len;
+        }
+      });
+      return { wch: Math.min(Math.max(maxLen + 3, 10), 50) };
+    });
+  };
+
+  // Sheet 1: SIGNED CA EXPORT
+  const exportRows = exportItems.map((item, idx) => ({
+    "#": idx + 1,
+    "Export Note Code": item.exportNoteCode || item.code || item.noteCode || '-',
+    "Export Command Code": item.exportCommandCode || item.commandCode || '-',
+    "Export Request": item.exportRequest || item.requestCode || '-',
+    "Requester": item.requester || item.creator || '-',
+    "Date Create": item.dateCreate || item.createdDate || item.date || '-',
+    "Date Export": item.dateExport || item.exportDate || '-',
+    "Export Warehouse": cleanWarehouseName(item.exportWarehouse || item.warehouse || '-'),
+    "Reason": item.reason || '-',
+    "Warehouse Entering": cleanWarehouseName(item.warehouseEntering || item.enteringWarehouse || '-'),
+    "Unit Entering": cleanWarehouseName(item.unitEntering || item.enteringUnit || '-'),
+    "Construction Code": item.constructionCode || item.construction || '-',
+    "Status": item.status || '-',
+    "Disapprove": item.disapprove || item.disapproveReason || '-',
+    "Status CA": item.statusCA || item.caStatus || 'Unsigned',
+    "Description": item.description || item.note || '-',
+    "Unit": item.unit || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "TEAM": cleanWarehouseName(item.team || item.requester || item.exportWarehouse || '-'),
+    "Year": item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : (item.date ? item.date.split('/')[2] : '-'))
+  }));
+
+  const wsExport = XLSX.utils.json_to_sheet(exportRows.length > 0 ? exportRows : [
+    { "#": "-", "Export Note Code": "No pending items" }
+  ]);
+  wsExport['!cols'] = getAutoFitCols(exportRows.length > 0 ? exportRows : [{ "#": "-", "Export Note Code": "No pending items" }]);
+  XLSX.utils.book_append_sheet(wb, wsExport, "SIGNED CA EXPORT");
+
+  // Sheet 2: SIGNED CA IMPORT
+  const importRows = importItems.map((item, idx) => ({
+    "#": idx + 1,
+    "Receipt Code": item.receiptCode || item.code || item.importCode || '-',
+    "Command Code": item.commandCode || item.importCommandCode || '-',
+    "Date": item.date || item.dateCreate || item.createdDate || '-',
+    "Warehouse": cleanWarehouseName(item.warehouse || item.importWarehouse || '-'),
+    "Creator": item.creator || item.requester || '-',
+    "Status": item.status || '-',
+    "Status CA": item.statusCA || item.caStatus || 'Unsigned',
+    "Unit": item.unit || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "TEAM": cleanWarehouseName(item.team || item.creator || item.warehouse || '-'),
+    "Year": item.year || (item.date ? item.date.split('/')[2] : '-')
+  }));
+
+  const wsImport = XLSX.utils.json_to_sheet(importRows.length > 0 ? importRows : [
+    { "#": "-", "Receipt Code": "No pending items" }
+  ]);
+  wsImport['!cols'] = getAutoFitCols(importRows.length > 0 ? importRows : [{ "#": "-", "Receipt Code": "No pending items" }]);
+  XLSX.utils.book_append_sheet(wb, wsImport, "SIGNED CA IMPORT");
+
+  // Generate binary OpenXML .xlsx array buffer with maximum ZIP compression (ultra small KB)
+  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
+  return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };

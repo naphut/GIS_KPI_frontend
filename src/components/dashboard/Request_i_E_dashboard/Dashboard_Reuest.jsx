@@ -11,6 +11,8 @@ import {
   saveTemplate,
   deleteTemplate,
   sendPhotoToTelegram,
+  sendDocumentToTelegram,
+  generateRestockExcelBlob,
   cleanWarehouseName
 } from '../../../services/telegramBot';
 import { loadFromDb, saveToDb, completeStore } from '../../../services/dbStore';
@@ -43,8 +45,15 @@ const VALID_UNITS = [
 
 const getUnitFromRequestCode = (importRequestCode) => {
   if (!importRequestCode) return null;
-  if (importRequestCode.startsWith('YCNKGIS_')) {
-    const parts = importRequestCode.split('_');
+  const str = String(importRequestCode).toUpperCase();
+
+  // Priority check: Match PNPZ1, PNPZ2, KANZ1 BEFORE generic PNP or KAN!
+  if (str.includes('PNPZ1') || str.includes('PNP_Z1') || str.includes('PNP-Z1')) return 'PNPZ1';
+  if (str.includes('PNPZ2') || str.includes('PNP_Z2') || str.includes('PNP-Z2')) return 'PNPZ2';
+  if (str.includes('KANZ1') || str.includes('KAN_Z1') || str.includes('KAN-Z1')) return 'KANZ1';
+
+  if (str.startsWith('YCNKGIS_')) {
+    const parts = str.split('_');
     if (parts.length >= 2) {
       const unitCode = parts[1];
       if (VALID_UNITS.includes(unitCode)) return unitCode;
@@ -52,6 +61,19 @@ const getUnitFromRequestCode = (importRequestCode) => {
       if (unitCode === 'PNPZ') return 'PNPZ1';
     }
   }
+
+  const UNITS_ORDER = [
+    'PNPZ1', 'PNPZ2', 'KANZ1',
+    'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KOH', 'KRA',
+    'MON', 'ODD', 'PNP', 'PRE', 'PRH', 'PUR', 'ROT',
+    'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
+  ];
+
+  for (const u of UNITS_ORDER) {
+    const regex = new RegExp(`(?:^|[^A-Z0-9])${u}(?:[^A-Z0-9]|$)`, 'i');
+    if (regex.test(str)) return u;
+  }
+
   return null;
 };
 
@@ -172,6 +194,10 @@ const Dashboard_Request = () => {
   const [sendResults, setSendResults] = useState(null);
   const [screenshotUnit, setScreenshotUnit] = useState(null);
   const [screenshotMode, setScreenshotMode] = useState(false);
+  const [summaryImageMode, setSummaryImageMode] = useState(false);
+  const [isSelectingForSummary, setIsSelectingForSummary] = useState(false);
+  const [openBatchDropdown, setOpenBatchDropdown] = useState(false);
+  const [openSingleDropdown, setOpenSingleDropdown] = useState(false);
 
   // Restock KPI Targets State
   const [restockTargets, setRestockTargets] = useState(() => {
@@ -468,6 +494,7 @@ const Dashboard_Request = () => {
     return 'text-rose-600 font-bold';
   };
 
+  // eslint-disable-next-line no-unused-vars
   const exportToExcel = () => {
     const exportData = filteredData.map(item => ({
       'Unit': item.unit || '-',
@@ -599,7 +626,8 @@ const Dashboard_Request = () => {
           return u === unit && !confirmedStatus[item.id];
         })
         .map(item => ({
-          code: item.importRequestCode || '',
+          ...item,
+          code: item.importRequestCode || item.code || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate),
           unitRequests: item.unitRequests || '-',
           creator: item.creator || '-'
@@ -611,7 +639,8 @@ const Dashboard_Request = () => {
           return u === unit && !restockOutConfirmed[item.id];
         })
         .map(item => ({
-          code: item.requestExportCode || '',
+          ...item,
+          code: item.requestExportCode || item.code || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.createDate),
           groupRequest: item.groupRequest || '-',
           creator: item.creator || '-'
@@ -735,6 +764,14 @@ const Dashboard_Request = () => {
       alert(`⚠️ No group ID configured for ${unit}. Please add it first.`);
       return;
     }
+
+    const reportData = getReportData();
+    const unitData = reportData?.units?.[unit];
+    const totalItems = (unitData?.unsignedOutItems?.length || 0) + (unitData?.unsignedInItems?.length || 0);
+    if (totalItems === 0) {
+      alert(`ℹ️ No pending items to send for ${unit}. (គ្មានទិន្នន័យត្រូវផ្ញើទេ)`);
+      return;
+    }
     
     setIsSending(true);
     setShowProgressModal(true);
@@ -752,7 +789,20 @@ const Dashboard_Request = () => {
       const data = getReportData();
       const result = await sendRestockToTelegram(unit, data, customNote, abortControllerRef.current.signal);
       
-      if (result && result.success) {
+      if (result && result.skipped) {
+        setSendProgress({
+          current: 1,
+          total: 1,
+          unit: unit,
+          status: 'skipped'
+        });
+        setSendResults({
+          total: 1,
+          success: 0,
+          failed: 0
+        });
+        alert(`ℹ️ No pending items to send for ${unit}. (គ្មានទិន្នន័យត្រូវផ្ញើទេ)`);
+      } else if (result && result.success) {
         completeStore(STORAGE_KEYS.DATA);
         completeStore('restock_out_data');
         setSendProgress({
@@ -809,6 +859,14 @@ const Dashboard_Request = () => {
       alert(`⚠️ No group ID configured for ${unit}. Please add it first.`);
       return;
     }
+
+    const reportData = getReportData();
+    const unitData = reportData?.units?.[unit];
+    const totalItems = (unitData?.unsignedOutItems?.length || 0) + (unitData?.unsignedInItems?.length || 0);
+    if (totalItems === 0) {
+      alert(`ℹ️ No pending items to send for ${unit}. (គ្មានទិន្នន័យត្រូវផ្ញើទេ)`);
+      return;
+    }
     
     setIsSending(true);
     setShowProgressModal(true);
@@ -825,7 +883,7 @@ const Dashboard_Request = () => {
     
     try {
       setScreenshotUnit(unit);
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 60));
       
       if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
       
@@ -834,15 +892,10 @@ const Dashboard_Request = () => {
         throw new Error('Screenshot element not found in DOM.');
       }
       
-      const rect = element.getBoundingClientRect();
-      const elHeight = rect.height || 600;
-      let scale = 3.0;
-      if (elHeight > 1800) scale = 2.0;
-      else if (elHeight > 1200) scale = 2.5;
-      
       const canvas = await html2canvas(element, {
-        width: 480,
-        scale: scale,
+        width: 1720,
+        windowWidth: 1720,
+        scale: 2.2,
         useCORS: true,
         logging: false,
         backgroundColor: '#f8fafc',
@@ -865,11 +918,20 @@ const Dashboard_Request = () => {
       if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
       
       const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/jpeg', 0.80);
       });
       
-      const caption = `📊 <b>TASK ASSET REPORT (RESTOCK) - BRANCH: ${unit}</b>`;
+      const caption = '';
       const result = await sendPhotoToTelegram(unit, blob, caption, signal);
+
+      // Also generate and send Excel document (.xlsx) with 2 sheets
+      try {
+        const excelBlob = generateRestockExcelBlob(unitData?.unsignedOutItems || [], unitData?.unsignedInItems || [], unit);
+        const filename = `RESTOCK_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
+      } catch (excelErr) {
+        console.error('Error sending Excel file:', excelErr);
+      }
       
       if (result && result.success) {
         completeStore(STORAGE_KEYS.DATA);
@@ -944,11 +1006,26 @@ const Dashboard_Request = () => {
     const results = [];
     
     try {
+      const reportData = getReportData();
       for (const unit of units) {
         if (signal.aborted) {
           results.push({ unit, success: false, error: 'Cancelled', aborted: true });
           failCount++;
           completedCount++;
+          continue;
+        }
+
+        const unitData = reportData?.units?.[unit];
+        const totalItems = (unitData?.unsignedOutItems?.length || 0) + (unitData?.unsignedInItems?.length || 0);
+        if (totalItems === 0) {
+          completedCount++;
+          results.push({ unit, success: true, skipped: true, error: 'No pending items (Skipped)' });
+          setSendProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'skipped'
+          });
           continue;
         }
         
@@ -961,7 +1038,7 @@ const Dashboard_Request = () => {
         
         try {
           setScreenshotUnit(unit);
-          await new Promise(resolve => setTimeout(resolve, 300));
+          await new Promise(resolve => setTimeout(resolve, 60));
           
           if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
           
@@ -970,15 +1047,10 @@ const Dashboard_Request = () => {
             throw new Error('Screenshot element not found in DOM.');
           }
           
-          const rect = element.getBoundingClientRect();
-          const elHeight = rect.height || 600;
-          let scale = 3.0;
-          if (elHeight > 1800) scale = 2.0;
-          else if (elHeight > 1200) scale = 2.5;
-          
           const canvas = await html2canvas(element, {
-            width: 480,
-            scale: scale,
+            width: 1720,
+            windowWidth: 1720,
+            scale: 2.2,
             useCORS: true,
             logging: false,
             backgroundColor: '#f8fafc',
@@ -1001,11 +1073,20 @@ const Dashboard_Request = () => {
           if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
           
           const blob = await new Promise((resolve, reject) => {
-            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/jpeg', 0.80);
           });
           
-          const caption = `📊 <b>TASK ASSET REPORT (RESTOCK) - BRANCH: ${unit}</b>`;
+          const caption = '';
           const sendRes = await sendPhotoToTelegram(unit, blob, caption, signal);
+
+          // Also generate and send Excel document (.xlsx) with 2 sheets
+          try {
+            const excelBlob = generateRestockExcelBlob(unitData?.unsignedOutItems || [], unitData?.unsignedInItems || [], unit);
+            const filename = `RESTOCK_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
+          } catch (excelErr) {
+            console.error('Error sending Excel file:', excelErr);
+          }
           
           completedCount++;
           results.push({ unit, ...sendRes });
@@ -1042,7 +1123,7 @@ const Dashboard_Request = () => {
         }
         
         if (completedCount < units.length && !signal.aborted) {
-          await new Promise(resolve => setTimeout(resolve, 600));
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
       
@@ -1067,6 +1148,482 @@ const Dashboard_Request = () => {
     }
   };
 
+  // Send Summary Image screenshot for a single unit
+  const sendSummaryImageScreenshot = async (unit, signal = null) => {
+    if (isSending) return;
+    
+    if (!hasGroupId(unit)) {
+      alert(`⚠️ No group ID configured for ${unit}. Please add it first.`);
+      return;
+    }
+
+    const reportData = getReportData();
+    const uData = reportData?.units?.[unit];
+    const totalPendingItems = (uData?.unsignedOutItems?.length || 0) + (uData?.unsignedInItems?.length || 0);
+    if (totalPendingItems === 0) {
+      alert(`ℹ️ សាខា ${unit} គ្មានទិន្នន័យត្រូវផ្ញើទេ (រំលងចោល)`);
+      return;
+    }
+
+    setIsSending(true);
+    setShowProgressModal(true);
+    setSendProgress({
+      current: 1,
+      total: 1,
+      unit: unit,
+      status: 'sending'
+    });
+    setSendResults(null);
+
+    if (!signal) {
+      abortControllerRef.current = new AbortController();
+    }
+    const activeSignal = signal || abortControllerRef.current.signal;
+
+    try {
+      setSummaryImageMode(true);
+      setScreenshotUnit(unit);
+      await new Promise(resolve => setTimeout(resolve, 60));
+
+      if (activeSignal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+      const element = document.getElementById('telegram-summary-report');
+      if (!element) throw new Error('Summary element not found in DOM.');
+
+      const canvas = await html2canvas(element, {
+        width: 1600,
+        windowWidth: 1600,
+        scale: 2.0,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      if (activeSignal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+      const blob = await new Promise((resolve, reject) => {
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/jpeg', 0.80);
+      });
+
+      const caption = '';
+      const result = await sendPhotoToTelegram(unit, blob, caption, activeSignal);
+
+      if (result && result.success) {
+        setSendProgress({ current: 1, total: 1, unit, status: 'success' });
+        setSendResults({ total: 1, success: 1, failed: 0 });
+      } else {
+        setSendProgress({ current: 1, total: 1, unit, status: 'failed', error: result?.error || 'Unknown error' });
+        setSendResults({ total: 1, success: 0, failed: 1 });
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Summary image single send cancelled.');
+      } else {
+        console.error('Error sending summary image:', error);
+        setSendProgress({ current: 1, total: 1, unit, status: 'failed', error: error.message });
+        setSendResults({ total: 1, success: 0, failed: 1 });
+      }
+    } finally {
+      setSummaryImageMode(false);
+      setIsSending(false);
+      setShowUnitSelector(false);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
+    }
+  };
+
+  // Send Summary Image screenshot to ALL configured units
+  const sendSummaryImageScreenshotAll = async () => {
+    if (isSending) return;
+    
+    const units = configured;
+    if (units.length === 0) {
+      alert('⚠️ No group IDs configured! Please add group IDs for at least one province.');
+      return;
+    }
+
+    setIsSending(true);
+    setShowProgressModal(true);
+    setSendProgress({ current: 0, total: units.length, unit: '', status: 'sending' });
+    setSendResults(null);
+
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
+    let completedCount = 0;
+    let successCount = 0;
+    let failCount = 0;
+    const results = [];
+
+    try {
+      setSummaryImageMode(true);
+      const reportData = getReportData();
+      for (const unit of units) {
+        if (signal.aborted) break;
+
+        const uData = reportData?.units?.[unit];
+        const totalItems = (uData?.unsignedOutItems?.length || 0) + (uData?.unsignedInItems?.length || 0);
+        if (totalItems === 0) {
+          completedCount++;
+          results.push({ unit, success: true, skipped: true, error: 'No pending items (Skipped)' });
+          setSendProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'skipped'
+          });
+          continue;
+        }
+
+        try {
+          setScreenshotUnit(unit);
+          await new Promise(resolve => setTimeout(resolve, 60));
+
+          if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+          const element = document.getElementById('telegram-summary-report');
+          if (!element) throw new Error('Summary element not found in DOM.');
+
+          const canvas = await html2canvas(element, {
+            width: 1600,
+            windowWidth: 1600,
+            scale: 2.0,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff'
+          });
+
+          if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+          const blob = await new Promise((resolve, reject) => {
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/jpeg', 0.80);
+          });
+
+          const caption = '';
+          const sendRes = await sendPhotoToTelegram(unit, blob, caption, signal);
+
+          completedCount++;
+          results.push({ unit, ...sendRes });
+
+          if (sendRes && sendRes.success) {
+            successCount++;
+            setSendProgress({ current: completedCount, total: units.length, unit, status: 'success' });
+          } else {
+            failCount++;
+            setSendProgress({ current: completedCount, total: units.length, unit, status: 'failed', error: sendRes?.error || 'Unknown error' });
+          }
+        } catch (unitErr) {
+          completedCount++;
+          failCount++;
+          results.push({ unit, success: false, error: unitErr.message });
+          setSendProgress({ current: completedCount, total: units.length, unit, status: 'failed', error: unitErr.message });
+        }
+
+        if (completedCount < units.length && !signal.aborted) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+
+      setSendResults({ total: units.length, success: successCount, failed: failCount });
+    } catch (err) {
+      console.error('Error in send all summary images:', err);
+    } finally {
+      setSummaryImageMode(false);
+      setScreenshotUnit(null);
+      setIsSending(false);
+      if (!abortControllerRef.current?.signal.aborted) {
+        setTimeout(() => setShowProgressModal(false), 3000);
+      }
+    }
+  };
+
+  // Render offscreen Summary Image report for Telegram matching exact Excel table layout (Unit + TEAM)
+  const renderSummaryReport = () => {
+    if (!summaryImageMode || !screenshotUnit) return null;
+
+    const unitsList = ['BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA', 'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT', 'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'];
+
+    const getInTeamName = (item) => {
+      const raw = item.unitRequests || item.unitReceive || item.importWarehouse || item.warehouse || '-';
+      return cleanWarehouseName(raw);
+    };
+
+    const getOutTeamName = (item) => {
+      const raw = item.groupRequest || item.receivingUnit || item.stockOut || item.stockReceive || item.warehouse || '-';
+      return cleanWarehouseName(raw);
+    };
+
+    const unitsToProcess = (screenshotUnit && screenshotUnit !== 'ALL' && unitsList.includes(screenshotUnit))
+      ? [screenshotUnit]
+      : unitsList;
+
+    const teamRows = [];
+
+    unitsToProcess.forEach(u => {
+      // Extract all live database items for target unit u
+      const allInForUnit = data.filter(item => {
+        const unit = item.unit || getUnitFromRequestCode(item.importRequestCode);
+        return unit === u;
+      });
+
+      const allOutForUnit = restockOutData.filter(item => {
+        const unit = item.unit || getUnitFromRequestCode(item.requestExportCode);
+        return unit === u;
+      });
+
+      const teamMap = {};
+
+      // Collect distinct teams from live RESTOCK IN items using Unit Requests
+      allInForUnit.forEach(item => {
+        const t = getInTeamName(item);
+        if (!t || t === '-') return;
+        if (!teamMap[t]) teamMap[t] = { inItems: [], outItems: [] };
+        if (!confirmedStatus[item.id]) {
+          const days = item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate);
+          teamMap[t].inItems.push({ ...item, daysDiff: days });
+        }
+      });
+
+      // Collect distinct teams from live RESTOCK OUT items using Group request
+      allOutForUnit.forEach(item => {
+        const t = getOutTeamName(item);
+        if (!t || t === '-') return;
+        if (!teamMap[t]) teamMap[t] = { inItems: [], outItems: [] };
+        if (!restockOutConfirmed[item.id]) {
+          const days = item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.createDate);
+          teamMap[t].outItems.push({ ...item, daysDiff: days });
+        }
+      });
+
+      let teamNames = Object.keys(teamMap).sort();
+
+      teamNames.forEach(tName => {
+        const tData = teamMap[tName] || { inItems: [], outItems: [] };
+        const tIn = tData.inItems;
+        const tOut = tData.outItems;
+
+        // Cat 1: Request import but NOT CREATED COMMAND YET
+        const cat1_d1 = tIn.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
+        const cat1_d2 = tIn.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+        const cat1_d3 = tIn.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
+        const cat1_tot = cat1_d1 + cat1_d2 + cat1_d3;
+
+        // Cat 2: Request export command but REJECTED
+        const cat2_items = tOut.filter(i => i.commandExportCode || i.commandCode);
+        const cat2_d1 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
+        const cat2_d2 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+        const cat2_d3 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
+        const cat2_tot = cat2_d1 + cat2_d2 + cat2_d3;
+
+        // Cat 3: Request export but NOT CREATED COMMAND YET
+        const cat3_items = tOut.filter(i => !i.commandExportCode && !i.commandCode);
+        const cat3_d1 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
+        const cat3_d2 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+        const cat3_d3 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
+        const cat3_tot = cat3_d1 + cat3_d2 + cat3_d3;
+
+        // Overall Totals
+        const tot_d1 = cat1_d1 + cat2_d1 + cat3_d1;
+        const tot_d2 = cat1_d2 + cat2_d2 + cat3_d2;
+        const tot_d3 = cat1_d3 + cat2_d3 + cat3_d3;
+        const tot_all = tot_d1 + tot_d2 + tot_d3;
+
+        // Only include team row if tot_all > 0 (Never display empty 0-item team rows!)
+        if (tot_all > 0) {
+          teamRows.push({
+            unit: u,
+            team: tName,
+            tot_d1, tot_d2, tot_d3, tot_all,
+            cat1_d1, cat1_d2, cat1_d3, cat1_tot,
+            cat2_d1, cat2_d2, cat2_d3, cat2_tot,
+            cat3_d1, cat3_d2, cat3_d3, cat3_tot
+          });
+        }
+      });
+    });
+
+    // Calculate grand totals across all rendered rows
+    const grandTotals = {
+      tot_d1: teamRows.reduce((sum, r) => sum + r.tot_d1, 0),
+      tot_d2: teamRows.reduce((sum, r) => sum + r.tot_d2, 0),
+      tot_d3: teamRows.reduce((sum, r) => sum + r.tot_d3, 0),
+      tot_all: teamRows.reduce((sum, r) => sum + r.tot_all, 0),
+      cat1_d1: teamRows.reduce((sum, r) => sum + r.cat1_d1, 0),
+      cat1_d2: teamRows.reduce((sum, r) => sum + r.cat1_d2, 0),
+      cat1_d3: teamRows.reduce((sum, r) => sum + r.cat1_d3, 0),
+      cat1_tot: teamRows.reduce((sum, r) => sum + r.cat1_tot, 0),
+      cat2_d1: teamRows.reduce((sum, r) => sum + r.cat2_d1, 0),
+      cat2_d2: teamRows.reduce((sum, r) => sum + r.cat2_d2, 0),
+      cat2_d3: teamRows.reduce((sum, r) => sum + r.cat2_d3, 0),
+      cat2_tot: teamRows.reduce((sum, r) => sum + r.cat2_tot, 0),
+      cat3_d1: teamRows.reduce((sum, r) => sum + r.cat3_d1, 0),
+      cat3_d2: teamRows.reduce((sum, r) => sum + r.cat3_d2, 0),
+      cat3_d3: teamRows.reduce((sum, r) => sum + r.cat3_d3, 0),
+      cat3_tot: teamRows.reduce((sum, r) => sum + r.cat3_tot, 0),
+    };
+
+    const renderCell = (val, type) => {
+      if (!val || val === 0) return <span className="text-slate-400 font-normal text-[10px]">-</span>;
+      if (type === 'd1') {
+        return <span className="bg-emerald-100 text-emerald-900 font-extrabold px-1.5 py-0.5 rounded border border-emerald-300 shadow-2xs text-[10px]">{val}</span>;
+      }
+      if (type === 'd2') { // 7 < Day < 30: RED COLOR AS REQUESTED!
+        return <span className="bg-[#dc2626] text-white font-black px-2 py-0.5 rounded border border-red-700 shadow-xs text-[10.5px] tracking-tight">{val}</span>;
+      }
+      if (type === 'd3') { // Day >= 30: Dark Rose Crimson
+        return <span className="bg-[#881337] text-white font-black px-2 py-0.5 rounded border border-rose-950 shadow-xs text-[10.5px] tracking-tight">{val}</span>;
+      }
+      if (type === 'tot') {
+        return <span className="font-black text-blue-950 text-[11px]">{val}</span>;
+      }
+      return <span className="font-bold text-slate-900 text-[10.5px]">{val}</span>;
+    };
+
+    const nowStr = `${new Date().getDate()}/${new Date().getMonth() + 1}/${String(new Date().getFullYear()).slice(2)} ${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+
+    return (
+      <div
+        id="telegram-summary-report"
+        style={{
+          position: 'fixed',
+          top: '-9999px',
+          left: '-9999px',
+          zIndex: -9999,
+          width: '1600px',
+          backgroundColor: '#ffffff',
+          padding: '16px',
+          fontFamily: 'Arial, sans-serif'
+        }}
+      >
+        {/* Top Date Header */}
+        <div className="text-center font-extrabold text-[#dc2626] text-sm mb-1 tracking-tight">
+          {nowStr}
+        </div>
+
+        {/* Excel Matrix Table */}
+        <table className="w-full border-collapse border border-black text-center text-xs font-bold bg-white">
+          <thead>
+            {/* Super Header Row 1 */}
+            <tr className="bg-white border-b border-black text-[11px] font-black">
+              <th rowSpan={2} className="border border-black w-10 py-1.5 align-middle bg-white text-black">No</th>
+              <th rowSpan={2} className="border border-black w-14 py-1.5 align-middle bg-white text-black">Unit</th>
+              <th rowSpan={2} className="border border-black w-36 py-1.5 align-middle bg-white text-left px-2 text-black">TEAM</th>
+              <th colSpan={4} className="border border-black py-1.5 bg-white text-black font-black uppercase">
+                Total
+              </th>
+              <th colSpan={4} className="border border-black py-1.5 bg-white">
+                <span className="text-[#1d4ed8] block text-[11px] font-extrabold">Request import but</span>
+                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase">NOT CREATED COMMAND YET</span>
+              </th>
+              <th colSpan={4} className="border border-black py-1.5 bg-white">
+                <span className="text-[#1d4ed8] block text-[11px] font-extrabold">Request export command but</span>
+                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase">REJECTED</span>
+              </th>
+              <th colSpan={4} className="border border-black py-1.5 bg-white">
+                <span className="text-[#1d4ed8] block text-[11px] font-extrabold">Request export but</span>
+                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase">NOT CREATED COMMAND YET</span>
+              </th>
+            </tr>
+
+            {/* Sub Header Row 2 - Vivid Color Coded Sub Headers */}
+            <tr className="border-b border-black text-[10px] font-black">
+              {/* Total Group */}
+              <th className="border border-black py-1 bg-[#e6f4ea] text-[#137333]">Day &lt;= 7</th>
+              <th className="border border-black py-1 bg-[#fce8e6] text-[#c5221f]">7 &lt; Day &lt; 30</th>
+              <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
+              <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
+
+              {/* Cat 1 Group */}
+              <th className="border border-black py-1 bg-[#e6f4ea] text-[#137333]">Day &lt;= 7</th>
+              <th className="border border-black py-1 bg-[#fce8e6] text-[#c5221f]">7 &lt; Day &lt; 30</th>
+              <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
+              <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
+
+              {/* Cat 2 Group */}
+              <th className="border border-black py-1 bg-[#e6f4ea] text-[#137333]">Day &lt;= 7</th>
+              <th className="border border-black py-1 bg-[#fce8e6] text-[#c5221f]">7 &lt; Day &lt; 30</th>
+              <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
+              <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
+
+              {/* Cat 3 Group */}
+              <th className="border border-black py-1 bg-[#e6f4ea] text-[#137333]">Day &lt;= 7</th>
+              <th className="border border-black py-1 bg-[#fce8e6] text-[#c5221f]">7 &lt; Day &lt; 30</th>
+              <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
+              <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
+            </tr>
+
+            {/* Total Summary Row 3 - Pure Excel Yellow Background */}
+            <tr className="bg-[#ffff00] border-b border-black text-[11px] font-black text-black">
+              <td className="border border-black py-1">-</td>
+              <td className="border border-black py-1 font-extrabold" colSpan={2}>Total</td>
+
+              {/* Total Group */}
+              <td className="border border-black py-1">{renderCell(grandTotals.tot_d1, 'd1')}</td>
+              <td className="border border-black py-1">{renderCell(grandTotals.tot_d2, 'd2')}</td>
+              <td className="border border-black py-1">{renderCell(grandTotals.tot_d3, 'd3')}</td>
+              <td className="border border-black py-1 font-black">{renderCell(grandTotals.tot_all, 'tot')}</td>
+
+              {/* Cat 1 */}
+              <td className="border border-black py-1">{renderCell(grandTotals.cat1_d1, 'd1')}</td>
+              <td className="border border-black py-1">{renderCell(grandTotals.cat1_d2, 'd2')}</td>
+              <td className="border border-black py-1">{renderCell(grandTotals.cat1_d3, 'd3')}</td>
+              <td className="border border-black py-1 font-black">{renderCell(grandTotals.cat1_tot, 'tot')}</td>
+
+              {/* Cat 2 */}
+              <td className="border border-black py-1">{renderCell(grandTotals.cat2_d1, 'd1')}</td>
+              <td className="border border-black py-1">{renderCell(grandTotals.cat2_d2, 'd2')}</td>
+              <td className="border border-black py-1">{renderCell(grandTotals.cat2_d3, 'd3')}</td>
+              <td className="border border-black py-1 font-black">{renderCell(grandTotals.cat2_tot, 'tot')}</td>
+
+              {/* Cat 3 */}
+              <td className="border border-black py-1">{renderCell(grandTotals.cat3_d1, 'd1')}</td>
+              <td className="border border-black py-1">{renderCell(grandTotals.cat3_d2, 'd2')}</td>
+              <td className="border border-black py-1">{renderCell(grandTotals.cat3_d3, 'd3')}</td>
+              <td className="border border-black py-1 font-black">{renderCell(grandTotals.cat3_tot, 'tot')}</td>
+            </tr>
+          </thead>
+
+          {/* Team Rows */}
+          <tbody className="text-[11px] font-bold text-black">
+            {teamRows.map((r, idx) => (
+              <tr key={idx} className="border-b border-black">
+                {/* Yellow Highlight Columns (No, Unit, TEAM) */}
+                <td className="border border-black py-1 bg-[#ffff00] text-black font-extrabold">{idx + 1}</td>
+                <td className="border border-black py-1 bg-[#ffff00] text-black font-black">{r.unit}</td>
+                <td className="border border-black py-1 bg-[#ffff00] text-black font-bold text-left px-2 font-mono">{r.team}</td>
+                
+                {/* Total Group */}
+                <td className="border border-black py-1 bg-[#ffff00] text-black">{renderCell(r.tot_d1, 'd1')}</td>
+                <td className="border border-black py-1 bg-[#ffff00] text-black">{renderCell(r.tot_d2, 'd2')}</td>
+                <td className="border border-black py-1 bg-[#ffff00] text-black">{renderCell(r.tot_d3, 'd3')}</td>
+                <td className="border border-black py-1 bg-[#ffff00] text-black font-black">{renderCell(r.tot_all, 'tot')}</td>
+
+                {/* Cat 1 Columns */}
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat1_d1, 'd1')}</td>
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat1_d2, 'd2')}</td>
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat1_d3, 'd3')}</td>
+                <td className="border border-black py-1 bg-white text-black font-black">{renderCell(r.cat1_tot, 'tot')}</td>
+
+                {/* Cat 2 Columns */}
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat2_d1, 'd1')}</td>
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat2_d2, 'd2')}</td>
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat2_d3, 'd3')}</td>
+                <td className="border border-black py-1 bg-white text-black font-black">{renderCell(r.cat2_tot, 'tot')}</td>
+
+                {/* Cat 3 Columns */}
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat3_d1, 'd1')}</td>
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat3_d2, 'd2')}</td>
+                <td className="border border-black py-1 bg-white text-black">{renderCell(r.cat3_d3, 'd3')}</td>
+                <td className="border border-black py-1 bg-white text-black font-black">{renderCell(r.cat3_tot, 'tot')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   // Render offscreen screenshot report for Telegram
   const renderScreenshotReport = () => {
     if (!screenshotUnit) return null;
@@ -1074,13 +1631,6 @@ const Dashboard_Request = () => {
     const reportData = getReportData();
     const unitData = reportData.units[unit];
     if (!unitData) return null;
-
-    const targetMorning = unitData.targetMorning || 0;
-    const targetEvening = unitData.targetEvening || 0;
-    const remain = unitData.remain || 0;
-    const result = unitData.result || 0;
-    const ratio = unitData.ratio || 0;
-    const inSystem = unitData.inSystem || 0;
 
     const unsignedInItems = unitData.unsignedInItems || [];
     const unsignedOutItems = unitData.unsignedOutItems || [];
@@ -1114,7 +1664,7 @@ const Dashboard_Request = () => {
     return (
       <div 
         id="telegram-screenshot-report" 
-        className="w-[480px] bg-slate-50 p-4 font-sans relative flex flex-col gap-3 text-left"
+        className="w-[1720px] bg-slate-50 p-3 font-sans relative flex flex-col gap-2.5 text-left border border-slate-300 rounded-xl shadow-xs"
         style={{
           position: 'fixed',
           top: '-9999px',
@@ -1123,141 +1673,222 @@ const Dashboard_Request = () => {
           boxSizing: 'border-box'
         }}
       >
-        {/* Header */}
-        <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-2xl p-4 text-white shadow-md relative overflow-hidden">
-          <div className="absolute right-0 bottom-0 translate-x-4 translate-y-4 w-28 h-28 bg-white/5 rounded-full blur-xl pointer-events-none" />
-          <div className="flex justify-between items-start">
-            <span className="text-[9px] bg-white/15 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border border-white/10 backdrop-blur-xs">
-              📊 Task Asset Report (Restock)
+        {/* Compact Excel Header Bar */}
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 px-3.5 py-1.5 rounded-lg text-white flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="text-[12px] font-black tracking-tight flex items-center gap-1">
+              📍 BRANCH: <span className="text-yellow-300 font-extrabold">{unit}</span>
             </span>
-            <span className="text-[9px] text-indigo-200/90 font-medium">
-              🕐 {timeStr} | 📅 {dateStr}
+            <span className="text-[9px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-md border border-rose-400/40 shadow-2xs">
+              ⏳ Remain: {unsignedOutItems.length + unsignedInItems.length}
             </span>
           </div>
-          <h2 className="text-lg font-black mt-2 tracking-tight flex items-center gap-1.5">
-            📍 BRANCH : <span className="text-yellow-300 font-extrabold">{unit}</span>
-          </h2>
+          <span className="text-[9px] text-slate-300 font-bold">
+            🕐 {timeStr} | 📅 {dateStr}
+          </span>
         </div>
 
-        {/* Overall KPI Summary Cards */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-xs">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-            📈 KPI SUMMARY RESTOCK
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-slate-50/70 border-t-2 border-slate-400 rounded-xl p-2 text-center">
-              <div className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Target ព្រឹក/ល្ងាច</div>
-              <div className="text-[11px] font-black text-slate-700 mt-0.5">{targetMorning} / {targetEvening}</div>
+        {/* 🖼️ SUMMARY KPI CARDS BANNER */}
+        <div className="grid grid-cols-6 gap-2">
+          <div className="bg-white border border-slate-200/90 rounded-lg p-1.5 flex items-center justify-between shadow-2xs">
+            <div>
+              <p className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider">📍 Branch</p>
+              <p className="text-[13px] font-black text-slate-900">{unit}</p>
             </div>
-            <div className="bg-emerald-50/30 border-t-2 border-emerald-500 rounded-xl p-2 text-center">
-              <div className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider">Result</div>
-              <div className="text-[11px] font-black text-emerald-600 mt-0.5">{result}</div>
+            <div className="w-7 h-7 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center font-black text-[11px] border border-slate-200">
+              🏢
             </div>
-            <div className="bg-rose-50/30 border-t-2 border-rose-500 rounded-xl p-2 text-center">
-              <div className="text-[8px] text-rose-600 font-bold uppercase tracking-wider">Remain</div>
-              <div className="text-[11px] font-black text-rose-600 mt-0.5">{remain}</div>
+          </div>
+
+          <div className="bg-white border border-indigo-200/80 rounded-lg p-1.5 flex items-center justify-between shadow-2xs">
+            <div>
+              <p className="text-[8px] font-extrabold text-indigo-500 uppercase tracking-wider">⏳ Unsigned</p>
+              <p className="text-[13px] font-black text-indigo-700">{unsignedOutItems.length + unsignedInItems.length} <span className="text-[8.5px] font-bold text-slate-400">Items</span></p>
             </div>
-            <div className="bg-blue-50/30 border-t-2 border-blue-500 rounded-xl p-2 text-center col-span-1.5">
-              <div className="text-[8px] text-blue-600 font-bold uppercase tracking-wider">Ratio</div>
-              <div className="text-[11px] font-black text-blue-600 mt-0.5">{ratio.toFixed(1)}%</div>
+            <div className="w-7 h-7 rounded-md bg-indigo-50 text-indigo-700 flex items-center justify-center font-black text-[11px] border border-indigo-100">
+              📋
             </div>
-            <div className="bg-indigo-50/30 border-t-2 border-indigo-500 rounded-xl p-2 text-center col-span-1.5">
-              <div className="text-[8px] text-indigo-600 font-bold uppercase tracking-wider">In System</div>
-              <div className="text-[11px] font-black text-indigo-600 mt-0.5">{inSystem}</div>
+          </div>
+
+          <div className="bg-white border border-blue-200/80 rounded-lg p-1.5 flex items-center justify-between shadow-2xs">
+            <div>
+              <p className="text-[8px] font-extrabold text-blue-500 uppercase tracking-wider">📤 Restock Out</p>
+              <p className="text-[13px] font-black text-blue-700">{unsignedOutItems.length} <span className="text-[8.5px] font-bold text-slate-400">Export</span></p>
+            </div>
+            <div className="w-7 h-7 rounded-md bg-blue-50 text-blue-700 flex items-center justify-center font-black text-[11px] border border-blue-100">
+              📤
+            </div>
+          </div>
+
+          <div className="bg-white border border-cyan-200/80 rounded-lg p-1.5 flex items-center justify-between shadow-2xs">
+            <div>
+              <p className="text-[8px] font-extrabold text-cyan-600 uppercase tracking-wider">📥 Restock In</p>
+              <p className="text-[13px] font-black text-cyan-700">{unsignedInItems.length} <span className="text-[8.5px] font-bold text-slate-400">Import</span></p>
+            </div>
+            <div className="w-7 h-7 rounded-md bg-cyan-50 text-cyan-700 flex items-center justify-center font-black text-[11px] border border-cyan-100">
+              📥
+            </div>
+          </div>
+
+          <div className="bg-white border border-rose-200/80 rounded-lg p-1.5 flex items-center justify-between shadow-2xs">
+            <div>
+              <p className="text-[8px] font-extrabold text-rose-500 uppercase tracking-wider">🔴 Delay ≥ 5d</p>
+              <p className="text-[13px] font-black text-rose-600">
+                {unsignedOutItems.filter(i => (parseInt(i.daysDiff) || 0) >= 5).length + unsignedInItems.filter(i => (parseInt(i.daysDiff) || 0) >= 5).length} <span className="text-[8.5px] font-bold text-slate-400">Critical</span>
+              </p>
+            </div>
+            <div className="w-7 h-7 rounded-md bg-rose-50 text-rose-600 flex items-center justify-center font-black text-[11px] border border-rose-100">
+              🚨
+            </div>
+          </div>
+
+          <div className="bg-white border border-amber-200/80 rounded-lg p-1.5 flex items-center justify-between shadow-2xs">
+            <div>
+              <p className="text-[8px] font-extrabold text-amber-500 uppercase tracking-wider">🟡 Delay 3-4d</p>
+              <p className="text-[13px] font-black text-amber-600">
+                {unsignedOutItems.filter(i => (parseInt(i.daysDiff) || 0) >= 3 && (parseInt(i.daysDiff) || 0) < 5).length + unsignedInItems.filter(i => (parseInt(i.daysDiff) || 0) >= 3 && (parseInt(i.daysDiff) || 0) < 5).length} <span className="text-[8.5px] font-bold text-slate-400">Warning</span>
+              </p>
+            </div>
+            <div className="w-7 h-7 rounded-md bg-amber-50 text-amber-600 flex items-center justify-center font-black text-[11px] border border-amber-100">
+              ⚠️
             </div>
           </div>
         </div>
 
         {/* Restock Out Section */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-xs">
-          <h3 className="text-[11px] font-black text-slate-800 flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
-            <span className="flex items-center gap-1.5 text-slate-700">📤 RESTOCK OUT</span>
-            <span className={unsignedOutItems.length === 0 ? "text-emerald-600 font-extrabold text-[9px] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100" : "text-blue-700 font-extrabold text-[9px] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"}>
+        <div className="border border-slate-300 bg-white rounded-lg overflow-hidden shadow-2xs">
+          <div className="bg-slate-100 px-3 py-1 border-b border-slate-300 text-[10px] font-black text-slate-800 flex justify-between items-center">
+            <span className="flex items-center gap-1 text-slate-800 uppercase tracking-wide">📤 RESTOCK OUT (EXPORT REQUEST)</span>
+            <span className={unsignedOutItems.length === 0 ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-extrabold text-[8.5px]" : "text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-extrabold text-[8.5px]"}>
               {unsignedOutItems.length === 0 ? "✅ Completed" : `📋 ${unsignedOutItems.length} Items`}
             </span>
-          </h3>
+          </div>
           {unsignedOutItems.length > 0 ? (
-            <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
-              <table className="min-w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[9.5px] font-bold border-b border-slate-200">
-                    <th className="border-r border-slate-200 px-2 py-1 text-center w-7">ល.រ</th>
-                    <th className="border-r border-slate-200 px-2 py-1">Code</th>
-                    <th className="border-r border-slate-200 px-2 py-1 text-left w-[125px]">Group Request</th>
-                    <th className="px-2 py-1 text-center w-12">Days ⚠️</th>
+            <table className="w-full text-left border-collapse table-fixed text-[9.5px]">
+              <thead>
+                <tr className="bg-slate-700 text-white font-bold border-b border-slate-300 text-[9.5px]">
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-7">Nº</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-left w-[175px]">Request export code</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[135px]">Command export code</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[120px]">Note export code</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[150px]">Group request</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[80px]">Create date</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[245px]">Stock out</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[150px]">Stock receive</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[165px]">Receiving Unit</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[115px]">Creator</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[130px]">Status</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[85px]">Status CA</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[50px]">Unit</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[55px]">Q'ty of day</th>
+                  <th className="px-1.5 py-1 text-center w-[45px]">Year</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {unsignedOutItems.map((item, index) => (
+                  <tr key={index} className="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/50">
+                    <td className="border-r border-slate-200 px-1.5 py-1 text-center font-bold text-slate-400 whitespace-nowrap">{index + 1}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 font-black text-slate-900 font-mono whitespace-nowrap truncate">{item.code || item.requestExportCode || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 font-bold text-slate-700 text-center whitespace-nowrap truncate">{item.commandExportCode || item.commandCode || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 font-bold text-slate-700 text-center whitespace-nowrap truncate">{item.noteExportCode || item.noteCode || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 font-black text-slate-800 text-center whitespace-nowrap truncate">{cleanWarehouseName(item.groupRequest || '-')}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-600 whitespace-nowrap">{item.createDate || item.createdDate || item.date || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-700 font-mono text-[9px] whitespace-nowrap truncate">{cleanWarehouseName(item.stockOut || item.exportWarehouse || '-')}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-700 whitespace-nowrap truncate">{cleanWarehouseName(item.stockReceive || item.warehouse || '-')}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-800 font-bold whitespace-nowrap truncate">{cleanWarehouseName(item.receivingUnit || item.unitReceive || item.unitEntering || '-')}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-700 whitespace-nowrap truncate">{item.creator || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-bold text-slate-700 whitespace-nowrap truncate">{item.status || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-bold whitespace-nowrap">
+                      {item.statusCA === 'Is signing' ? (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-bold">Is signing ⚠️</span>
+                      ) : (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[8px] font-bold">{item.statusCA || 'Unsigned'}</span>
+                      )}
+                    </td>
+                    <td className="border-r border-slate-200 px-1.5 py-1 text-center font-extrabold text-slate-800 whitespace-nowrap">{item.unit || unit}</td>
+                    <td className="border-r border-slate-200 px-1.5 py-1 text-center font-extrabold whitespace-nowrap">{getDelayBadge(item.daysDiff)}</td>
+                    <td className="px-1.5 py-1 text-center font-bold text-slate-700 whitespace-nowrap">{item.year || (item.createDate ? item.createDate.split('/')[2] : '-')}</td>
                   </tr>
-                </thead>
-                <tbody className="text-[9px] text-slate-600 divide-y divide-slate-100">
-                  {unsignedOutItems.map((item, index) => (
-                    <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
-                      <td className="border-r border-slate-100 px-2 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-800 tracking-tighter font-mono">{item.code}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-700 truncate max-w-[125px]">{cleanWarehouseName(item.groupRequest || '-')}</td>
-                      <td className="px-2 py-1 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div className="bg-emerald-50/40 border border-emerald-100 rounded-xl py-3 text-center text-emerald-600 font-bold text-[11px] flex flex-col items-center gap-1">
-              <span>🎉 All items cleared!</span>
-              <span className="text-[9px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
+            <div className="py-2 text-center text-emerald-700 font-bold text-[9.5px] bg-emerald-50/30">
+              🎉 All items cleared!
             </div>
           )}
         </div>
 
         {/* Restock In Section */}
-        <div className="bg-white border border-slate-200/60 rounded-2xl p-4 shadow-xs">
-          <h3 className="text-[11px] font-black text-slate-800 flex items-center justify-between pb-2 border-b border-slate-100 mb-2.5">
-            <span className="flex items-center gap-1.5 text-slate-700">📥 RESTOCK IN</span>
-            <span className={unsignedInItems.length === 0 ? "text-emerald-600 font-extrabold text-[9px] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100" : "text-blue-700 font-extrabold text-[9px] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100"}>
+        <div className="border border-slate-300 bg-white rounded-lg overflow-hidden shadow-2xs">
+          <div className="bg-slate-100 px-3 py-1 border-b border-slate-300 text-[10px] font-black text-slate-800 flex justify-between items-center">
+            <span className="flex items-center gap-1 text-slate-800 uppercase tracking-wide">📥 RESTOCK IN (IMPORT REQUEST)</span>
+            <span className={unsignedInItems.length === 0 ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-extrabold text-[8.5px]" : "text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-extrabold text-[8.5px]"}>
               {unsignedInItems.length === 0 ? "✅ Completed" : `📋 ${unsignedInItems.length} Items`}
             </span>
-          </h3>
+          </div>
           {unsignedInItems.length > 0 ? (
-            <div className="overflow-hidden border border-slate-200/80 rounded-xl shadow-xs">
-              <table className="min-w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-gradient-to-b from-slate-50 to-slate-100/80 text-slate-700 text-[9.5px] font-bold border-b border-slate-200">
-                    <th className="border-r border-slate-200 px-2 py-1 text-center w-7">ល.រ</th>
-                    <th className="border-r border-slate-200 px-2 py-1">Code</th>
-                    <th className="border-r border-slate-200 px-2 py-1 text-left w-[125px]">Unit Requests</th>
-                    <th className="px-2 py-1 text-center w-12">Days ⚠️</th>
+            <table className="w-full text-left border-collapse table-fixed text-[9.5px]">
+              <thead>
+                <tr className="bg-slate-700 text-white font-bold border-b border-slate-300 text-[9.5px]">
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-7">Nº</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-left w-[175px]">Import Request code</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[135px]">Import Command code</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[80px]">Date Create</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[245px]">Import warehouse</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[80px]">Contract</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[115px]">Creator</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[150px]">Unit Requests</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[165px]">Unit Receive</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[80px]">Date Delivery</th>
+                  <th className="border-r border-slate-600 px-2 py-1 text-center w-[85px]">Status CA</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[50px]">Unit</th>
+                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[55px]">Q'ty of day</th>
+                  <th className="px-1.5 py-1 text-center w-[45px]">Year</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {unsignedInItems.map((item, index) => (
+                  <tr key={index} className="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/50">
+                    <td className="border-r border-slate-200 px-1.5 py-1 text-center font-bold text-slate-400 whitespace-nowrap">{index + 1}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 font-black text-slate-900 font-mono whitespace-nowrap truncate">{item.code || item.importRequestCode || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 font-bold text-slate-700 text-center whitespace-nowrap truncate">{item.importCommandCode || item.commandCode || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-600 whitespace-nowrap">{item.dateCreate || item.createdDate || item.date || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-700 font-mono text-[9px] whitespace-nowrap truncate">{cleanWarehouseName(item.importWarehouse || item.warehouse || '-')}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-600 whitespace-nowrap truncate">{item.contract || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-700 whitespace-nowrap truncate">{item.creator || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 font-black text-slate-800 text-center whitespace-nowrap truncate">{cleanWarehouseName(item.unitRequests || '-')}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center text-slate-800 font-bold whitespace-nowrap truncate">{cleanWarehouseName(item.unitReceive || item.receivingUnit || '-')}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-semibold text-slate-600 whitespace-nowrap">{item.dateDelivery || item.deliveryDate || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1 text-center font-bold whitespace-nowrap">
+                      {item.statusCA === 'Is signing' ? (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[8px] font-bold">Is signing ⚠️</span>
+                      ) : (
+                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[8px] font-bold">{item.statusCA || 'Unsigned'}</span>
+                      )}
+                    </td>
+                    <td className="border-r border-slate-200 px-1.5 py-1 text-center font-extrabold text-slate-800 whitespace-nowrap">{item.unit || unit}</td>
+                    <td className="border-r border-slate-200 px-1.5 py-1 text-center font-extrabold whitespace-nowrap">{getDelayBadge(item.daysDiff)}</td>
+                    <td className="px-1.5 py-1 text-center font-bold text-slate-700 whitespace-nowrap">{item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : '-')}</td>
                   </tr>
-                </thead>
-                <tbody className="text-[9px] text-slate-600 divide-y divide-slate-100">
-                  {unsignedInItems.map((item, index) => (
-                    <tr key={index} className="hover:bg-slate-50/50 odd:bg-white even:bg-slate-50/20">
-                      <td className="border-r border-slate-100 px-2 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-800 tracking-tighter font-mono">{item.code}</td>
-                      <td className="border-r border-slate-100 px-2 py-1 font-bold text-slate-700 truncate max-w-[125px]">{cleanWarehouseName(item.unitRequests || '-')}</td>
-                      <td className="px-2 py-1 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <div className="bg-emerald-50/40 border border-emerald-100 rounded-2xl py-4 text-center text-emerald-600 font-bold text-xs flex flex-col items-center gap-1">
-              <span>🎉 All items cleared!</span>
-              <span className="text-[9.5px] text-emerald-500/80 font-medium">គ្មានទិន្នន័យចាល់ឡើយ</span>
+            <div className="py-2 text-center text-emerald-700 font-bold text-[9.5px] bg-emerald-50/30">
+              🎉 All items cleared!
             </div>
           )}
         </div>
 
         {customNote && customNote.trim() && (
-          <div className="bg-amber-50/40 border border-amber-100 rounded-3xl p-5 shadow-xs">
-            <h4 className="text-[10.5px] font-black text-amber-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+          <div className="bg-amber-50/40 border border-amber-100 rounded-xl p-2.5 shadow-2xs">
+            <h4 className="text-[9.5px] font-black text-amber-700 uppercase tracking-wider mb-1 flex items-center gap-1">
               📝 NOTE
             </h4>
-            <p className="text-[10.5px] font-semibold text-slate-600 leading-relaxed whitespace-pre-wrap">{customNote.trim()}</p>
+            <p className="text-[9.5px] font-semibold text-slate-600 leading-relaxed whitespace-pre-wrap">{customNote.trim()}</p>
           </div>
         )}
-
-        <div className="text-center text-[9.5px] font-bold text-slate-400/80 mt-1 flex items-center justify-center gap-1">
-          <span>📊 Report generated from Restock Dashboard</span>
-        </div>
       </div>
     );
   };
@@ -1401,12 +2032,6 @@ const Dashboard_Request = () => {
             </div>
             <p className="text-indigo-100 mt-1 text-sm">Recall And &amp; Request Stock Out</p>
           </div>
-          <button 
-            onClick={exportToExcel}
-            className="px-4 py-2.5 bg-white text-indigo-600 rounded-xl font-semibold hover:bg-indigo-50 transition-all shadow-md flex items-center gap-2 text-sm"
-          >
-            📎 Export Data
-          </button>
         </div>
       </div>
 
@@ -1426,63 +2051,152 @@ const Dashboard_Request = () => {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => {
-                setScreenshotMode(false);
-                sendToAll();
-              }}
-              disabled={isSending || configuredCount === 0}
-              className={`px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md disabled:opacity-50 ${
-                configuredCount > 0
-                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 shadow-emerald-200'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              title={configuredCount === 0 ? 'No provinces configured' : 'Send to all configured provinces'}
-            >
-              <span>📤</span>
-              Send Text Receipts All ({configuredCount})
-            </button>
+            {/* 1. Batch Actions Dropdown (Send All) */}
+            <div className="relative inline-block text-left">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenBatchDropdown(!openBatchDropdown);
+                  setOpenSingleDropdown(false);
+                }}
+                disabled={isSending || configuredCount === 0}
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-extrabold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-sm"
+              >
+                <span>🚀</span>
+                <span>Send All ({configuredCount})</span>
+                <span className={`transition-transform duration-200 text-[10px] ml-1 ${openBatchDropdown ? 'rotate-180' : ''}`}>▼</span>
+              </button>
 
-            <button
-              onClick={() => {
-                setScreenshotMode(true);
-                sendToAllScreenshot();
-              }}
-              disabled={isSending || configuredCount === 0}
-              className={`px-5 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2 shadow-md disabled:opacity-50 ${
-                configuredCount > 0
-                  ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white hover:from-indigo-600 hover:to-indigo-700 shadow-indigo-200'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-              title={configuredCount === 0 ? 'No provinces configured' : 'Send screenshot to all configured provinces'}
-            >
-              <span>📸</span>
-              Send Detail ({configuredCount})
-            </button>
-            
-            <button
-              onClick={() => {
-                setScreenshotMode(false);
-                setShowUnitSelector(!showUnitSelector);
-              }}
-              disabled={isSending}
-              className="px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-blue-200"
-            >
-              <span>📤</span>
-              Send Text Receipts (1)
-            </button>
+              {openBatchDropdown && (
+                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    🌐 Batch Operations ({configuredCount} Provinces)
+                  </div>
+                  <div className="py-1 space-y-1">
+                    <button
+                      onClick={() => {
+                        setOpenBatchDropdown(false);
+                        setScreenshotMode(false);
+                        setIsSelectingForSummary(false);
+                        sendToAll();
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">📤</span>
+                      <div>
+                        <div className="font-black text-slate-800">Send Text Receipts All ({configuredCount})</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Send text receipts to all 25 units</div>
+                      </div>
+                    </button>
 
-            <button
-              onClick={() => {
-                setScreenshotMode(true);
-                setShowUnitSelector(!showUnitSelector);
-              }}
-              disabled={isSending}
-              className="px-4 py-2.5 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors flex items-center gap-2 disabled:opacity-50 shadow-md shadow-violet-200"
-            >
-              <span>📸</span>
-              Send Detail (1)
-            </button>
+                    <button
+                      onClick={() => {
+                        setOpenBatchDropdown(false);
+                        setScreenshotMode(true);
+                        setIsSelectingForSummary(false);
+                        sendToAllScreenshot();
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">📸</span>
+                      <div>
+                        <div className="font-black text-slate-800">Send Detail ({configuredCount})</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Send Detail Screenshot + Excel file</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setOpenBatchDropdown(false);
+                        setIsSelectingForSummary(true);
+                        sendSummaryImageScreenshotAll();
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">🖼️</span>
+                      <div>
+                        <div className="font-black text-slate-800">Summary Image all Unit ({configuredCount})</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Send Excel Matrix Table Screenshot</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Single Unit Actions Dropdown (Send 1) */}
+            <div className="relative inline-block text-left">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenSingleDropdown(!openSingleDropdown);
+                  setOpenBatchDropdown(false);
+                }}
+                disabled={isSending}
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-sm"
+              >
+                <span>🎯</span>
+                <span>Send Single Branch (1)</span>
+                <span className={`transition-transform duration-200 text-[10px] ml-1 ${openSingleDropdown ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+
+              {openSingleDropdown && (
+                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                    📍 Single Unit Operations (1 Province)
+                  </div>
+                  <div className="py-1 space-y-1">
+                    <button
+                      onClick={() => {
+                        setOpenSingleDropdown(false);
+                        setScreenshotMode(false);
+                        setIsSelectingForSummary(false);
+                        setShowUnitSelector(true);
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">📤</span>
+                      <div>
+                        <div className="font-black text-slate-800">Send Text Receipts (1)</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Select 1 unit to send text receipt</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setOpenSingleDropdown(false);
+                        setScreenshotMode(true);
+                        setIsSelectingForSummary(false);
+                        setShowUnitSelector(true);
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-violet-50 hover:text-violet-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">📸</span>
+                      <div>
+                        <div className="font-black text-slate-800">Send Detail (1)</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Select 1 unit to send Detail + Excel</div>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setOpenSingleDropdown(false);
+                        setScreenshotMode(true);
+                        setIsSelectingForSummary(true);
+                        setShowUnitSelector(true);
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                    >
+                      <span className="text-base mt-0.5">🖼️</span>
+                      <div>
+                        <div className="font-black text-slate-800">Summary Image (1)</div>
+                        <div className="text-[10px] text-slate-400 font-medium">Select 1 unit to send Summary Image</div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1572,7 +2286,9 @@ const Dashboard_Request = () => {
                     onClick={() => {
                       setTelegramSelectedUnit(unit);
                       if (isConfigured) {
-                        if (screenshotMode) {
+                        if (isSelectingForSummary) {
+                          sendSummaryImageScreenshot(unit);
+                        } else if (screenshotMode) {
                           sendReportToTelegramScreenshot(unit);
                         } else {
                           sendReportToTelegram(unit);
@@ -1926,6 +2642,7 @@ const Dashboard_Request = () => {
       {renderProgressModal()}
 
       {createPortal(renderScreenshotReport(), document.body)}
+      {createPortal(renderSummaryReport(), document.body)}
 
       <style>{`
         @keyframes fadeIn {

@@ -384,8 +384,6 @@ const MainDashboard = ({ onNavigate }) => {
         <div className="mt-8 sm:mt-12 text-center text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 border-t pt-4 sm:pt-6 border-gray-200 dark:border-gray-700">
           <span>© 2026 GIS Asset Management System</span>
           <span className="mx-2 sm:mx-3">•</span>
-          <span className="font-semibold text-gray-500 dark:text-gray-400">Developed by RET NAPHUT 06/15/2026</span>
-          <span className="mx-2 sm:mx-3">•</span>
           <span>Version 3.0.1</span>
           <span className="mx-2 sm:mx-3">•</span>
           <span>🟢 All systems operational</span>
