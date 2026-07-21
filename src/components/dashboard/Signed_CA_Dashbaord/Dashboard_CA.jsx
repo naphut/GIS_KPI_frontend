@@ -696,8 +696,8 @@ const Dashboard_CA = () => {
       }
       
       const canvas = await html2canvas(element, {
-        width: 500,
-        windowWidth: 500,
+        width: 2450,
+        windowWidth: 2450,
         scale: 2.5,
         useCORS: true,
         logging: false,
@@ -721,7 +721,7 @@ const Dashboard_CA = () => {
       if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
       
       const blob = await new Promise((resolve, reject) => {
-        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/jpeg', 0.94);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
       });
       
       const result = await sendPhotoToTelegram(unit, blob, '', signal);
@@ -731,7 +731,7 @@ const Dashboard_CA = () => {
         const unsignedOutItems = unitData?.unsignedOutItems || [];
         const unsignedInItems = unitData?.unsignedInItems || [];
         const excelBlob = generateSignedCAExcelBlob(unsignedOutItems, unsignedInItems, unit);
-        const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
         await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
       } catch (excelErr) {
         console.error('Error sending Signed CA Excel file:', excelErr);
@@ -852,8 +852,8 @@ const Dashboard_CA = () => {
           }
           
           const canvas = await html2canvas(element, {
-            width: 500,
-            windowWidth: 500,
+            width: 2450,
+            windowWidth: 2450,
             scale: 2.5,
             useCORS: true,
             logging: false,
@@ -877,7 +877,7 @@ const Dashboard_CA = () => {
           if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
           
           const blob = await new Promise((resolve, reject) => {
-            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/jpeg', 0.94);
+            canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas to Blob conversion failed')), 'image/png');
           });
           
           const sendRes = await sendPhotoToTelegram(unit, blob, '', signal);
@@ -887,7 +887,7 @@ const Dashboard_CA = () => {
             const unsignedOutItems = unitData?.unsignedOutItems || [];
             const unsignedInItems = unitData?.unsignedInItems || [];
             const excelBlob = generateSignedCAExcelBlob(unsignedOutItems, unsignedInItems, unit);
-            const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
             await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
           } catch (excelErr) {
             console.error('Error sending Signed CA Excel file:', excelErr);
@@ -1599,7 +1599,7 @@ const Dashboard_CA = () => {
     return (
       <div 
         id="telegram-screenshot-report" 
-        className="w-[500px] bg-slate-50 p-3 font-sans relative flex flex-col gap-2.5 text-left border border-slate-300 rounded-xl shadow-xs"
+        className="w-[2450px] bg-slate-50 p-5 font-sans relative flex flex-col gap-4 text-left border border-slate-300 rounded-2xl shadow-sm"
         style={{
           position: 'fixed',
           top: '-9999px',
@@ -1609,103 +1609,147 @@ const Dashboard_CA = () => {
         }}
       >
         {/* Compact Excel Header Bar */}
-        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 px-3 py-1.5 rounded-lg text-white flex items-center justify-between shadow-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black tracking-tight flex items-center gap-1">
-              📍 BRANCH: <span className="text-yellow-300 font-extrabold">{unit}</span>
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 px-5 py-3 rounded-xl text-white flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-4">
+            <span className="text-[16px] font-black tracking-tight flex items-center gap-1.5">
+              📍 BRANCH: <span className="text-yellow-300 font-black">{unit}</span>
             </span>
-            <span className="text-[8.5px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-md border border-rose-400/40 shadow-2xs">
+            <span className="text-[12px] bg-rose-600 text-white font-extrabold px-3 py-1 rounded-lg border border-rose-400/40 shadow-2xs">
               ⏳ Remain: {remain}
             </span>
           </div>
-          <span className="text-[8.5px] text-slate-300 font-medium">
+          <span className="text-[12px] text-slate-300 font-bold">
             🕐 {timeStr} | 📅 {dateStr}
           </span>
         </div>
 
         {/* Export CA Section */}
-        <div className="border border-slate-300 bg-white rounded-lg overflow-hidden shadow-2xs">
-          <div className="bg-slate-100 px-2.5 py-1 border-b border-slate-300 text-[9.5px] font-black text-slate-800 flex justify-between items-center">
-            <span className="flex items-center gap-1 text-slate-800">📤 EXPORT CA</span>
-            <span className={unsignedOutItems.length === 0 ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-extrabold text-[8px]" : "text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-extrabold text-[8px]"}>
+        <div className="border border-slate-300 bg-white rounded-xl overflow-hidden shadow-2xs">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 text-[13px] font-black text-slate-800 flex justify-between items-center">
+            <span className="flex items-center gap-1.5 text-slate-900">📤 EXPORT CA</span>
+            <span className={unsignedOutItems.length === 0 ? "text-emerald-700 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200 font-extrabold text-[11px]" : "text-blue-700 bg-blue-50 px-3 py-0.5 rounded-full border border-blue-200 font-extrabold text-[11px]"}>
               {unsignedOutItems.length === 0 ? "✅ Completed" : `📋 ${unsignedOutItems.length} Items`}
             </span>
           </div>
           {unsignedOutItems.length > 0 ? (
-            <table className="w-full text-left border-collapse table-fixed text-[8.5px]">
+            <table className="w-full text-left border-collapse text-[11.5px]">
               <thead>
-                <tr className="bg-slate-700 text-white font-bold border-b border-slate-300 text-[8.5px]">
-                  <th className="border-r border-slate-600 px-1 py-1 text-center w-7">#</th>
-                  <th className="border-r border-slate-600 px-1.5 py-1 text-left w-[185px]">Code</th>
-                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[145px]">TEAM</th>
-                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[75px]">Status CA</th>
-                  <th className="px-1 py-1 text-center w-[44px]">Days ⚠️</th>
+                <tr className="bg-slate-700 text-white font-bold border-b border-slate-300 text-[12px]">
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-10">#</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[200px]">Export Note Code</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[190px]">Export Command Code</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[150px]">Export Request</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[125px]">Requester</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[95px]">Date Create</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[95px]">Date Export</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[150px]">Export Warehouse</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[120px]">Reason</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[150px]">Warehouse Entering</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[125px]">Unit Entering</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[135px]">Construction Code</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[85px]">Status</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[100px]">Disapprove</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[90px]">Status CA</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[120px]">Description</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[70px]">Unit</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[60px]">Days ⚠️</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-center w-[140px]">TEAM</th>
+                  <th className="px-2 py-1.5 text-center w-[60px]">Year</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {unsignedOutItems.map((item, index) => (
                   <tr key={index} className="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/50">
-                    <td className="border-r border-slate-200 px-1 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
-                    <td className="border-r border-slate-200 px-1.5 py-1 font-bold text-slate-900 font-mono truncate">{item.code}</td>
-                    <td className="border-r border-slate-200 px-1.5 py-1 font-bold text-slate-700 text-center truncate">{item.team || getTeamFromWarehouse(item.unitEntering || item.exportWarehouse || '-')}</td>
-                    <td className="border-r border-slate-200 px-1 py-1 text-center font-medium">
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-bold text-slate-400">{index + 1}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-bold text-slate-900 font-mono whitespace-nowrap">{item.exportNoteCode || item.code || '-'}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-bold text-slate-700 font-mono whitespace-nowrap">{item.exportCommandCode || item.commandCode || '-'}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 whitespace-nowrap">{item.exportRequest || item.requestCode || '-'}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-bold text-slate-800 whitespace-nowrap">{item.requester || item.creator || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-semibold text-slate-600 whitespace-nowrap">{item.dateCreate || item.date || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-semibold text-slate-600 whitespace-nowrap">{item.dateExport || item.exportDate || '-'}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 whitespace-nowrap">{cleanWarehouseName(item.exportWarehouse || item.warehouse || '-')}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 text-slate-600 whitespace-nowrap">{item.reason || '-'}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 whitespace-nowrap">{cleanWarehouseName(item.warehouseEntering || item.enteringWarehouse || '-')}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 whitespace-nowrap">{cleanWarehouseName(item.unitEntering || item.enteringUnit || '-')}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 text-slate-600 whitespace-nowrap">{item.constructionCode || item.construction || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-semibold whitespace-nowrap">{item.status || '-'}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 text-slate-600 whitespace-nowrap">{item.disapprove || item.disapproveReason || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-bold whitespace-nowrap">
                       {item.statusCA === 'Is signing' ? (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[7.5px] font-bold">Is signing ⚠️</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">Is signing ⚠️</span>
                       ) : (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[7.5px] font-bold">{item.statusCA || 'Unsigned'}</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">{item.statusCA || 'Unsigned'}</span>
                       )}
                     </td>
-                    <td className="px-1 py-1 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 text-slate-600 whitespace-nowrap">{item.description || item.note || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-extrabold text-slate-800 whitespace-nowrap">{item.unit || unit || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-black whitespace-nowrap">{getDelayBadge(item.daysDiff)}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-black text-slate-900 text-center whitespace-nowrap">{item.team || getTeamFromWarehouse(item.unitEntering || item.exportWarehouse || '-')}</td>
+                    <td className="px-2 py-1.5 text-center font-semibold text-slate-600 whitespace-nowrap">{item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : (item.date ? item.date.split('/')[2] : '-'))}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <div className="py-2 text-center text-emerald-700 font-bold text-[9px] bg-emerald-50/30">
+            <div className="py-3 text-center text-emerald-700 font-bold text-[11px] bg-emerald-50/30">
               🎉 All items cleared!
             </div>
           )}
         </div>
 
         {/* Import CA Section */}
-        <div className="border border-slate-300 bg-white rounded-lg overflow-hidden shadow-2xs">
-          <div className="bg-slate-100 px-2.5 py-1 border-b border-slate-300 text-[9.5px] font-black text-slate-800 flex justify-between items-center">
-            <span className="flex items-center gap-1 text-slate-800">📥 IMPORT CA</span>
-            <span className={unsignedInItems.length === 0 ? "text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-extrabold text-[8px]" : "text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 font-extrabold text-[8px]"}>
+        <div className="border border-slate-300 bg-white rounded-xl overflow-hidden shadow-2xs">
+          <div className="bg-slate-100 px-4 py-2 border-b border-slate-300 text-[13px] font-black text-slate-800 flex justify-between items-center">
+            <span className="flex items-center gap-1.5 text-slate-900">📥 IMPORT CA</span>
+            <span className={unsignedInItems.length === 0 ? "text-emerald-700 bg-emerald-50 px-3 py-0.5 rounded-full border border-emerald-200 font-extrabold text-[11px]" : "text-blue-700 bg-blue-50 px-3 py-0.5 rounded-full border border-blue-200 font-extrabold text-[11px]"}>
               {unsignedInItems.length === 0 ? "✅ Completed" : `📋 ${unsignedInItems.length} Items`}
             </span>
           </div>
           {unsignedInItems.length > 0 ? (
-            <table className="w-full text-left border-collapse table-fixed text-[8.5px]">
+            <table className="w-full text-left border-collapse text-[11.5px]">
               <thead>
-                <tr className="bg-slate-700 text-white font-bold border-b border-slate-300 text-[8.5px]">
-                  <th className="border-r border-slate-600 px-1 py-1 text-center w-7">#</th>
-                  <th className="border-r border-slate-600 px-1.5 py-1 text-left w-[185px]">Code</th>
-                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[145px]">TEAM</th>
-                  <th className="border-r border-slate-600 px-1.5 py-1 text-center w-[75px]">Status CA</th>
-                  <th className="px-1 py-1 text-center w-[44px]">Days ⚠️</th>
+                <tr className="bg-slate-700 text-white font-bold border-b border-slate-300 text-[12px]">
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-10">#</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[210px]">Receipt Code</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[190px]">Command Code</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[100px]">Date</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[170px]">Warehouse</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-left w-[140px]">Creator</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[85px]">Status</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[90px]">Status CA</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[70px]">Unit</th>
+                  <th className="border-r border-slate-600 px-2 py-1.5 text-center w-[60px]">Days ⚠️</th>
+                  <th className="border-r border-slate-600 px-2.5 py-1.5 text-center w-[150px]">TEAM</th>
+                  <th className="px-2 py-1.5 text-center w-[60px]">Year</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {unsignedInItems.map((item, index) => (
                   <tr key={index} className="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/50">
-                    <td className="border-r border-slate-200 px-1 py-1 text-center font-semibold text-slate-400">{index + 1}</td>
-                    <td className="border-r border-slate-200 px-1.5 py-1 font-bold text-slate-900 font-mono truncate">{item.code}</td>
-                    <td className="border-r border-slate-200 px-1.5 py-1 font-bold text-slate-700 text-center truncate">{item.team || getTeamFromWarehouse(item.warehouse || '-')}</td>
-                    <td className="border-r border-slate-200 px-1 py-1 text-center font-medium">
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-bold text-slate-400">{index + 1}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-bold text-slate-900 font-mono whitespace-nowrap">{item.receiptCode || item.code || '-'}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-bold text-slate-700 font-mono whitespace-nowrap">{item.commandCode || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-semibold text-slate-600 whitespace-nowrap">{item.date || item.dateCreate || '-'}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-semibold text-slate-700 whitespace-nowrap">{cleanWarehouseName(item.warehouse || '-')}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-bold text-slate-800 whitespace-nowrap">{item.creator || item.requester || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-semibold whitespace-nowrap">{item.status || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-bold whitespace-nowrap">
                       {item.statusCA === 'Is signing' ? (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[7.5px] font-bold">Is signing ⚠️</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold">Is signing ⚠️</span>
                       ) : (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[7.5px] font-bold">{item.statusCA || 'Unsigned'}</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">{item.statusCA || 'Unsigned'}</span>
                       )}
                     </td>
-                    <td className="px-1 py-1 text-center font-extrabold">{getDelayBadge(item.daysDiff)}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-extrabold text-slate-800 whitespace-nowrap">{item.unit || unit || '-'}</td>
+                    <td className="border-r border-slate-200 px-2 py-1.5 text-center font-black whitespace-nowrap">{getDelayBadge(item.daysDiff)}</td>
+                    <td className="border-r border-slate-200 px-2.5 py-1.5 font-black text-slate-900 text-center whitespace-nowrap">{item.team || getTeamFromWarehouse(item.warehouse || '-')}</td>
+                    <td className="px-2 py-1.5 text-center font-semibold text-slate-600 whitespace-nowrap">{item.year || (item.date ? item.date.split('/')[2] : '-')}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <div className="py-2 text-center text-emerald-700 font-bold text-[9px] bg-emerald-50/30">
+            <div className="py-3 text-center text-emerald-700 font-bold text-[11px] bg-emerald-50/30">
               🎉 All items cleared!
             </div>
           )}

@@ -927,7 +927,7 @@ const Dashboard_Request = () => {
       // Also generate and send Excel document (.xlsx) with 2 sheets
       try {
         const excelBlob = generateRestockExcelBlob(unitData?.unsignedOutItems || [], unitData?.unsignedInItems || [], unit);
-        const filename = `RESTOCK_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        const filename = `RESTOCK_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
         await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
       } catch (excelErr) {
         console.error('Error sending Excel file:', excelErr);
@@ -1082,7 +1082,7 @@ const Dashboard_Request = () => {
           // Also generate and send Excel document (.xlsx) with 2 sheets
           try {
             const excelBlob = generateRestockExcelBlob(unitData?.unsignedOutItems || [], unitData?.unsignedInItems || [], unit);
-            const filename = `RESTOCK_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            const filename = `RESTOCK_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
             await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
           } catch (excelErr) {
             console.error('Error sending Excel file:', excelErr);

@@ -1,6 +1,5 @@
 // telegramBot.js - Full Working Version with ALL Exports (Optimized)
 import { loadFromDb } from './dbStore';
-import * as XLSX from 'xlsx';
 
 // ============================================================
 // 📌 CONFIGURATION
@@ -1014,7 +1013,7 @@ export const sendToTelegram = async (unit, data, customNote = '', signal = null)
   // 📌 Automatically attach 3-sheet Excel file (.xlsx) containing all columns & details
   try {
     const excelBlob = generateStockoutExcelBlob(m1Items, m2Items, m3Items, unit);
-    const filename = `STOCKOUT_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const filename = `STOCKOUT_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
     await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
   } catch (excelErr) {
     console.error('Error attaching Stockout Excel document to Telegram:', excelErr);
@@ -1168,7 +1167,7 @@ export const sendRestockToTelegram = async (unit, data, customNote = '', signal 
   // 📌 Automatically attach 2-sheet Excel file (.xlsx) containing all columns & details
   try {
     const excelBlob = generateSignedCAExcelBlob(unsignedOutItems, unsignedInItems, unit);
-    const filename = `RESTOCK_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const filename = `RESTOCK_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
     await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
   } catch (excelErr) {
     console.error('Error attaching Restock Excel document to Telegram:', excelErr);
@@ -1316,7 +1315,7 @@ export const sendCAToTelegram = async (unit, data, customNote = '', signal = nul
   // 📌 Automatically attach 2-sheet Excel file (.xlsx) containing all columns & details
   try {
     const excelBlob = generateSignedCAExcelBlob(unsignedOutItems, unsignedInItems, unit);
-    const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
     await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
   } catch (excelErr) {
     console.error('Error attaching Signed CA Excel document to Telegram:', excelErr);
@@ -1671,52 +1670,105 @@ export const sendDocumentToTelegram = async (unit, documentBlob, filename = 'rep
   }
 };
 
-// ============================================================
-// 📌 GENERATE MULTI-SHEET EXCEL BLOB FOR RESTOCK IN/OUT
+
+
+  // ============================================================
+// 📌 EXCEL XML SPREADSHEET GENERATOR WITH STYLES (HEADER & CONDITIONAL COLORS)
 // ============================================================
 
-export const generateRestockExcelBlob = (unsignedOutItems = [], unsignedInItems = [], unit = '') => {
-  const wb = XLSX.utils.book_new();
+const escapeXml = (str) => {
+  if (str === null || str === undefined) return '';
+  return str.toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+};
 
-  const getAutoFitCols = (rows) => {
-    if (!rows || rows.length === 0) return [];
-    const keys = Object.keys(rows[0]);
-    return keys.map(key => {
-      let maxLen = key.length;
-      rows.forEach(row => {
-        const val = row[key] !== undefined && row[key] !== null ? String(row[key]) : '';
-        if (val.length > maxLen) maxLen = val.length;
+const createExcelXmlBlob = (sheets) => {
+  let xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40"><Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style><Style ss:ID="Header"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#0F172A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/></Borders><Font ss:FontName="Arial" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#1E293B" ss:Pattern="Solid"/></Style><Style ss:ID="CellLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style><Style ss:ID="CellLeftBold"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A" ss:Bold="1"/></Style><Style ss:ID="CellCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style><Style ss:ID="DaysRed"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#991B1B" ss:Bold="1"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style><Style ss:ID="DaysYellow"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#92400E" ss:Bold="1"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style><Style ss:ID="DaysSlate"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#475569" ss:Bold="1"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style><Style ss:ID="StatusYellow"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#B45309" ss:Bold="1"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style><Style ss:ID="StatusRed"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#B91C1C" ss:Bold="1"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style></Styles>`;
+
+  sheets.forEach(sheet => {
+    xml += `<Worksheet ss:Name="${escapeXml(sheet.name)}"><Table>`;
+    
+    if (sheet.rows && sheet.rows.length > 0 && sheet.headers) {
+      sheet.headers.forEach(h => {
+        let maxLen = h.length;
+        sheet.rows.forEach(r => {
+          const val = r[h];
+          if (val !== null && val !== undefined) maxLen = Math.max(maxLen, val.toString().length);
+        });
+        const colWidth = Math.min(Math.max(maxLen * 8, 75), 320);
+        xml += `<Column ss:Width="${colWidth}"/>`;
       });
-      return { wch: Math.max(maxLen + 4, 15) };
-    });
-  };
+    }
 
-  // Sheet 1: RESTOCK OUT (EXPORT REQUEST)
+    // Header Row
+    xml += `<Row ss:Height="24">`;
+    sheet.headers.forEach(h => {
+      xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`;
+    });
+    xml += `</Row>`;
+
+    // Data Rows
+    sheet.rows.forEach(r => {
+      xml += `<Row ss:Height="20">`;
+      sheet.headers.forEach(h => {
+        const val = r[h] !== undefined && r[h] !== null ? r[h] : '-';
+        let styleId = 'CellLeft';
+        if (h === '#' || h === 'Nº' || h === 'Year' || h === 'Unit' || h === 'UNIT') {
+          styleId = 'CellCenter';
+        } else if (h === 'Export Note Code' || h === 'Receipt Code' || h === 'Export No' || h === 'Code of stock-out note' || h === 'Import Request code') {
+          styleId = 'CellLeftBold';
+        } else if (h === 'Days' || h === "Q'ty of day") {
+          const daysNum = parseInt(val.toString().replace(/[^0-9]/g, '')) || 0;
+          if (daysNum >= 5) styleId = 'DaysRed';
+          else if (daysNum >= 3) styleId = 'DaysYellow';
+          else styleId = 'DaysSlate';
+        } else if (h === 'Status CA' || h === 'Status') {
+          const valStr = val.toString();
+          if (valStr.includes('Is signing')) styleId = 'StatusYellow';
+          else if (valStr.includes('Unsigned') || valStr.includes('Pending')) styleId = 'StatusRed';
+          else styleId = 'CellCenter';
+        }
+
+        const isNum = typeof val === 'number';
+        const typeStr = isNum ? 'Number' : 'String';
+        xml += `<Cell ss:StyleID="${styleId}"><Data ss:Type="${typeStr}">${escapeXml(val)}</Data></Cell>`;
+      });
+      xml += `</Row>`;
+    });
+
+    xml += `</Table></Worksheet>`;
+  });
+
+  xml += `</Workbook>`;
+  return new Blob([xml], { type: 'application/vnd.ms-excel' });
+};
+
+// ============================================================
+// 📌 GENERATE RESTOCK EXCEL BLOB
+// ============================================================
+
+export const generateRestockExcelBlob = (unsignedOutItems = [], unsignedInItems = [], unit = 'ALL') => {
   const outRows = unsignedOutItems.map((item, idx) => ({
     "Nº": idx + 1,
     "Request export code": item.code || item.requestExportCode || '-',
-    "Command export code": item.commandExportCode || item.commandCode || '-',
-    "Note export code": item.noteExportCode || item.noteCode || '-',
-    "Group request": cleanWarehouseName(item.groupRequest || '-'),
-    "Create date": item.createDate || item.createdDate || item.date || '-',
-    "Stock out": cleanWarehouseName(item.stockOut || item.exportWarehouse || '-'),
-    "Stock receive": cleanWarehouseName(item.stockReceive || item.warehouse || '-'),
-    "Receiving Unit": cleanWarehouseName(item.receivingUnit || item.unitReceive || item.unitEntering || '-'),
-    "Creator": item.creator || '-',
-    "Status": item.status || '-',
+    "Command Export Code": item.commandExportCode || item.commandCode || '-',
+    "Date Create": item.dateCreate || item.createdDate || item.date || '-',
+    "Warehouse Export": cleanWarehouseName(item.warehouseExport || item.warehouse || '-'),
+    "Contract": item.contract || '-',
+    "Requester": item.requester || '-',
+    "Unit Request": cleanWarehouseName(item.unitRequest || item.requestingUnit || '-'),
+    "Unit Entering": cleanWarehouseName(item.unitEntering || item.enteringUnit || '-'),
+    "Date Export": item.dateExport || item.exportDate || '-',
     "Status CA": item.statusCA || 'Unsigned',
     "Unit": item.unit || unit || '-',
     "Q'ty of day": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
     "Year": item.year || (item.createDate ? item.createDate.split('/')[2] : '-')
   }));
 
-  const wsOut = XLSX.utils.json_to_sheet(outRows.length > 0 ? outRows : [
-    { "Nº": "-", "Request export code": "No pending items" }
-  ]);
-  wsOut['!cols'] = getAutoFitCols(outRows.length > 0 ? outRows : [{ "Nº": "-", "Request export code": "No pending items" }]);
-  XLSX.utils.book_append_sheet(wb, wsOut, "RESTOCK OUT (EXPORT REQUEST)");
-
-  // Sheet 2: RESTOCK IN (IMPORT REQUEST)
   const inRows = unsignedInItems.map((item, idx) => ({
     "Nº": idx + 1,
     "Import Request code": item.code || item.importRequestCode || '-',
@@ -1734,41 +1786,27 @@ export const generateRestockExcelBlob = (unsignedOutItems = [], unsignedInItems 
     "Year": item.year || (item.createDate ? item.createDate.split('/')[2] : '-')
   }));
 
-  const wsIn = XLSX.utils.json_to_sheet(inRows.length > 0 ? inRows : [
-    { "Nº": "-", "Import Request code": "No pending items" }
-  ]);
-  wsIn['!cols'] = getAutoFitCols(inRows.length > 0 ? inRows : [{ "Nº": "-", "Import Request code": "No pending items" }]);
-  XLSX.utils.book_append_sheet(wb, wsIn, "RESTOCK IN (IMPORT REQUEST)");
+  const sheets = [
+    {
+      name: "RESTOCK OUT (EXPORT REQUEST)",
+      headers: ["Nº", "Request export code", "Command Export Code", "Date Create", "Warehouse Export", "Contract", "Requester", "Unit Request", "Unit Entering", "Date Export", "Status CA", "Unit", "Q'ty of day", "Year"],
+      rows: outRows.length > 0 ? outRows : [{ "Nº": "-", "Request export code": "No pending items" }]
+    },
+    {
+      name: "RESTOCK IN (IMPORT REQUEST)",
+      headers: ["Nº", "Import Request code", "Import Command code", "Date Create", "Import warehouse", "Contract", "Creator", "Unit Requests", "Unit Receive", "Date Delivery", "Status CA", "Unit", "Q'ty of day", "Year"],
+      rows: inRows.length > 0 ? inRows : [{ "Nº": "-", "Import Request code": "No pending items" }]
+    }
+  ];
 
-  // Generate binary OpenXML .xlsx array buffer with maximum ZIP compression (ultra small KB)
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
-  return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  return createExcelXmlBlob(sheets);
 };
 
 // ============================================================
-// 📌 GENERATE STOCKOUT EXCEL BLOB (3 SHEETS, DEF-COMPRESSED)
+// 📌 GENERATE STOCKOUT EXCEL BLOB
 // ============================================================
 
 export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = [], unit = 'ALL') => {
-  const wb = XLSX.utils.book_new();
-
-  const getAutoFitCols = (jsonArray) => {
-    if (!jsonArray || jsonArray.length === 0) return [];
-    const keys = Object.keys(jsonArray[0]);
-    return keys.map(key => {
-      let maxLen = key.toString().length;
-      jsonArray.forEach(row => {
-        const val = row[key];
-        if (val !== null && val !== undefined) {
-          const len = val.toString().length;
-          if (len > maxLen) maxLen = len;
-        }
-      });
-      return { wch: Math.min(Math.max(maxLen + 3, 10), 50) };
-    });
-  };
-
-  // Sheet 1: STOCKOUT YET
   const sheet1Rows = m1Items.map((item, idx) => ({
     "#": idx + 1,
     "Warehouse Stock out": cleanWarehouseName(item.warehouse || item.stockOut || '-'),
@@ -1782,13 +1820,6 @@ export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = 
     "TEAM": cleanWarehouseName(item.team || item.groupReceiver || item.stockReceiver || '-')
   }));
 
-  const ws1 = XLSX.utils.json_to_sheet(sheet1Rows.length > 0 ? sheet1Rows : [
-    { "#": "-", "Export No": "No pending items" }
-  ]);
-  ws1['!cols'] = getAutoFitCols(sheet1Rows.length > 0 ? sheet1Rows : [{ "#": "-", "Export No": "No pending items" }]);
-  XLSX.utils.book_append_sheet(wb, ws1, "STOCKOUT YET");
-
-  // Sheet 2: STOCKOUT NOTE CONFIRMED
   const sheet2Rows = m2Items.map((item, idx) => ({
     "#": idx + 1,
     "Code of stock-out note": item.code || item.noteCode || '-',
@@ -1802,13 +1833,6 @@ export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = 
     "Status": item.status || 'Pending'
   }));
 
-  const ws2 = XLSX.utils.json_to_sheet(sheet2Rows.length > 0 ? sheet2Rows : [
-    { "#": "-", "Code of stock-out note": "No pending items" }
-  ]);
-  ws2['!cols'] = getAutoFitCols(sheet2Rows.length > 0 ? sheet2Rows : [{ "#": "-", "Code of stock-out note": "No pending items" }]);
-  XLSX.utils.book_append_sheet(wb, ws2, "STOCKOUT NOTE CONFIRMED");
-
-  // Sheet 3: NO CREATE HAND OVER
   const sheet3Rows = m3Items.map((item, idx) => ({
     "#": idx + 1,
     "Code of handover minutes": item.code || item.handoverCode || '-',
@@ -1822,41 +1846,32 @@ export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = 
     "UNIT": item.unit || unit || '-'
   }));
 
-  const ws3 = XLSX.utils.json_to_sheet(sheet3Rows.length > 0 ? sheet3Rows : [
-    { "#": "-", "Code of handover minutes": "No pending items" }
-  ]);
-  ws3['!cols'] = getAutoFitCols(sheet3Rows.length > 0 ? sheet3Rows : [{ "#": "-", "Code of handover minutes": "No pending items" }]);
-  XLSX.utils.book_append_sheet(wb, ws3, "NO CREATE HAND OVER");
+  const sheets = [
+    {
+      name: "STOCKOUT YET",
+      headers: ["#", "Warehouse Stock out", "Export No", "Date", "Stock Receiver", "Group Receiver", "Construction", "Unit", "Days", "TEAM"],
+      rows: sheet1Rows.length > 0 ? sheet1Rows : [{ "#": "-", "Export No": "No pending items" }]
+    },
+    {
+      name: "STOCKOUT NOTE CONFIRMED",
+      headers: ["#", "Code of stock-out note", "Warehouse", "Recipient", "Creator", "Creating date", "TEAM", "Unit", "Days", "Status"],
+      rows: sheet2Rows.length > 0 ? sheet2Rows : [{ "#": "-", "Code of stock-out note": "No pending items" }]
+    },
+    {
+      name: "NO CREATE HAND OVER",
+      headers: ["#", "Code of handover minutes", "Type of handover", "Handover unit", "Unit confirm handover", "Handover date", "Status", "TEAM", "Days", "UNIT"],
+      rows: sheet3Rows.length > 0 ? sheet3Rows : [{ "#": "-", "Code of handover minutes": "No pending items" }]
+    }
+  ];
 
-  // Binary OpenXML .xlsx with maximum ZIP compression (ultra small KB)
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
-  return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  return createExcelXmlBlob(sheets);
 };
 
 // ============================================================
-// 📌 GENERATE SIGNED CA EXCEL BLOB (2 SHEETS, DEF-COMPRESSED)
+// 📌 GENERATE SIGNED CA EXCEL BLOB
 // ============================================================
 
 export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], unit = 'ALL') => {
-  const wb = XLSX.utils.book_new();
-
-  const getAutoFitCols = (jsonArray) => {
-    if (!jsonArray || jsonArray.length === 0) return [];
-    const keys = Object.keys(jsonArray[0]);
-    return keys.map(key => {
-      let maxLen = key.toString().length;
-      jsonArray.forEach(row => {
-        const val = row[key];
-        if (val !== null && val !== undefined) {
-          const len = val.toString().length;
-          if (len > maxLen) maxLen = len;
-        }
-      });
-      return { wch: Math.min(Math.max(maxLen + 3, 10), 50) };
-    });
-  };
-
-  // Sheet 1: SIGNED CA EXPORT
   const exportRows = exportItems.map((item, idx) => ({
     "#": idx + 1,
     "Export Note Code": item.exportNoteCode || item.code || item.noteCode || '-',
@@ -1880,13 +1895,6 @@ export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], un
     "Year": item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : (item.date ? item.date.split('/')[2] : '-'))
   }));
 
-  const wsExport = XLSX.utils.json_to_sheet(exportRows.length > 0 ? exportRows : [
-    { "#": "-", "Export Note Code": "No pending items" }
-  ]);
-  wsExport['!cols'] = getAutoFitCols(exportRows.length > 0 ? exportRows : [{ "#": "-", "Export Note Code": "No pending items" }]);
-  XLSX.utils.book_append_sheet(wb, wsExport, "SIGNED CA EXPORT");
-
-  // Sheet 2: SIGNED CA IMPORT
   const importRows = importItems.map((item, idx) => ({
     "#": idx + 1,
     "Receipt Code": item.receiptCode || item.code || item.importCode || '-',
@@ -1902,13 +1910,18 @@ export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], un
     "Year": item.year || (item.date ? item.date.split('/')[2] : '-')
   }));
 
-  const wsImport = XLSX.utils.json_to_sheet(importRows.length > 0 ? importRows : [
-    { "#": "-", "Receipt Code": "No pending items" }
-  ]);
-  wsImport['!cols'] = getAutoFitCols(importRows.length > 0 ? importRows : [{ "#": "-", "Receipt Code": "No pending items" }]);
-  XLSX.utils.book_append_sheet(wb, wsImport, "SIGNED CA IMPORT");
+  const sheets = [
+    {
+      name: "SIGNED CA EXPORT",
+      headers: ["#", "Export Note Code", "Export Command Code", "Export Request", "Requester", "Date Create", "Date Export", "Export Warehouse", "Reason", "Warehouse Entering", "Unit Entering", "Construction Code", "Status", "Disapprove", "Status CA", "Description", "Unit", "Days", "TEAM", "Year"],
+      rows: exportRows.length > 0 ? exportRows : [{ "#": "-", "Export Note Code": "No pending items" }]
+    },
+    {
+      name: "SIGNED CA IMPORT",
+      headers: ["#", "Receipt Code", "Command Code", "Date", "Warehouse", "Creator", "Status", "Status CA", "Unit", "Days", "TEAM", "Year"],
+      rows: importRows.length > 0 ? importRows : [{ "#": "-", "Receipt Code": "No pending items" }]
+    }
+  ];
 
-  // Generate binary OpenXML .xlsx array buffer with maximum ZIP compression (ultra small KB)
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
-  return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  return createExcelXmlBlob(sheets);
 };

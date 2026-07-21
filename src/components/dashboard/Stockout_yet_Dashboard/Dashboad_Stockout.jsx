@@ -1397,7 +1397,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
         const m2Items = getUnitM2Items(unit);
         const m3Items = getUnitM3Items(unit);
         const excelBlob = generateStockoutExcelBlob(m1Items, m2Items, m3Items, unit);
-        const filename = `STOCKOUT_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        const filename = `STOCKOUT_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
         await sendDocumentToTelegram(unit, excelBlob, filename, '', abortControllerRef.current.signal);
       } catch (excelErr) {
         console.error('Error sending Stockout Excel file:', excelErr);
@@ -1572,7 +1572,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
             const m2Items = getUnitM2Items(unit);
             const m3Items = getUnitM3Items(unit);
             const excelBlob = generateStockoutExcelBlob(m1Items, m2Items, m3Items, unit);
-            const filename = `STOCKOUT_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            const filename = `STOCKOUT_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
             await sendDocumentToTelegram(unit, excelBlob, filename, '', abortControllerRef.current.signal);
           } catch (excelErr) {
             console.error('Error sending Stockout Excel file:', excelErr);
