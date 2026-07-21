@@ -279,37 +279,7 @@ const Sidebar = ({ onSelect, selected }) => {
           ))}
         </div>
 
-        {/* ─── BOTTOM SECTION ─── */}
-        <div className="mt-6 pt-5 border-t border-slate-100">
-          <div className="bg-gradient-to-br from-blue-50/80 via-indigo-50/60 to-purple-50/40 rounded-2xl p-4 border border-blue-100 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Active Modules</div>
-                <div className="text-2xl font-black text-slate-800 mt-0.5 tracking-tight">3</div>
-              </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center text-white text-lg shadow-md shadow-indigo-200">
-                📊
-              </div>
-            </div>
-            <div className="mt-2.5 flex items-center gap-1.5">
-              <span className="px-2 py-0.5 bg-blue-100/80 text-blue-800 text-[10px] font-black rounded-lg border border-blue-200/50">📋</span>
-              <span className="px-2 py-0.5 bg-emerald-100/80 text-emerald-800 text-[10px] font-black rounded-lg border border-emerald-200/50">✅</span>
-              <span className="px-2 py-0.5 bg-purple-100/80 text-purple-800 text-[10px] font-black rounded-lg border border-purple-200/50">🔄</span>
-            </div>
-          </div>
-        </div>
 
-        {/* ─── SETTINGS & HELP ─── */}
-        <div className="mt-4 pt-3 border-t border-slate-100 flex gap-1.5">
-          <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl transition-all group border border-slate-100 hover:border-slate-200 cursor-pointer">
-            <span className="text-lg">⚙️</span>
-            <span className="text-[11px] font-bold group-hover:text-slate-900">Settings</span>
-          </button>
-          <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 text-slate-600 hover:bg-slate-50 rounded-xl transition-all group border border-slate-100 hover:border-slate-200 cursor-pointer">
-            <span className="text-lg">❓</span>
-            <span className="text-[11px] font-bold group-hover:text-slate-900">Help</span>
-          </button>
-        </div>
       </nav>
 
       {/* ─── FOOTER ─── */}
