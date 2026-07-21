@@ -1809,14 +1809,14 @@ export const generateRestockExcelBlob = (unsignedOutItems = [], unsignedInItems 
 export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = [], unit = 'ALL') => {
   const sheet1Rows = m1Items.map((item, idx) => ({
     "#": idx + 1,
-    "Warehouse Stock out": cleanWarehouseName(item.warehouse || item.stockOut || '-'),
-    "Export No": item.exportNo || item.code || item.exportCode || '-',
+    "Warehouse Stock out": cleanWarehouseName(item.exportCode || item.warehouse || item.stockOut || item.warehouseStockOut || '-'),
+    "Export No": item.exportNo || item.code || '-',
     "Date": item.realExport || item.date || item.dateCreate || item.createdDate || '-',
-    "Stock Receiver": cleanWarehouseName(item.stockReceiver || item.receivingUnit || '-'),
+    "Stock Receiver": cleanWarehouseName(item.stockReceiver || item.receivingUnit || item.stockReceive || item.receiver || '-'),
     "Group Receiver": cleanWarehouseName(item.groupReceiver || item.groupRequest || '-'),
     "Construction": item.constructionReceiver || item.construction || '-',
     "Unit": item.unit || unit || '-',
-    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days !== undefined ? `${item.days}d` : '-'),
     "TEAM": cleanWarehouseName(item.team || item.groupReceiver || item.stockReceiver || '-')
   }));
 
