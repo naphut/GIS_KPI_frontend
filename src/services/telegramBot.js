@@ -971,7 +971,18 @@ export const sendToTelegram = async (unit, data, customNote = '', signal = null)
   }
 
   const message = formatStockoutMessage(unit, data, customNote);
-  return await sendMessageToTelegram(unit, message, signal);
+  const result = await sendMessageToTelegram(unit, message, signal);
+
+  // 📌 Automatically attach 3-sheet Excel file (.xlsx) containing all columns & details
+  try {
+    const excelBlob = generateStockoutExcelBlob(m1Items, m2Items, m3Items, unit);
+    const filename = `STOCKOUT_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
+  } catch (excelErr) {
+    console.error('Error attaching Stockout Excel document to Telegram:', excelErr);
+  }
+
+  return result;
 };
 
 export const sendToAllTelegram = async (data, onProgress, customNote = '', signal = null) => {
@@ -1114,7 +1125,18 @@ export const sendRestockToTelegram = async (unit, data, customNote = '', signal 
   }
 
   const message = formatRestockMessage(unit, data, customNote);
-  return await sendMessageToTelegram(unit, message, signal);
+  const result = await sendMessageToTelegram(unit, message, signal);
+
+  // 📌 Automatically attach 2-sheet Excel file (.xlsx) containing all columns & details
+  try {
+    const excelBlob = generateSignedCAExcelBlob(unsignedOutItems, unsignedInItems, unit);
+    const filename = `RESTOCK_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
+  } catch (excelErr) {
+    console.error('Error attaching Restock Excel document to Telegram:', excelErr);
+  }
+
+  return result;
 };
 
 export const sendToAllRestockTelegram = async (data, onProgress, customNote = '', signal = null) => {
@@ -1238,9 +1260,9 @@ export const sendCAToTelegram = async (unit, data, customNote = '', signal = nul
   if (data && data.units && data.units[unit]) {
     unitData = data.units[unit];
   }
-  const unsignedInItems = unitData?.unsignedInItems || [];
   const unsignedOutItems = unitData?.unsignedOutItems || [];
-  const totalItems = unsignedInItems.length + unsignedOutItems.length;
+  const unsignedInItems = unitData?.unsignedInItems || [];
+  const totalItems = unsignedOutItems.length + unsignedInItems.length;
 
   if (totalItems === 0) {
     return {
@@ -1251,7 +1273,18 @@ export const sendCAToTelegram = async (unit, data, customNote = '', signal = nul
   }
 
   const message = formatCAMessage(unit, data, customNote);
-  return await sendMessageToTelegram(unit, message, signal);
+  const result = await sendMessageToTelegram(unit, message, signal);
+
+  // 📌 Automatically attach 2-sheet Excel file (.xlsx) containing all columns & details
+  try {
+    const excelBlob = generateSignedCAExcelBlob(unsignedOutItems, unsignedInItems, unit);
+    const filename = `SIGNED_CA_${unit}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
+  } catch (excelErr) {
+    console.error('Error attaching Signed CA Excel document to Telegram:', excelErr);
+  }
+
+  return result;
 };
 
 export const sendToAllCATelegram = async (data, onProgress, customNote = '', signal = null) => {

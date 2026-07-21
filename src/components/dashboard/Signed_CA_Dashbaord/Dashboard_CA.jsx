@@ -13,9 +13,7 @@ import {
   sendDocumentToTelegram,
   generateSignedCAExcelBlob,
   cleanWarehouseName,
-  getTeamFromWarehouse,
-  getUnitFromTeam,
-  getTeamFromRecipient
+  getTeamFromWarehouse
 } from '../../../services/telegramBot';
 import { loadFromDb, saveToDb, completeStore } from '../../../services/dbStore';
 import html2canvas from 'html2canvas';
@@ -387,33 +385,17 @@ const Dashboard_CA = () => {
       const targetEvening = importEvening + exportEvening;
       const totalUnitTarget = importTarget + exportTarget;
 
-      const getItemUnitOut = (item) => {
-        const rawTeam = item.team || getTeamFromWarehouse(item.unitEntering || item.exportWarehouse || '-');
-        const cleanTeam = getTeamFromRecipient(rawTeam);
-        const teamUnit = getUnitFromTeam(cleanTeam);
-        if (teamUnit) return teamUnit;
-        return item.unit || 'OTHER';
-      };
-
-      const getItemUnitIn = (item) => {
-        const rawTeam = item.team || getTeamFromWarehouse(item.warehouse || '-');
-        const cleanTeam = getTeamFromRecipient(rawTeam);
-        const teamUnit = getUnitFromTeam(cleanTeam);
-        if (teamUnit) return teamUnit;
-        return item.unit || 'OTHER';
-      };
-
-      const outItems = stockOutData.filter(item => getItemUnitOut(item) === unit);
+      const outItems = stockOutData.filter(item => item.unit === unit);
       const outUnsigned = outItems.length;
-      const outResult = exportCompletionHistory.filter(h => h.unit === unit || (h.team && getUnitFromTeam(h.team) === unit)).length;
+      const outResult = exportCompletionHistory.filter(h => h.unit === unit).length;
       const outTotal = outResult + outUnsigned;
       const outRatio = exportTarget > 0 
         ? parseFloat(((outResult / exportTarget) * 100).toFixed(2)) 
         : (outUnsigned === 0 && outResult === 0 ? 100 : 0);
       
-      const inItems = stockInData.filter(item => getItemUnitIn(item) === unit);
+      const inItems = stockInData.filter(item => item.unit === unit);
       const inUnsigned = inItems.length;
-      const inResult = importCompletionHistory.filter(h => h.unit === unit || (h.team && getUnitFromTeam(h.team) === unit)).length;
+      const inResult = importCompletionHistory.filter(h => h.unit === unit).length;
       const inTotal = inResult + inUnsigned;
       const inRatio = importTarget > 0 
         ? parseFloat(((inResult / importTarget) * 100).toFixed(2)) 
@@ -433,13 +415,13 @@ const Dashboard_CA = () => {
       
       const unsignedOutItemsList = outItems
         .filter(item => {
-          const s = (item.statusCA || '').toLowerCase().trim();
-          return s !== 'signed' && s !== 'signed ca' && s !== 'completed';
+          const s = (item.statusCA || '').toLowerCase();
+          return !s.includes('signed') || s.includes('unsigned');
         })
         .map(item => ({
           ...item,
-          code: item.exportNoteCode || item.exportCommandCode || item.code || '',
-          daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate || item.dateExport || item.date),
+          code: item.exportNoteCode || item.code || '',
+          daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.dateCreate),
           warehouse: item.exportWarehouse || item.warehouse || '-',
           statusCA: item.statusCA || 'Unsigned',
           creator: item.createRequester || item.requester || item.creator || '-',
@@ -448,12 +430,12 @@ const Dashboard_CA = () => {
 
       const unsignedInItemsList = inItems
         .filter(item => {
-          const s = (item.statusCA || '').toLowerCase().trim();
-          return s !== 'signed' && s !== 'signed ca' && s !== 'completed';
+          const s = (item.statusCA || '').toLowerCase();
+          return !s.includes('signed') || s.includes('unsigned');
         })
         .map(item => ({
           ...item,
-          code: item.codeReceipt || item.commandCode || item.code || '',
+          code: item.codeReceipt || item.code || '',
           daysDiff: item.daysDiff !== undefined ? item.daysDiff : calculateDaysDiff(item.date),
           warehouse: item.warehouse || '-',
           statusCA: item.statusCA || 'Unsigned',
