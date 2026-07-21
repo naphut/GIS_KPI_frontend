@@ -737,59 +737,97 @@ const formatCAMessage = (unit, data, customNote = '') => {
     return `✅ <b>No unsigned CA items for all teams!</b>`;
   }
 
-  let parts = [];
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-  // Export CA
+  let parts = [];
+  let header = `📊 <b>SIGNED CA REPORT DETAILS</b>\n`;
+  header += `📍 <b>BRANCH : ${unit}</b>\n`;
+  header += `🕒 ${timeStr} | 📅 ${dateStr}\n`;
+  header += `📋 <b>Total Pending:</b> ${totalItems} Items\n`;
+  header += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+  parts.push(header);
+
+  // 1. EXPORT CA Section
   if (unsignedOutItems.length > 0) {
     const outGroups = {};
     unsignedOutItems.forEach(item => {
       const rawTeam = item.team || getTeamFromWarehouse(item.unitEntering || item.exportWarehouse || '-');
       const team = getTeamFromRecipient(rawTeam);
-      if (!outGroups[team]) {
-        outGroups[team] = [];
-      }
+      if (!outGroups[team]) outGroups[team] = [];
       outGroups[team].push(item);
     });
 
     const outTeams = Object.keys(outGroups).sort((a, b) => a.localeCompare(b));
-    let exportMsg = `📤 <b>EXPORT CA</b>\n`;
+    let exportMsg = `📤 <b>EXPORT CA (${unsignedOutItems.length} Items)</b>\n`;
     outTeams.forEach(team => {
-      exportMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
-      outGroups[team].forEach(item => {
+      exportMsg += `[SPLIT]👥 <b>TEAM: ${escapeHtml(team)}</b>\n`;
+      outGroups[team].forEach((item, idx) => {
         const days = parseInt(item.daysDiff) || 0;
-        exportMsg += ` • <code>${escapeHtml(item.code || '-')}(${days}d)</code>\n`;
+        const code = item.exportNoteCode || item.code || item.noteCode || '-';
+        const cmdCode = item.exportCommandCode || item.commandCode || '-';
+        const requester = item.requester || item.creator || '-';
+        const dateCreate = item.dateCreate || item.date || '-';
+        const expWh = cleanWarehouseName(item.exportWarehouse || item.warehouse || '-');
+        const unitEnt = cleanWarehouseName(item.unitEntering || item.enteringUnit || '-');
+        const whEnt = cleanWarehouseName(item.warehouseEntering || item.enteringWarehouse || '-');
+        const statusCA = item.statusCA || 'Unsigned';
+
+        exportMsg += ` ${idx + 1}. <code>${escapeHtml(code)}</code> (<b>${days}d</b>)\n`;
+        if (cmdCode && cmdCode !== '-') exportMsg += `    • Cmd Code: <code>${escapeHtml(cmdCode)}</code>\n`;
+        if (requester && requester !== '-') exportMsg += `    • Requester: ${escapeHtml(requester)}\n`;
+        if (dateCreate && dateCreate !== '-') exportMsg += `    • Date: ${escapeHtml(dateCreate)}\n`;
+        if (expWh && expWh !== '-') exportMsg += `    • Exp WH: ${escapeHtml(expWh)}\n`;
+        if (whEnt && whEnt !== '-') exportMsg += `    • WH Entering: ${escapeHtml(whEnt)}\n`;
+        if (unitEnt && unitEnt !== '-') exportMsg += `    • Unit Entering: ${escapeHtml(unitEnt)}\n`;
+        exportMsg += `    • Status CA: <b>${escapeHtml(statusCA)}</b>\n`;
+        if (item.reason && item.reason !== '-') exportMsg += `    • Reason: ${escapeHtml(item.reason)}\n`;
+        if (item.description && item.description !== '-') exportMsg += `    • Note: ${escapeHtml(item.description)}\n`;
+        exportMsg += `\n`;
       });
     });
     parts.push(exportMsg);
   }
 
-  // Import CA
+  // 2. IMPORT CA Section
   if (unsignedInItems.length > 0) {
     const inGroups = {};
     unsignedInItems.forEach(item => {
       const rawTeam = item.team || getTeamFromWarehouse(item.warehouse || '-');
       const team = getTeamFromRecipient(rawTeam);
-      if (!inGroups[team]) {
-        inGroups[team] = [];
-      }
+      if (!inGroups[team]) inGroups[team] = [];
       inGroups[team].push(item);
     });
 
     const inTeams = Object.keys(inGroups).sort((a, b) => a.localeCompare(b));
-    let importMsg = `📥 <b>IMPORT CA</b>\n`;
+    let importMsg = `📥 <b>IMPORT CA (${unsignedInItems.length} Items)</b>\n`;
     inTeams.forEach(team => {
-      importMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
-      inGroups[team].forEach(item => {
+      importMsg += `[SPLIT]👥 <b>TEAM: ${escapeHtml(team)}</b>\n`;
+      inGroups[team].forEach((item, idx) => {
         const days = parseInt(item.daysDiff) || 0;
-        importMsg += ` • <code>${escapeHtml(item.code || '-')}(${days}d)</code>\n`;
+        const receiptCode = item.receiptCode || item.code || item.importCode || '-';
+        const cmdCode = item.commandCode || item.importCommandCode || '-';
+        const creator = item.creator || item.requester || '-';
+        const dateStr = item.date || item.dateCreate || '-';
+        const wh = cleanWarehouseName(item.warehouse || item.importWarehouse || '-');
+        const statusCA = item.statusCA || 'Unsigned';
+
+        importMsg += ` ${idx + 1}. <code>${escapeHtml(receiptCode)}</code> (<b>${days}d</b>)\n`;
+        if (cmdCode && cmdCode !== '-') importMsg += `    • Cmd Code: <code>${escapeHtml(cmdCode)}</code>\n`;
+        if (creator && creator !== '-') importMsg += `    • Creator: ${escapeHtml(creator)}\n`;
+        if (dateStr && dateStr !== '-') importMsg += `    • Date: ${escapeHtml(dateStr)}\n`;
+        if (wh && wh !== '-') importMsg += `    • Warehouse: ${escapeHtml(wh)}\n`;
+        importMsg += `    • Status CA: <b>${escapeHtml(statusCA)}</b>\n`;
+        importMsg += `\n`;
       });
     });
     parts.push(importMsg);
   }
 
   let message = parts.join('\n');
-  if (message) {
-    message += `\n📊 <b>ចំនួនសរុប៖</b> ${totalItems} Items`;
+  if (customNote && customNote.trim()) {
+    message += `\n━━━━━━━━━━━━━━━━━━━━━━━\n📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n`;
   }
 
   return message;
