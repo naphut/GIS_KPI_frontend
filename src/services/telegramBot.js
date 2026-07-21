@@ -1506,8 +1506,35 @@ export const sendPhotoToTelegram = async (unit, photoBlob, caption = '', signal 
       console.log(`✅ Sent photo directly to ${unit} (${duration}ms)`);
       return { success: true, result: directResult, duration };
     } else {
-      console.error(`❌ Failed to send photo directly to ${unit}: ${directResult.description}`);
-      return { success: false, error: directResult.description, duration };
+      console.warn(`⚠️ sendPhoto failed (${directResult.description}). Trying sendDocument fallback for ${unit}...`);
+
+      // 📌 Fallback: Send as Document file (bypasses Telegram photo dimension & aspect ratio limits)
+      const docUrl = `https://api.telegram.org/bot${token}/sendDocument`;
+      const docFormData = new FormData();
+      docFormData.append('chat_id', groupId);
+      docFormData.append('document', photoBlob, `${unit}_screenshot_report.png`);
+      if (caption) {
+        docFormData.append('caption', caption);
+        docFormData.append('parse_mode', 'HTML');
+      }
+
+      const docResponse = await fetch(docUrl, {
+        method: 'POST',
+        body: docFormData,
+        signal: signal || controller.signal
+      });
+
+      const docResult = await docResponse.json();
+      const totalDuration = Date.now() - startTime;
+      clearTimeout(timeoutId);
+
+      if (docResult.ok) {
+        console.log(`✅ Sent screenshot document fallback to ${unit} (${totalDuration}ms)`);
+        return { success: true, result: docResult, duration: totalDuration };
+      }
+
+      console.error(`❌ Failed to send photo and document fallback to ${unit}: ${directResult.description}`);
+      return { success: false, error: directResult.description, duration: totalDuration };
     }
   } catch (error) {
     const duration = Date.now() - startTime;

@@ -823,7 +823,7 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
     const sortedM3 = [...m3Items].sort((a, b) => (a.unitConfirm || '').localeCompare(b.unitConfirm || ''));
 
     const tasks = [];
-    const chunkSize = 50;
+    const chunkSize = 25;
 
     // Helper to chunk array
     const chunkArray = (arr, size) => {
