@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { loadFromDb, saveToDb } from '../../services/dbStore';
+import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
 
 // Storage Keys
 const STORAGE_KEYS = {
@@ -643,12 +643,29 @@ const NO_CREATE_HAND_OVER = () => {
     setData(filtered);
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
     if (window.confirm('⚠️ Are you sure you want to delete ALL data?')) {
       setData([]);
       setCompletionHistory([]);
       setTargets({});
       setConfirmedStatus({});
+      
+      // Clear localStorage immediately
+      localStorage.removeItem(STORAGE_KEYS.DATA);
+      localStorage.removeItem(STORAGE_KEYS.COMPLETION);
+      localStorage.removeItem(STORAGE_KEYS.TARGETS);
+      localStorage.removeItem(STORAGE_KEYS.TARGET_HISTORY);
+      localStorage.removeItem(STORAGE_KEYS.CONFIRMED);
+      
+      // Clear DB stores in parallel
+      await Promise.all([
+        clearStore(STORAGE_KEYS.DATA),
+        clearStore(STORAGE_KEYS.COMPLETION),
+        clearStore(STORAGE_KEYS.TARGETS),
+        clearStore(STORAGE_KEYS.TARGET_HISTORY),
+        clearStore(STORAGE_KEYS.CONFIRMED)
+      ]);
+      
       showNotification('All data cleared!', 'warning');
     }
   };

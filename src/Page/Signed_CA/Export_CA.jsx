@@ -884,10 +884,21 @@ export const Export_CA = () => {
       setCompletionHistory([]);
       setTargets({});
       setConfirmedStatus({});
-      await clearStore(STORAGE_KEYS.DATA);
-      await clearStore(STORAGE_KEYS.COMPLETION);
-      await clearStore(STORAGE_KEYS.TARGETS);
-      await clearStore(STORAGE_KEYS.CONFIRMED);
+      
+      // Clear localStorage immediately
+      localStorage.removeItem(STORAGE_KEYS.DATA);
+      localStorage.removeItem(STORAGE_KEYS.COMPLETION);
+      localStorage.removeItem(STORAGE_KEYS.TARGETS);
+      localStorage.removeItem(STORAGE_KEYS.CONFIRMED);
+      
+      // Clear DB stores in parallel
+      await Promise.all([
+        clearStore(STORAGE_KEYS.DATA),
+        clearStore(STORAGE_KEYS.COMPLETION),
+        clearStore(STORAGE_KEYS.TARGETS),
+        clearStore(STORAGE_KEYS.CONFIRMED)
+      ]);
+      
       showNotification('All data cleared!', 'warning');
     }
   };

@@ -130,10 +130,12 @@ export const completeStore = async (key) => {
   return null;
 };
 
-/**
- * Transition a store value's status to 'cleared'.
- */
 export const clearStore = async (key) => {
+  try {
+    localStorage.removeItem(key);
+  } catch (e) {
+    console.error(`Error clearing localStorage cache for "${key}":`, e);
+  }
   try {
     const response = await fetch(`${getBackendBaseUrl()}/${key}/clear`, {
       method: 'POST'
