@@ -27,6 +27,15 @@ export const loadFromDb = async (key, fallback = null) => {
       signal: controller.signal
     });
     clearTimeout(timeoutId);
+
+    // If key is not found (404), it has been deleted on the server. Clear local cache.
+    if (response.status === 404) {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {}
+      return fallback;
+    }
+
     if (response.ok) {
       const data = await response.json();
       if (data && data.status === 'cleared') {
@@ -55,19 +64,15 @@ export const loadFromDb = async (key, fallback = null) => {
     }
   }
 
-  // Fallback to local storage (for migration or offline cache)
+  // Fallback to local storage (read-only offline cache, NEVER re-upload automatically)
   try {
     const localSaved = localStorage.getItem(key);
     if (localSaved !== null) {
-      let parsed = localSaved;
       try {
-        parsed = JSON.parse(localSaved);
+        return JSON.parse(localSaved);
       } catch (e) {
-        parsed = localSaved;
+        return localSaved;
       }
-      // Proactively migrate to database in background
-      saveToDb(key, parsed).catch(err => console.error(`Migration error for key "${key}":`, err));
-      return parsed;
     }
   } catch (e) {
     console.error(`Error reading localStorage for "${key}":`, e);
