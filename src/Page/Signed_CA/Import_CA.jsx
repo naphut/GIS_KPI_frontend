@@ -729,9 +729,6 @@ const Import_CA = () => {
 
   const clearAllData = async () => {
     if (window.confirm('⚠️ Are you sure you want to delete ALL data? This cannot be undone!')) {
-      // Prevent automatic useEffect sync hooks from writing back empty structures to DB
-      isLoaded.current = false;
-
       setData([]);
       setCompletionHistory([]);
       setTargets({});
@@ -752,11 +749,8 @@ const Import_CA = () => {
         clearStore(STORAGE_KEYS.COMPLETION),
         clearStore(STORAGE_KEYS.TARGETS),
         clearStore(STORAGE_KEYS.CONFIRMED)
-      ]).then(() => {
-        isLoaded.current = true;
-      }).catch(err => {
+      ]).catch(err => {
         console.error("Error clearing DB store:", err);
-        isLoaded.current = true;
       });
     }
   };
