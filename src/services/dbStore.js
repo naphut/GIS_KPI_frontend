@@ -29,6 +29,12 @@ export const loadFromDb = async (key, fallback = null) => {
     clearTimeout(timeoutId);
     if (response.ok) {
       const data = await response.json();
+      if (data && data.status === 'cleared') {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {}
+        return fallback;
+      }
       if (data && data.value !== undefined && data.value !== null) {
         const valStr = typeof data.value === 'string' ? data.value : JSON.stringify(data.value);
         try {
