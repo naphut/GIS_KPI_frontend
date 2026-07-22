@@ -628,8 +628,8 @@ export const Export_CA = () => {
       // 🎯 ប្រើមុខងារ getUnit ថ្មី
       const unit = getUnit(item.exportWarehouse, item.exportNoteCode, item.exportCommandCode);
       const team = getTeamFromWarehouse(item.nameWarehouseEntering || item.exportWarehouse);
-      const daysDiff = calculateDaysDiff(item.dateCreate);
-      const year = extractYearFromDate(item.dateCreate);
+      const daysDiff = calculateDaysDiff(item.dateExport || item.dateCreate);
+      const year = extractYearFromDate(item.dateExport || item.dateCreate);
       
       return {
         id: Math.max(...data.map(d => d.id), 0, index) + index + 1,
@@ -855,9 +855,10 @@ export const Export_CA = () => {
     const updatedData = data.map(item => {
       if (item.id === id) {
         const updated = { ...item, [field]: value };
-        if (field === 'dateCreate') {
-          updated.daysDiff = calculateDaysDiff(value);
-          updated.year = extractYearFromDate(value);
+        if (field === 'dateCreate' || field === 'dateExport') {
+          const targetDate = field === 'dateExport' ? (value || item.dateCreate) : (item.dateExport || value);
+          updated.daysDiff = calculateDaysDiff(targetDate);
+          updated.year = extractYearFromDate(targetDate);
         }
         if (field === 'exportWarehouse' || field === 'exportNoteCode' || field === 'exportCommandCode') {
           // 🎯 ប្រើមុខងារ getUnit ថ្មី
@@ -1124,8 +1125,9 @@ export const Export_CA = () => {
     setData(prevData => {
       let changed = false;
       const updated = prevData.map(item => {
-        const currentDaysDiff = calculateDaysDiff(item.dateCreate);
-        const currentYear = extractYearFromDate(item.dateCreate);
+        const targetDate = item.dateExport || item.dateCreate;
+        const currentDaysDiff = calculateDaysDiff(targetDate);
+        const currentYear = extractYearFromDate(targetDate);
         if (item.daysDiff !== currentDaysDiff || item.year !== currentYear) {
           changed = true;
           return { ...item, daysDiff: currentDaysDiff, year: currentYear };
