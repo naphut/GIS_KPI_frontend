@@ -34,7 +34,7 @@ const Import_CA = () => {
   const [completionHistory, setCompletionHistory] = useState(() => getStorageData(STORAGE_KEYS.COMPLETION) || []);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAlarmModal, setShowAlarmModal] = useState(false);
-  const [alarmThreshold, setAlarmThreshold] = useState(4);
+  const [alarmThreshold, setAlarmThreshold] = useState(7);
   const [dismissedItems, setDismissedItems] = useState(new Set());
   const [editingCell, setEditingCell] = useState(null);
   const [showPasteModal, setShowPasteModal] = useState(false);
@@ -922,7 +922,7 @@ const Import_CA = () => {
   }, [filteredData, currentPage, pageSize]);
 
   const alarmItems = useMemo(() => {
-    return filteredData.filter(item => (item.daysDiff > alarmThreshold || (item.statusCA && (item.statusCA.toUpperCase().includes('UNSIGNED') || item.statusCA.toUpperCase().includes('CHƯA') || item.statusCA.toUpperCase().includes('CHUA')))) && !dismissedItems.has(item.id));
+    return filteredData.filter(item => (item.daysDiff >= alarmThreshold || (item.statusCA && (item.statusCA.toUpperCase().includes('UNSIGNED') || item.statusCA.toUpperCase().includes('CHƯA') || item.statusCA.toUpperCase().includes('CHUA')))) && !dismissedItems.has(item.id));
   }, [filteredData, alarmThreshold, dismissedItems]);
 
   const [alarmSearchTerm, setAlarmSearchTerm] = useState('');
@@ -997,9 +997,9 @@ const Import_CA = () => {
 
   const getDaysColor = (days) => {
     if (days < 0) return 'text-rose-600 bg-rose-50';
+    if (days >= alarmThreshold) return 'text-rose-700 bg-rose-100 animate-pulse';
     if (days === 0) return 'text-amber-600 bg-amber-50';
     if (days <= 3) return 'text-yellow-600 bg-yellow-50';
-    if (days > alarmThreshold) return 'text-rose-700 bg-rose-100 animate-pulse';
     return 'text-emerald-600 bg-emerald-50';
   };
 
@@ -1434,7 +1434,7 @@ const Import_CA = () => {
             </div>
             <div className="flex gap-2.5 items-center">
               <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-3.5 py-1.5 rounded-xl shadow-sm">
-                <span className="text-sm text-amber-800 font-semibold">⚠️ &gt;</span>
+                <span className="text-sm text-amber-800 font-semibold">⚠️ &ge;</span>
                 <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-16 px-2 py-1 text-sm border border-amber-300 rounded-lg text-center bg-white text-gray-800 font-bold focus:outline-none focus:ring-2 focus:ring-amber-500" min="1"/>
                 <span className="text-sm text-amber-800 font-semibold">days</span>
               </div>
@@ -1462,7 +1462,7 @@ const Import_CA = () => {
           </div>
           <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Threshold</div>
-            <div className="text-2xl font-black text-amber-600 mt-1">&gt;{alarmThreshold}d</div>
+            <div className="text-2xl font-black text-amber-600 mt-1">&ge;{alarmThreshold}d</div>
           </div>
           <div className={`bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm cursor-pointer hover:shadow-md transition-all duration-200 ${alarmCount > 0 ? 'border-rose-400 bg-rose-50/30' : ''}`} onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}>
             <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Alarms</div>
@@ -1491,7 +1491,7 @@ const Import_CA = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedData.map((item) => {
-                const isAlarm = (item.daysDiff > alarmThreshold || (item.statusCA && (item.statusCA.toUpperCase().includes('UNSIGNED') || item.statusCA.toUpperCase().includes('CHƯA') || item.statusCA.toUpperCase().includes('CHUA')))) && !dismissedItems.has(item.id);
+                const isAlarm = (item.daysDiff >= alarmThreshold || (item.statusCA && (item.statusCA.toUpperCase().includes('UNSIGNED') || item.statusCA.toUpperCase().includes('CHƯA') || item.statusCA.toUpperCase().includes('CHUA')))) && !dismissedItems.has(item.id);
                 return (
                   <tr key={item.id} className={`${isAlarm ? 'bg-rose-50' : ''} ${selectedRows.has(item.id) ? 'bg-blue-50' : ''} hover:bg-gray-50 transition-colors`}>
                     <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" /></td>
@@ -1634,7 +1634,7 @@ const Import_CA = () => {
           <span>📋 Total GIS (Unsigned/Is signing): <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
           {/* <div className="flex gap-3 flex-wrap">
             <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>GIS Warehouse</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&gt;{alarmThreshold}d)</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&ge;{alarmThreshold}d)</span>
             <span className="flex items-center gap-1 text-gray-300">|</span>
             <span className="flex items-center gap-1"><span className="text-amber-600 font-bold">✍️</span> Is signing</span>
             <span className="flex items-center gap-1"><span className="text-gray-500 font-bold">📝</span> Unsigned</span>

@@ -877,7 +877,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       'Date': item.realExport, 'Stock Receiver': item.stockReceiver,
       'Group Receiver': item.groupReceiver, 'Construction Receiver': item.constructionReceiver,
       'Unit': item.unit, "Days": item.daysDiff, 'TEAM': item.team || '-',
-      'Status': item.daysDiff > alarmThreshold ? 'ALARM' : 'Normal'
+      'Status': item.daysDiff >= alarmThreshold ? 'ALARM' : 'Normal'
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
     
@@ -985,7 +985,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   }, [filteredData, currentPage, pageSize]);
 
   const alarmItems = useMemo(() => {
-    return filteredData.filter(item => item.daysDiff > alarmThreshold && !dismissedItems.has(item.id));
+    return filteredData.filter(item => item.daysDiff >= alarmThreshold && !dismissedItems.has(item.id));
   }, [filteredData, alarmThreshold, dismissedItems]);
 
   const [alarmSearchTerm, setAlarmSearchTerm] = useState('');
@@ -1064,7 +1064,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     if (days < 0) return 'text-rose-600 bg-rose-50';
     if (days === 0) return 'text-amber-600 bg-amber-50';
     if (days <= 3) return 'text-yellow-600 bg-yellow-50';
-    if (days > alarmThreshold) return 'text-rose-700 bg-rose-100 animate-pulse';
+    if (days >= alarmThreshold) return 'text-rose-700 bg-rose-100 animate-pulse';
     return 'text-emerald-600 bg-emerald-50';
   };
 
@@ -1547,7 +1547,7 @@ const STOCKOUT_YET_CONFIRM = () => {
             </div>
             <div className="flex gap-2 items-center flex-wrap">
               <div className="flex items-center gap-1 bg-amber-100 px-3 py-1.5 rounded-full">
-                <span className="text-sm">⚠️ &gt;</span>
+                <span className="text-sm">⚠️ &ge;</span>
                 <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-16 px-2 py-1 text-sm border rounded-lg text-center bg-white" min="1"/>
                 <span className="text-sm">days</span>
               </div>
@@ -1577,7 +1577,7 @@ const STOCKOUT_YET_CONFIRM = () => {
           </div>
           <div className="bg-white rounded-xl px-3 py-2 shadow-sm">
             <div className="text-xs text-gray-500">Threshold</div>
-            <div className="text-xl font-bold text-amber-600">&gt;{alarmThreshold}d</div>
+            <div className="text-xl font-bold text-amber-600">&ge;{alarmThreshold}d</div>
           </div>
           <div className={`bg-white rounded-xl px-3 py-2 shadow-sm cursor-pointer hover:bg-rose-50 transition-colors ${alarmCount > 0 ? 'border-2 border-rose-500' : ''}`} onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}>
             <div className="text-xs text-gray-500">Alarms</div>
@@ -1607,7 +1607,7 @@ const STOCKOUT_YET_CONFIRM = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedData.map((item) => {
-                const isAlarm = item.daysDiff > alarmThreshold && !dismissedItems.has(item.id);
+                const isAlarm = item.daysDiff >= alarmThreshold && !dismissedItems.has(item.id);
                 return (
                   <tr key={item.id} className={`${isAlarm ? 'bg-rose-50' : ''} ${selectedRows.has(item.id) ? 'bg-blue-50' : ''} hover:bg-gray-50 transition-colors`}>
                     <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" /></td>
