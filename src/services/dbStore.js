@@ -143,14 +143,14 @@ export const clearStore = async (key) => {
     console.error(`Error clearing localStorage cache for "${key}":`, e);
   }
   try {
-    const response = await fetch(`${getBackendBaseUrl()}/${key}/clear`, {
-      method: 'POST'
+    const response = await fetch(`${getBackendBaseUrl()}/${key}`, {
+      method: 'DELETE'
     });
     if (response.ok) {
       return await response.json();
     }
   } catch (error) {
-    console.error(`Error clearing store for key "${key}":`, error);
+    console.error(`Error deleting store key "${key}" from DB:`, error);
   }
   return null;
 };

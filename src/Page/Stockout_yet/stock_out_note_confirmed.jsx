@@ -633,6 +633,9 @@ const StockOutNoteConfirmed = () => {
 
   const clearAllData = async () => {
     if (window.confirm('⚠️ Are you sure you want to delete ALL data?')) {
+      // Prevent automatic useEffect sync hooks from writing back empty structures to DB
+      isLoaded.current = false;
+
       setData([]);
       setCompletionHistory([]);
       setTargets({});
@@ -645,16 +648,22 @@ const StockOutNoteConfirmed = () => {
       localStorage.removeItem(STORAGE_KEYS.TARGET_HISTORY);
       localStorage.removeItem(STORAGE_KEYS.CONFIRMED);
       
-      // Clear DB stores in parallel
-      await Promise.all([
+      // Show notification instantly
+      showNotification('All data cleared!', 'warning');
+      
+      // Clear DB stores in background
+      Promise.all([
         clearStore(STORAGE_KEYS.DATA),
         clearStore(STORAGE_KEYS.COMPLETION),
         clearStore(STORAGE_KEYS.TARGETS),
         clearStore(STORAGE_KEYS.TARGET_HISTORY),
         clearStore(STORAGE_KEYS.CONFIRMED)
-      ]);
-      
-      showNotification('All data cleared!', 'warning');
+      ]).then(() => {
+        isLoaded.current = true;
+      }).catch(err => {
+        console.error("Error clearing DB store:", err);
+        isLoaded.current = true;
+      });
     }
   };
 

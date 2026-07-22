@@ -790,6 +790,9 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   const clearAllData = async () => {
     if (window.confirm('⚠️ Are you sure you want to delete ALL data?')) {
+      // Prevent automatic useEffect sync hooks from writing back empty structures to DB
+      isLoaded.current = false;
+
       setData([]);
       setCompletionHistory([]);
       setTargets({});
@@ -800,15 +803,21 @@ const STOCKOUT_YET_CONFIRM = () => {
       localStorage.removeItem(STORAGE_KEYS.TARGETS);
       localStorage.removeItem(STORAGE_KEYS.TARGET_HISTORY);
       
-      // Clear DB stores in parallel
-      await Promise.all([
+      // Show notification instantly
+      showNotification('All data cleared!', 'warning');
+      
+      // Clear DB stores in background
+      Promise.all([
         clearStore(STORAGE_KEYS.DATA),
         clearStore(STORAGE_KEYS.COMPLETION),
         clearStore(STORAGE_KEYS.TARGETS),
         clearStore(STORAGE_KEYS.TARGET_HISTORY)
-      ]);
-      
-      showNotification('All data cleared!', 'warning');
+      ]).then(() => {
+        isLoaded.current = true;
+      }).catch(err => {
+        console.error("Error clearing DB store:", err);
+        isLoaded.current = true;
+      });
     }
   };
 
