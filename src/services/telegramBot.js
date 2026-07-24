@@ -285,10 +285,42 @@ export const getUnitData = async (unit) => {
       return item.unit || 'OTHER';
     };
 
+    const getUnitFromGroupReceiver = (group) => {
+      if (!group || group === '-') return null;
+      const upper = group.toUpperCase();
+      if (upper.includes('PNPZ1')) return 'PNPZ1';
+      if (upper.includes('PNPZ2')) return 'PNPZ2';
+      if (upper.includes('PNP')) return 'PNP';
+      if (upper.includes('KANZ1')) return 'KANZ1';
+      if (upper.includes('KAN')) return 'KAN';
+      const matches = [
+        'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KOH', 'KRA',
+        'MON', 'ODD', 'PRE', 'PRH', 'PUR', 'ROT', 'SIE',
+        'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
+      ];
+      for (const m of matches) {
+        if (upper.includes(m)) return m;
+      }
+      return null;
+    };
+
+    const shouldExcludeM1 = (item) => {
+      if (item.constructionReceiver && item.constructionReceiver.toUpperCase().includes('GPON')) {
+        const u = item.unit || 'OTHER';
+        const excludedGponUnits = ['SPE', 'TAK', 'KAM', 'CHH'];
+        if (excludedGponUnits.includes(u)) return true;
+      }
+      if (item.groupReceiver && item.groupReceiver.toUpperCase().includes('GIS_MOD')) return true;
+      
+      const isStockReceiverGIS = item.stockReceiver && item.stockReceiver.includes('GIS');
+      const isGroupReceiverGIS = item.groupReceiver && (item.groupReceiver.includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null);
+      return !isStockReceiverGIS && !isGroupReceiverGIS;
+    };
+
     // ─── FILTER BY UNIT ───
-    const unitStockout = stockoutData.filter(item => getItemUnit1(item) === unit);
-    const unitNocreate = nocreateData.filter(item => getItemUnit2(item) === unit);
-    const unitNotconfirmed = notconfirmedData.filter(item => getItemUnit3(item) === unit);
+    const unitStockout = stockoutData.filter(item => getItemUnit1(item) === unit && !shouldExcludeM1(item));
+    const unitNocreate = nocreateData.filter(item => getItemUnit2(item) === unit && item.recipient && item.recipient.toUpperCase().includes('GIS'));
+    const unitNotconfirmed = notconfirmedData.filter(item => getItemUnit3(item) === unit && item.unitConfirm && item.unitConfirm.toUpperCase().includes('GIS'));
 
     const isMorning = new Date().getHours() < 12;
 
@@ -304,7 +336,6 @@ export const getUnitData = async (unit) => {
     const m1Ratio = m1Target > 0 ? parseFloat(((m1Completed / m1Target) * 100).toFixed(2)) : (m1Remain === 0 && m1Completed === 0 ? 100 : 0);
 
     const m1RemainingItems = unitStockout
-      .filter(item => !stockoutHistory.some(c => c.exportNo === item.exportNo || c.code === item.exportNo))
       .map(item => ({
         exportCode: item.exportCode || item.code || '-',
         exportNo: item.exportNo || '-',
@@ -333,7 +364,6 @@ export const getUnitData = async (unit) => {
     const m2Ratio = m2Target > 0 ? parseFloat(((m2Completed / m2Target) * 100).toFixed(2)) : (m2Remain === 0 && m2Completed === 0 ? 100 : 0);
 
     const m2RemainingItems = unitNocreate
-      .filter(item => !nocreateHistory.some(c => c.code === item.code) && !nocreateConfirmed[item.code])
       .map(item => ({
         code: item.code || '-',
         warehouse: item.warehouse || '-',
@@ -364,7 +394,6 @@ export const getUnitData = async (unit) => {
     const m3Ratio = m3Target > 0 ? parseFloat(((m3Completed / m3Target) * 100).toFixed(2)) : (m3Remain === 0 && m3Completed === 0 ? 100 : 0);
 
     const m3RemainingItems = unitNotconfirmed
-      .filter(item => !notconfirmedHistory.some(c => c.code === item.code) && !notconfirmedConfirmed[item.code])
       .map(item => ({
         code: item.code || '-',
         type: item.type || '-',

@@ -351,42 +351,71 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
       return item.unit || 'OTHER';
     };
 
+    const getUnitFromGroupReceiver = (group) => {
+      if (!group || group === '-') return null;
+      const upper = group.toUpperCase();
+      if (upper.includes('PNPZ1')) return 'PNPZ1';
+      if (upper.includes('PNPZ2')) return 'PNPZ2';
+      if (upper.includes('PNP')) return 'PNP';
+      if (upper.includes('KANZ1')) return 'KANZ1';
+      if (upper.includes('KAN')) return 'KAN';
+      const matches = [
+        'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KOH', 'KRA',
+        'MON', 'ODD', 'PRE', 'PRH', 'PUR', 'ROT', 'SIE',
+        'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
+      ];
+      for (const m of matches) {
+        if (upper.includes(m)) return m;
+      }
+      return null;
+    };
+
     const getStockoutItems = (unitFilter = null) => {
       const data = JSON.parse(localStorage.getItem('kpi_stockout_data') || '[]');
-      const completionHistory = JSON.parse(localStorage.getItem('kpi_stockout_completionHistory') || '[]');
-      const remaining = data.filter(item => !completionHistory.some(c => c.exportNo === item.exportNo || c.code === item.exportNo));
-      const enriched = remaining.map(item => {
+      const enriched = data.map(item => {
         const teamRaw = item.team || item.groupReceiver || item.stockReceiver || item.warehouse || '';
         const teamVal = getTeamFromRecipient(teamRaw);
         return { ...item, team: teamVal };
       });
-      return unitFilter ? enriched.filter(item => getItemUnit1(item) === unitFilter) : enriched;
+      // Filter to match the view table (GIS check and exclusions)
+      const filtered = enriched.filter(item => {
+        // Exclusions same as shouldExcludeItem in STOCKOUT_YET_CONFIRM.jsx
+        if (item.constructionReceiver && item.constructionReceiver.toUpperCase().includes('GPON')) {
+          const u = item.unit || 'OTHER';
+          const excludedGponUnits = ['SPE', 'TAK', 'KAM', 'CHH'];
+          if (excludedGponUnits.includes(u)) return false;
+        }
+        if (item.groupReceiver && item.groupReceiver.toUpperCase().includes('GIS_MOD')) return false;
+        
+        const isStockReceiverGIS = item.stockReceiver && item.stockReceiver.includes('GIS');
+        const isGroupReceiverGIS = item.groupReceiver && (item.groupReceiver.includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null);
+        return isStockReceiverGIS || isGroupReceiverGIS;
+      });
+      return unitFilter ? filtered.filter(item => getItemUnit1(item) === unitFilter) : filtered;
     };
 
     const getNoCreateItems = (unitFilter = null) => {
       const data = JSON.parse(localStorage.getItem('kpi_nocreate_data') || '[]');
-      const completionHistory = JSON.parse(localStorage.getItem('kpi_nocreate_completionHistory') || '[]');
-      const confirmedStatus = JSON.parse(localStorage.getItem('kpi_nocreate_confirmedStatus') || '{}');
-      const remaining = data.filter(item => !completionHistory.some(c => c.code === item.code) && !confirmedStatus[item.code]);
-      const enriched = remaining.map(item => {
+      const enriched = data.map(item => {
         const teamRaw = item.team || item.recipient || item.warehouse || '';
         const teamVal = getTeamFromRecipient(teamRaw);
         return { ...item, team: teamVal };
       });
-      return unitFilter ? enriched.filter(item => getItemUnit2(item) === unitFilter) : enriched;
+      // Filter to match the view table (recipient includes GIS)
+      const filtered = enriched.filter(item => item.recipient && item.recipient.toUpperCase().includes('GIS'));
+      return unitFilter ? filtered.filter(item => getItemUnit2(item) === unitFilter) : filtered;
     };
 
     const getNotConfirmedItems = (unitFilter = null) => {
       const data = JSON.parse(localStorage.getItem('kpi_notconfirmed_data') || '[]');
-      const completionHistory = JSON.parse(localStorage.getItem('kpi_notconfirmed_completionHistory') || '[]');
-      const confirmedStatus = JSON.parse(localStorage.getItem('kpi_notconfirmed_confirmedStatus') || '{}');
-      const remaining = data.filter(item => !completionHistory.some(c => c.code === item.code) && !confirmedStatus[item.code]);
-      const enriched = remaining.map(item => {
+      const enriched = data.map(item => {
         const teamRaw = item.team || item.unitConfirm || item.handoverUnit || '';
         const teamVal = getTeamFromRecipient(teamRaw);
         return { ...item, team: teamVal };
       });
-      return unitFilter ? enriched.filter(item => getItemUnit3(item) === unitFilter) : enriched;
+      // Filter to match the view table (unitConfirm includes GIS)
+      const filtered = enriched.filter(item => item.unitConfirm && item.unitConfirm.toUpperCase().includes('GIS'));
+      return unitFilter ? filtered.filter(item => getItemUnit3(item) === unitFilter) : filtered;
     };
 
     // Calculate unit-specific details
