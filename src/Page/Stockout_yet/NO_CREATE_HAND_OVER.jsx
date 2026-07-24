@@ -1197,16 +1197,7 @@ const NO_CREATE_HAND_OVER = () => {
               placeholder="Paste your system data here...&#10;&#10;Format: Code, Warehouse, Recipient, Creator, Date" 
               className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-              <div className="text-sm text-gray-600">
-                <strong>📊 What will happen:</strong>
-                <ul className="mt-1 ml-4 list-disc">
-                  <li>🎯 <span className="text-purple-600">NEW UNIT</span> → Auto-create target</li>
-                  <li>✅ <span className="text-emerald-600">CONFIRMED</span> → Click "Mark Confirm" button</li>
-                  <li>📋 <span className="text-blue-600">REMAINING</span> → Unconfirmed items</li>
-                </ul>
-              </div>
-            </div>
+
             {data.length > 0 && (
               <div className="mt-3 p-2 bg-amber-50 rounded-xl text-sm text-amber-800">
                 ⚠️ Current data has {data.length} record(s). Import will replace existing data.

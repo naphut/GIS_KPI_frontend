@@ -1432,20 +1432,7 @@ export const Export_CA = () => {
               placeholder="Paste your system data here...&#10;&#10;Format: Export Note Code, Export Command Code, Export Request, Create Requester, Date Create, Date Export, Export Warehouse, Reason export, Name Warehouse Entering, Unit Entering, Code Contruction, Status, Disapprove not, Status CA, Description&#10;&#10;Note: Only GIS Warehouse + Actual Export all + Unsigned/Is signing will be imported." 
               className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-              <div className="text-sm text-gray-600">
-                <strong>📊 Filter Rules & Unit Extraction:</strong>
-                <ul className="mt-1 ml-4 list-disc">
-                  <li>🏠 <strong>Export Warehouse</strong> - Must contain "GIS"</li>
-                  <li>✅ <strong>Status</strong> - Must be "Actual Export all" or "Thực xuất hết"</li>
-                  <li>📋 <strong>Status CA</strong> - Must be "Unsigned" or "Is signing"</li>
-                  <li>🥇 <strong>Unit Priority</strong> - Warehouse → Note Code → Command Code</li>
-                  <li>🎯 <strong>FBC</strong> → PNPZ1, PNPZ2, KANZ1</li>
-                  <li>🎯 <strong>SOS</strong> → PNP, KAN</li>
-                  <li>🎯 <strong>PLA</strong> → PNP, KAN</li>
-                </ul>
-              </div>
-            </div>
+
             {data.length > 0 && (
               <div className="mt-3 p-2 bg-amber-50 rounded-xl text-sm text-amber-800">
                 ⚠️ Current data has {data.length} record(s). Import will replace existing data.

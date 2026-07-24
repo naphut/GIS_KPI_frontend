@@ -1210,16 +1210,7 @@ const StockOutNoteConfirmed = () => {
               placeholder="Paste your system data here...&#10;&#10;Format: Code, Type, Handover unit, Unit confirm, Date, Status" 
               className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-              <div className="text-sm text-gray-600">
-                <strong>📊 Filtering Rules:</strong>
-                <ul className="mt-1 ml-4 list-disc">
-                  <li>🎯 <strong>GIS</strong> → Only records with GIS in "Unit confirm handover"</li>
-                  <li>⏳ <strong>Not confirmed</strong> → Only records with Status = "Not confirmed"</li>
-                  <li>✅ <strong>Confirm</strong> → Click "Mark Confirm" to complete</li>
-                </ul>
-              </div>
-            </div>
+
             {data.length > 0 && (
               <div className="mt-3 p-2 bg-amber-50 rounded-xl text-sm text-amber-800">
                 ⚠️ Current data has {data.length} record(s). Import will replace existing data.

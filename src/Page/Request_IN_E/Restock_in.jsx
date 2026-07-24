@@ -1334,19 +1334,7 @@ export const Restock_in = () => {
               placeholder="Paste your system data here...&#10;&#10;Format: Import Request code, Import Command code, Date Create, Import warehouse, Contract, Creator, Unit Requests, Unit Receive, Date Delivery, Status CA&#10;&#10;Note: Only YCNKGIS_ format with valid units will be imported.&#10;&#10;Example:&#10;YCNKGIS_STU_SOS03/26/000086		24/06/2026	GIS_STU_STOCK_XL_SOSTEAM03		stu_tec_sokimsan	GIS_STU_SOS_TEAM03	GIS_STU_SOS_TEAM03	24/06/2026	Unsigned" 
               className="w-full h-64 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-inner focus:outline-none"
             />
-            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="text-sm text-gray-600">
-                <strong className="font-semibold text-gray-800">📊 Filter Rules & Unit Extraction:</strong>
-                <ul className="mt-1.5 ml-4 list-disc space-y-0.5">
-                  <li>🏠 <strong>Import Request code</strong> - Must start with "YCNKGIS_"</li>
-                  <li>📋 <strong>Status CA</strong> - Must be "Unsigned"</li>
-                  <li>🎯 <strong>Unit Priority</strong> - Request Code → Unit Requests → Unit Receive</li>
-                  <li>📋 <strong>FBC</strong> → KANZ1, PNPZ1, PNPZ2</li>
-                  <li>📋 <strong>SOS</strong> → KAN, PNP</li>
-                  <li>📅 <strong>Year</strong> - Auto-extracted from Date Create</li>
-                </ul>
-              </div>
-            </div>
+
             {data.length > 0 && (
               <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
                 ⚠️ Current data has {data.length} record(s). Import will replace existing data.

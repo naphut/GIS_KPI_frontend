@@ -1380,18 +1380,7 @@ const STOCKOUT_YET_CONFIRM = () => {
               placeholder="Paste your system data here...&#10;&#10;Format: Export Code, Export No, Date, Stock Receiver, Group Receiver, Construction Receiver&#10;&#10;🚫 Items with GPON (for SPE, TAK, KAM, CHH) or GIS_MOD will be automatically excluded" 
               className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
-            <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-              <div className="text-sm text-gray-600">
-                <strong>📊 What will happen:</strong>
-                <ul className="mt-1 ml-4 list-disc">
-                  <li>🎯 <span className="text-purple-600">Unit</span> → Extracted from Group Receiver</li>
-                  <li>🚫 <span className="text-rose-600">EXCLUDED</span> → GPON (for SPE, TAK, KAM, CHH) &amp; GIS_MOD (Group Receiver)</li>
-                  <li>🎯 <span className="text-purple-600">New Unit</span> → Auto-create target (morning/evening)</li>
-                  <li>✅ <span className="text-emerald-600">COMPLETED</span> → Missing Export No (+1 Result)</li>
-                  <li>📋 <span className="text-blue-600">REMAINING</span> → Same Export No</li>
-                </ul>
-              </div>
-            </div>
+
             {data.length > 0 && (
               <div className="mt-3 p-2 bg-amber-50 rounded-xl text-sm text-amber-800">
                 ⚠️ Current data has {data.length} record(s). Import will replace existing data.

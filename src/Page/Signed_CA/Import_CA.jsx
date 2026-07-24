@@ -1270,19 +1270,7 @@ const Import_CA = () => {
               placeholder="Paste your system data here...&#10;&#10;Format: Receipt Code, Command Code, Date, Warehouse, Creator, Status, Status CA&#10;&#10;Note: Only Unsigned and Is signing will be imported. Signed records will be filtered out.&#10;&#10;Example:&#10;PNKMON_ASU/26/000571	LNKMON_PLA/26/000546	23/06/2026	MON_STOCK_ROTATIONAL_TESTED	mon_aus_tepvasnan	Đã thực nhập hết / Actual Import finished	Unsigned" 
               className="w-full h-64 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-inner focus:outline-none"
             />
-            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <div className="text-sm text-gray-600">
-                <strong className="font-semibold text-gray-800">📊 Unit Extraction Rules:</strong>
-                <ul className="mt-1.5 ml-4 list-disc space-y-0.5">
-                  <li>🎯 <strong>FBC</strong> in Code/Command/Warehouse → <span className="font-bold text-purple-600">PNPZ1, PNPZ2, KANZ1</span></li>
-                  <li>🎯 <strong>SOS</strong> in Code/Command/Warehouse → <span className="font-bold text-blue-600">PNP, KAN</span></li>
-                  <li>🎯 <strong>PLA</strong> in Code/Command/Warehouse → <span className="font-bold text-green-600">PNP, KAN</span></li>
-                  <li>🏠 <strong>Auto-filter</strong> - Only GIS warehouses are kept</li>
-                  <li>🚫 <strong>Filter out Signed</strong> - Only Unsigned and Is signing are imported</li>
-                  <li>📅 <strong>Year</strong> - Auto-extracted from Date</li>
-                </ul>
-              </div>
-            </div>
+
             {data.length > 0 && (
               <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
                 ⚠️ Current data has {data.length} record(s). Import will replace existing data.
