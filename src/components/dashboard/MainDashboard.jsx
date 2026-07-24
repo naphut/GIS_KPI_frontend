@@ -118,7 +118,7 @@ const MainDashboard = ({ onNavigate }) => {
       id: 'stockout_group',
       title: '📋 CONFIRMED HAND OVER',
       subtitle: 'CONFIRMED HAND OVER ON SYSTEM',
-      description: 'តាមដាន និងផ្ទៀងផ្ទាត់ការប្រគល់ភារកិច្ចរវាងបណ្តាខេត្ត។ ត្រួតពិនិត្យគោលដៅការងារពេលព្រឹក និងពេលល្ងាច ហើយផ្ញើរបាយការណ៍ដោយស្វ័យប្រវត្តិទៅកាន់ក្រុម Telegram។',
+      description: '',
       icon: '📋',
       color: 'from-amber-500 to-orange-600',
       shadow: 'hover:shadow-orange-500/20',
@@ -140,7 +140,7 @@ const MainDashboard = ({ onNavigate }) => {
       id: 'signed_ca_group',
       title: '✅ IMPORT CA & EXPORT CA',
       subtitle: 'SIGNED "CA" ON THE SYSTEM YET',
-      description: 'Manage and review digital signing status. Monitor signing progress for Stock In and Stock Out documents, tracking unsigned vs. fully signed records.',
+      description: '',
       icon: '✅',
       color: 'from-blue-500 to-indigo-600',
       shadow: 'hover:shadow-indigo-500/20',
@@ -161,11 +161,7 @@ const MainDashboard = ({ onNavigate }) => {
       id: 'restock_group',
       title: '🔄 RESTOCK IN & RESTOCK OUT',
       subtitle: 'RESTOCK IN CA / RESTOCK OUT',
-      description: (
-        <span>
-          តាមដាន និងគ្រប់គ្រងដំណើរការ <strong>Recall to Stock</strong> របស់ METFONE ព្រមទាំងតាមដានស្ថានភាពនៃសម្ភារៈដែលបានស្នើសុំ (Request) សម្រាប់យកទៅប្រើប្រាស់ ដើម្បីធានាថាការចែកចាយ និងការគ្រប់គ្រងស្តុកប្រព្រឹត្តទៅបានត្រឹមត្រូវ មានប្រសិទ្ធភាព និងទាន់ពេលវេលា។
-        </span>
-      ),
+      description: '',
       icon: '🔄',
       color: 'from-emerald-500 to-teal-600',
       shadow: 'hover:shadow-emerald-500/20',
@@ -218,9 +214,6 @@ const MainDashboard = ({ onNavigate }) => {
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-2 sm:mt-3 text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300 flex items-center gap-2 flex-wrap">
                 📊 GIS Asset Management Portal
               </h1>
-              <p className="text-slate-300 mt-1.5 sm:mt-2 max-w-xl text-xs sm:text-sm leading-relaxed">
-                Centralized monitoring system for Confirmed Hand Overs, System Signings, and Warehousing Restock Assets.
-              </p>
             </div>
             
             <div className="flex gap-3 sm:gap-4 bg-white/5 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-white/10 shrink-0">
@@ -314,9 +307,11 @@ const MainDashboard = ({ onNavigate }) => {
               {/* Card Body */}
               <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
                 <div>
-                  <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4 sm:mb-6">
-                    {mod.description}
-                  </p>
+                  {mod.description && (
+                    <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-4 sm:mb-6">
+                      {mod.description}
+                    </p>
+                  )}
 
                   {/* Quick Stats Grid */}
                   <div className={`grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6 ${mod.bgColor} p-3 sm:p-3.5 rounded-xl border ${mod.borderColor}`}>
