@@ -339,27 +339,109 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
 
   // Get data from all components
   const getReportData = () => {
+    const getUnitFromGroupReceiver = (groupReceiver) => {
+      if (!groupReceiver) return null;
+      let upper = groupReceiver.toUpperCase().replace(/\s+/g, '');
+      upper = upper.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
+      
+      if (/_PNPZ1_/.test(upper) || /^PNPZ1\b/.test(upper)) return 'PNPZ1';
+      if (/_PNPZ2_/.test(upper) || /^PNPZ2\b/.test(upper)) return 'PNPZ2';
+      if (/_KANZ1_/.test(upper) || /^KANZ1\b/.test(upper)) return 'KANZ1';
+
+      const gisMatch = upper.match(/^GIS_([A-Z]+)_/);
+      const province = gisMatch ? gisMatch[1] : null;
+
+      const fbcMatch = upper.match(/FBC[^\d]*(\d+)/);
+      const sosMatch = upper.match(/SOS[^\d]*(\d+)/);
+
+      if (fbcMatch && province) {
+        const num = String(parseInt(fbcMatch[1])).padStart(2, '0');
+        if (province === 'PNP') {
+          const PNPZ1 = ['01','03','05','06','07','10','11','13','14'];
+          const PNPZ2 = ['02','04','08','09','12'];
+          if (PNPZ1.includes(num)) return 'PNPZ1';
+          if (PNPZ2.includes(num)) return 'PNPZ2';
+          return 'PNP';
+        }
+        if (province === 'KAN') {
+          const KANZ1 = ['01','02','03','04','05','06','07'];
+          if (KANZ1.includes(num)) return 'KANZ1';
+          return 'KAN';
+        }
+        if (allUnits.includes(province)) return province;
+      }
+
+      if (sosMatch && province) {
+        if (allUnits.includes(province)) return province;
+      }
+
+      if (upper.includes('PLANNING') || upper.includes('_PLA')) {
+        if (province && allUnits.includes(province)) return province;
+      }
+
+      if (province && allUnits.includes(province)) return province;
+
+      const sortedUnits = [...allUnits].sort((a, b) => b.length - a.length);
+      for (const unit of sortedUnits) {
+        if (upper.includes(`GIS_${unit}_`) || upper.startsWith(unit + '_') || upper === unit) {
+          return unit;
+        }
+      }
+      return null;
+    };
+
+    const getUnit = (exportCode, exportNo, groupReceiver, stockReceiver) => {
+      const unitFromGroup = getUnitFromGroupReceiver(groupReceiver);
+      if (unitFromGroup && allUnits.includes(unitFromGroup)) return unitFromGroup;
+      
+      if (stockReceiver && stockReceiver !== '-') {
+        const unitFromStock = getUnitFromGroupReceiver(stockReceiver);
+        if (unitFromStock && allUnits.includes(unitFromStock)) return unitFromStock;
+      }
+      
+      const code = (exportCode || exportNo || '').toUpperCase();
+      if (!code) return 'OTHER';
+      
+      const unitMap = {
+        'PNPZ1': 'PNPZ1', 'PNPZ2': 'PNPZ2', 'KANZ1': 'KANZ1',
+        'BAN': 'BAN', 'BAT': 'BAT', 'CHA': 'CHA', 'CHH': 'CHH',
+        'KAM': 'KAM', 'KAN': 'KAN', 'KOH': 'KOH', 'KRA': 'KRA',
+        'MON': 'MON', 'ODD': 'ODD', 'PNP': 'PNP', 'PRE': 'PRE',
+        'PRH': 'PRH', 'PUR': 'PUR', 'ROT': 'ROT', 'SIE': 'SIE',
+        'SIH': 'SIH', 'SPE': 'SPE', 'STU': 'STU', 'SVA': 'SVA',
+        'TAK': 'TAK', 'THO': 'THO'
+      };
+      for (const [key, value] of Object.entries(unitMap)) {
+        if (code.includes(key)) return value;
+      }
+      return 'OTHER';
+    };
+
     const getItemUnit1 = (item) => {
-      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.groupReceiver && item.groupReceiver !== '-' ? item.groupReceiver : (item.stockReceiver || '-'));
-      const cleanTeam = getTeamFromRecipient(rawTeam);
-      const teamUnit = getUnitFromTeam(cleanTeam);
-      if (teamUnit) return teamUnit;
+      const parsedUnit = getUnit(item.exportCode, item.exportNo, item.groupReceiver, item.stockReceiver);
+      if (parsedUnit && allUnits.includes(parsedUnit)) return parsedUnit;
       return item.unit || 'OTHER';
     };
 
     const getItemUnit2 = (item) => {
-      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.recipient || '-');
-      const cleanTeam = getTeamFromRecipient(rawTeam);
-      const teamUnit = getUnitFromTeam(cleanTeam);
-      if (teamUnit) return teamUnit;
+      const parsedUnit = getUnitFromGroupReceiver(item.recipient) || getUnitFromGroupReceiver(item.warehouse) || getUnitFromGroupReceiver(item.team);
+      if (parsedUnit && allUnits.includes(parsedUnit)) return parsedUnit;
+      
+      const code = (item.code || '').toUpperCase();
+      for (const u of allUnits) {
+        if (code.includes(u)) return u;
+      }
       return item.unit || 'OTHER';
     };
 
     const getItemUnit3 = (item) => {
-      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.unitConfirm || '-');
-      const cleanTeam = getTeamFromRecipient(rawTeam);
-      const teamUnit = getUnitFromTeam(cleanTeam);
-      if (teamUnit) return teamUnit;
+      const parsedUnit = getUnitFromGroupReceiver(item.unitConfirm) || getUnitFromGroupReceiver(item.handoverUnit) || getUnitFromGroupReceiver(item.team);
+      if (parsedUnit && allUnits.includes(parsedUnit)) return parsedUnit;
+      
+      const code = (item.code || '').toUpperCase();
+      for (const u of allUnits) {
+        if (code.includes(u)) return u;
+      }
       return item.unit || 'OTHER';
     };
 
