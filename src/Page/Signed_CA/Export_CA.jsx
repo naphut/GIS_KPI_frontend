@@ -1241,7 +1241,6 @@ export const Export_CA = () => {
                 <span className="text-2xl">📊</span>
                 <div>
                   <h2 className="text-xl font-bold text-white">KPI Dashboard - Export CA Performance</h2>
-                  <p className="text-purple-100 text-sm">Complete Unit Performance | Dynamic Target Management</p>
                 </div>
               </div>
               <div className="flex gap-2">

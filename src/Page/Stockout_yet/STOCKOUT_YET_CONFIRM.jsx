@@ -197,6 +197,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   const [data, setData] = useState(() => getStorageData(STORAGE_KEYS.DATA) || []);
   const [completionHistory, setCompletionHistory] = useState(() => getStorageData(STORAGE_KEYS.COMPLETION) || []);
   const [searchTerm, setSearchTerm] = useState('');
+  // eslint-disable-next-line no-unused-vars
   const [filterGIS, setFilterGIS] = useState(true);
   const [showAlarmModal, setShowAlarmModal] = useState(false);
   const [alarmThreshold, setAlarmThreshold] = useState(4);
@@ -1199,7 +1200,6 @@ const STOCKOUT_YET_CONFIRM = () => {
                 <span className="text-2xl">📊</span>
                 <div>
                   <h2 className="text-xl font-bold text-white">KPI Dashboard - Stockout Performance</h2>
-                  <p className="text-purple-100 text-sm">Track Morning & Evening Targets | Unit from Group Receiver</p>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -1529,10 +1529,7 @@ const STOCKOUT_YET_CONFIRM = () => {
               </div>
 
               <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-48 sm:w-64 px-4 py-2 pl-10 text-sm border rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
-              <label className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors">
-                <input type="checkbox" checked={filterGIS} onChange={(e) => setFilterGIS(e.target.checked)} className="rounded" />
-                <span className="text-sm font-medium">GIS Only</span>
-              </label>
+
             </div>
           </div>
         </div>
