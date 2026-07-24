@@ -274,26 +274,14 @@ export const getUnitData = async (unit) => {
 
     // ─── DYNAMIC ITEM UNIT RESOLVER ───
     const getItemUnit1 = (item) => {
-      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.groupReceiver && item.groupReceiver !== '-' ? item.groupReceiver : (item.stockReceiver || '-'));
-      const cleanTeam = getTeamFromRecipient(rawTeam);
-      const teamUnit = getUnitFromTeam(cleanTeam);
-      if (teamUnit) return teamUnit;
       return item.unit || 'OTHER';
     };
 
     const getItemUnit2 = (item) => {
-      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.recipient || '-');
-      const cleanTeam = getTeamFromRecipient(rawTeam);
-      const teamUnit = getUnitFromTeam(cleanTeam);
-      if (teamUnit) return teamUnit;
       return item.unit || 'OTHER';
     };
 
     const getItemUnit3 = (item) => {
-      const rawTeam = (item.team && item.team !== '-') ? item.team : (item.unitConfirm || '-');
-      const cleanTeam = getTeamFromRecipient(rawTeam);
-      const teamUnit = getUnitFromTeam(cleanTeam);
-      if (teamUnit) return teamUnit;
       return item.unit || 'OTHER';
     };
 
