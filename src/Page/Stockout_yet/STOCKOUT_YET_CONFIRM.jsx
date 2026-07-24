@@ -1194,7 +1194,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
         <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="bg-slate-800 px-6 py-4">
+          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <span className="text-2xl">📊</span>
@@ -1203,7 +1203,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-slate-600 hover:bg-slate-500 text-white px-3 py-1 rounded-lg text-sm transition-colors">📜 History</button>
+                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">📜 History</button>
                 <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
               </div>
             </div>
@@ -1212,29 +1212,29 @@ const STOCKOUT_YET_CONFIRM = () => {
           <div className="p-6 overflow-y-auto flex-1">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-              <div className="bg-slate-50 rounded-xl p-4 text-slate-800 shadow-sm border border-slate-200/60">
-                <div className="text-xs text-slate-500 font-medium">Target ព្រឹក</div>
-                <div className="text-2xl font-bold text-slate-800 mt-1">{calculateKPIData.summary.targetMorning}</div>
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="text-xs opacity-90">Target ព្រឹក</div>
+                <div className="text-2xl font-bold">{calculateKPIData.summary.targetMorning}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4 text-slate-800 shadow-sm border border-slate-200/60">
-                <div className="text-xs text-slate-500 font-medium">Target ល្ងាច</div>
-                <div className="text-2xl font-bold text-slate-800 mt-1">{calculateKPIData.summary.targetEvening}</div>
+              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="text-xs opacity-90">Target ល្ងាច</div>
+                <div className="text-2xl font-bold">{calculateKPIData.summary.targetEvening}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4 text-slate-800 shadow-sm border border-slate-200/60">
-                <div className="text-xs text-slate-500 font-medium">Remain</div>
-                <div className="text-2xl font-bold text-slate-800 mt-1">{calculateKPIData.summary.remain}</div>
+              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="text-xs opacity-90">Remain</div>
+                <div className="text-2xl font-bold">{calculateKPIData.summary.remain}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4 text-slate-800 shadow-sm border border-slate-200/60">
-                <div className="text-xs text-slate-500 font-medium">Result</div>
-                <div className="text-2xl font-bold text-slate-800 mt-1">{calculateKPIData.summary.result}</div>
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="text-xs opacity-90">Result</div>
+                <div className="text-2xl font-bold">{calculateKPIData.summary.result}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4 text-slate-800 shadow-sm border border-slate-200/60">
-                <div className="text-xs text-slate-500 font-medium">Ratio</div>
-                <div className="text-2xl font-bold text-slate-800 mt-1">{calculateKPIData.summary.ratio.toFixed(1)}%</div>
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="text-xs opacity-90">Ratio</div>
+                <div className="text-2xl font-bold">{calculateKPIData.summary.ratio.toFixed(1)}%</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-4 text-slate-800 shadow-sm border border-slate-200/60">
-                <div className="text-xs text-slate-500 font-medium">In System</div>
-                <div className="text-2xl font-bold text-slate-800 mt-1">{calculateKPIData.summary.totalRecords}</div>
+              <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="text-xs opacity-90">In System</div>
+                <div className="text-2xl font-bold">{calculateKPIData.summary.totalRecords}</div>
               </div>
             </div>
 
@@ -1244,8 +1244,8 @@ const STOCKOUT_YET_CONFIRM = () => {
                 <span>Overall Progress (based on Evening Target)</span>
                 <span className="font-bold">{calculateKPIData.summary.ratio.toFixed(1)}%</span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden shadow-inner">
-                <div className="bg-indigo-600 h-4 rounded-full transition-all duration-500" style={{ width: `${calculateKPIData.summary.ratio}%` }}></div>
+              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-500 to-blue-500 h-4 rounded-full transition-all duration-500" style={{ width: `${calculateKPIData.summary.ratio}%` }}></div>
               </div>
             </div>
 
@@ -1490,33 +1490,33 @@ const STOCKOUT_YET_CONFIRM = () => {
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         
         {/* ─── HEADER ─── */}
-        <div className="bg-white px-6 py-5 border-b border-slate-100">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-5">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
                   <span>📦</span> STOCKOUT YET CONFIRM
                 </h1>
-                <span className="bg-slate-100 text-slate-700 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-slate-200/80 font-medium">
+                <span className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/30">
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-indigo-600 mt-1 text-xs font-bold uppercase tracking-wider">TEAM STEP 1</p>
-              <p className="text-slate-500 mt-1 text-sm font-normal">តាមដានសម្ភារៈដែលបាន Request ហើយត្រូវបាន Export ពីស្តុក METFONE មកកាន់ស្តុក GIS។</p>
+              <p className="text-blue-100 mt-1 text-sm">TEAM STEP 1</p>
+              <p className="text-blue-100 mt-1 text-sm">**តាមដានសម្ភារៈដែលបាន Request ហើយត្រូវបាន Export ពីស្តុក METFONE មកកាន់ស្តុក GIS។**</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={clearAllData} className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all shadow-xs">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm">📊 KPI</button>
+              <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-sm transition-colors">🗑️ Clear All</button>
+              <button onClick={() => setShowKPIModal(true)} className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl transition-colors">📊 KPI</button>
             </div>
           </div>
         </div>
 
         {/* ─── TOOLBAR ─── */}
-        <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
           <div className="flex flex-wrap gap-3 justify-between items-center">
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setShowPasteModal(true)} className="px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors text-sm flex items-center gap-1 font-semibold shadow-xs">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl transition-colors text-sm flex items-center gap-1 font-semibold">📎 Export</button>
+              <button onClick={() => setShowPasteModal(true)} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm flex items-center gap-1">🔄 Smart Import</button>
+              <button onClick={exportToExcel} className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors text-sm flex items-center gap-1">📎 Export</button>
               {selectedRows.size > 0 && (
                 <button onClick={deleteSelectedRows} className="px-4 py-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors text-sm flex items-center gap-1">🗑️ Complete ({selectedRows.size})</button>
               )}

@@ -148,16 +148,16 @@ const Sidebar = ({ onSelect, selected }) => {
   return (
     <div className="w-64 h-full bg-white shadow-xl flex flex-col border-r border-gray-100">
       {/* ─── LOGO ─── */}
-      <div className="p-5 border-b border-gray-100 bg-slate-50/50">
+      <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-md border border-slate-100">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-lg shadow-blue-200/50">
             <img src="/gis_asset_logo.png" alt="GIS Logo" className="w-full h-full object-cover" style={{ transform: 'scale(1.3) translateY(-1px)' }} />
           </div>
           <div>
             <div className="text-xl font-bold text-gray-800 leading-none">
-              GI<span className="text-indigo-600">S</span>
+              GI<span className="text-blue-600">S</span>
             </div>
-            <div className="text-[10px] text-gray-500 font-semibold tracking-wider mt-0.5">
+            <div className="text-[10px] text-gray-500 font-medium tracking-wider mt-0.5">
               ASSET MANAGEMENT
             </div>
           </div>
@@ -180,8 +180,8 @@ const Sidebar = ({ onSelect, selected }) => {
                     }}
                     className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-2xl transition-all duration-300 group ${
                       isGroupActive(item) || selected === item.id || isGroupOpen(item.id)
-                        ? 'bg-slate-900 text-white shadow-sm'
-                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                        ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
+                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-xs'
                     }`}
                   >
                     <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md transition-colors flex-shrink-0 ${
@@ -255,8 +255,8 @@ const Sidebar = ({ onSelect, selected }) => {
                   onClick={() => onSelect(item.id)}
                   className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-2xl transition-all duration-300 group ${
                     selected === item.id
-                      ? 'bg-slate-900 text-white shadow-sm'
-                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
+                      ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
+                      : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-xs'
                   }`}
                 >
                   <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md transition-colors flex-shrink-0 ${

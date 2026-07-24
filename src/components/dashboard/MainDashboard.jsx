@@ -120,15 +120,15 @@ const MainDashboard = ({ onNavigate }) => {
       subtitle: 'CONFIRMED HAND OVER ON SYSTEM',
       description: '',
       icon: '📋',
-      color: 'from-slate-800 to-slate-900',
-      shadow: 'hover:shadow-slate-500/10',
-      borderColor: 'border-slate-200 dark:border-slate-800',
-      bgColor: 'bg-slate-50 dark:bg-slate-900/10',
+      color: 'from-amber-500 to-orange-600',
+      shadow: 'hover:shadow-orange-500/20',
+      borderColor: 'border-orange-200 dark:border-orange-800',
+      bgColor: 'bg-orange-50 dark:bg-orange-900/10',
       stats: [
-        { label: 'Total Tasks', value: confirmedStats.total, color: 'text-slate-900 dark:text-white' },
-        { label: 'Completed', value: confirmedStats.completed, color: 'text-slate-600 dark:text-slate-400 font-semibold' },
-        { label: 'Pending', value: confirmedStats.pending, color: 'text-slate-600 dark:text-slate-400 font-semibold' },
-        { label: 'Success Rate', value: `${confirmedStats.rate.toFixed(1)}%`, color: 'text-indigo-600 dark:text-indigo-400 font-extrabold' },
+        { label: 'Total Tasks', value: confirmedStats.total, color: 'text-gray-900 dark:text-white' },
+        { label: 'Completed', value: confirmedStats.completed, color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Pending', value: confirmedStats.pending, color: 'text-amber-600 dark:text-amber-400' },
+        { label: 'Success Rate', value: `${confirmedStats.rate.toFixed(1)}%`, color: 'text-blue-600 dark:text-blue-400 font-bold' },
       ],
       subtasks: [
         { id: 'STOCKOUT_YET_CONFIRM', label: 'STOCKOUT YET CONFIRM', icon: '📦', desc: 'Pending stockout confirmations' },
@@ -142,15 +142,15 @@ const MainDashboard = ({ onNavigate }) => {
       subtitle: 'SIGNED "CA" ON THE SYSTEM YET',
       description: '',
       icon: '✅',
-      color: 'from-slate-800 to-slate-900',
-      shadow: 'hover:shadow-slate-500/10',
-      borderColor: 'border-slate-200 dark:border-slate-800',
-      bgColor: 'bg-slate-50 dark:bg-slate-900/10',
+      color: 'from-blue-500 to-indigo-600',
+      shadow: 'hover:shadow-indigo-500/20',
+      borderColor: 'border-indigo-200 dark:border-indigo-800',
+      bgColor: 'bg-indigo-50 dark:bg-indigo-900/10',
       stats: [
-        { label: 'Total Records', value: caStats.total, color: 'text-slate-900 dark:text-white' },
-        { label: 'Is Signing', value: caStats.signing, color: 'text-slate-600 dark:text-slate-400 font-semibold' },
-        { label: 'Unsigned', value: caStats.unsigned, color: 'text-slate-600 dark:text-slate-400 font-semibold' },
-        { label: 'Signed Rate', value: `${caStats.rate.toFixed(1)}%`, color: 'text-indigo-600 dark:text-indigo-400 font-extrabold' },
+        { label: 'Total Records', value: caStats.total, color: 'text-gray-900 dark:text-white' },
+        { label: 'Is Signing', value: caStats.signing, color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Unsigned', value: caStats.unsigned, color: 'text-rose-600 dark:text-rose-400' },
+        { label: 'Signed Rate', value: `${caStats.rate.toFixed(1)}%`, color: 'text-indigo-600 dark:text-indigo-400 font-bold' },
       ],
       subtasks: [
         { id: 'STOCK_OUT_IS_SIGNING', label: 'STOCK OUT IS SIGNING', icon: '📤', desc: 'Export documents signing' },
@@ -163,15 +163,15 @@ const MainDashboard = ({ onNavigate }) => {
       subtitle: 'RESTOCK IN CA / RESTOCK OUT',
       description: '',
       icon: '🔄',
-      color: 'from-slate-800 to-slate-900',
-      shadow: 'hover:shadow-slate-500/10',
-      borderColor: 'border-slate-200 dark:border-slate-800',
-      bgColor: 'bg-slate-50 dark:bg-slate-900/10',
+      color: 'from-emerald-500 to-teal-600',
+      shadow: 'hover:shadow-emerald-500/20',
+      borderColor: 'border-teal-200 dark:border-teal-800',
+      bgColor: 'bg-teal-50 dark:bg-teal-900/10',
       stats: [
-        { label: 'Total Requests', value: restockStats.total, color: 'text-slate-900 dark:text-white' },
-        { label: 'Completed', value: restockStats.completed, color: 'text-slate-600 dark:text-slate-400 font-semibold' },
-        { label: 'Pending', value: restockStats.pending, color: 'text-slate-600 dark:text-slate-400 font-semibold' },
-        { label: 'Restock Rate', value: `${restockStats.rate.toFixed(1)}%`, color: 'text-indigo-600 dark:text-indigo-400 font-extrabold' },
+        { label: 'Total Requests', value: restockStats.total, color: 'text-gray-900 dark:text-white' },
+        { label: 'Completed', value: restockStats.completed, color: 'text-emerald-600 dark:text-emerald-400' },
+        { label: 'Pending', value: restockStats.pending, color: 'text-amber-600 dark:text-amber-400' },
+        { label: 'Restock Rate', value: `${restockStats.rate.toFixed(1)}%`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
       ],
       subtasks: [
         { id: 'RESTOCK_IN', label: 'RESTOCK IN', icon: '📥', desc: 'Incoming restock requests' },
@@ -191,36 +191,39 @@ const MainDashboard = ({ onNavigate }) => {
       <div className="w-full px-4 sm:px-6 py-6 sm:py-8 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         
         {/* ─── HEADER BANNER ─── */}
-        <div className="relative overflow-hidden bg-slate-900 rounded-2xl shadow-md p-6 sm:p-8 mb-6 sm:mb-8 text-white border border-slate-800">
+        <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-950 rounded-2xl shadow-2xl p-6 sm:p-8 mb-6 sm:mb-8 text-white border border-slate-800">
+          <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+          <div className="absolute bottom-0 left-0 w-56 sm:w-80 h-56 sm:h-80 bg-blue-500/5 rounded-full blur-3xl -ml-20 -mb-20"></div>
+          
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
             <div>
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="bg-slate-800 text-slate-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-slate-700">
+                <span className="bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-indigo-500/30">
                   v1.0.0
                 </span>
-                <span className="bg-slate-800 text-slate-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider border border-slate-700">
+                <span className="bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-500/30">
                   🏢 Enterprise Portal
                 </span>
-                <span className="bg-emerald-950/30 text-emerald-400 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-emerald-900/50">
+                <span className="bg-emerald-500/20 text-emerald-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-emerald-500/30">
                   🟢 Live
                 </span>
-                <span className="bg-slate-800 text-slate-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-slate-700">
+                <span className="bg-blue-500/20 text-blue-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-blue-500/30">
                   {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-2 sm:mt-3 text-white flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-2 sm:mt-3 text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300 flex items-center gap-2 flex-wrap">
                 📊 GIS Asset Management Portal
               </h1>
             </div>
             
-            <div className="flex gap-3 sm:gap-4 bg-slate-800/80 p-3 sm:p-4 rounded-xl border border-slate-700/80 shrink-0">
-              <div className="text-center px-2 sm:px-4 border-r border-slate-700/80">
+            <div className="flex gap-3 sm:gap-4 bg-white/5 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-white/10 shrink-0">
+              <div className="text-center px-2 sm:px-4 border-r border-white/10">
                 <span className="block text-xl sm:text-2xl font-bold text-indigo-400">
                   {totalPending}
                 </span>
                 <span className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-medium">Pending</span>
               </div>
-              <div className="text-center px-2 sm:px-4 border-r border-slate-700/80">
+              <div className="text-center px-2 sm:px-4 border-r border-white/10">
                 <span className="block text-xl sm:text-2xl font-bold text-emerald-400">
                   {totalCompleted}
                 </span>
