@@ -199,7 +199,7 @@ const MainDashboard = ({ onNavigate }) => {
             <div>
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-indigo-500/30">
-                  v3.0.1
+                  v1.0.0
                 </span>
                 <span className="bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-500/30">
                   🏢 Enterprise Portal
