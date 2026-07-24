@@ -1377,32 +1377,32 @@ const Import_CA = () => {
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
         
         {/* ─── HEADER ─── */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-5">
+        <div className="bg-white px-6 py-5 border-b border-slate-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                   <span>📥</span> IMPORT CA
                 </h1>
-                <span className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/30">
+                <span className="bg-slate-100 text-slate-700 text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-slate-200/80 font-medium">
                   🟢 Live • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-blue-100 mt-1 text-sm">**របាយការណ៍បញ្ជីបង្កាន់ដៃ Stock In ដែលមិនទាន់បានចុះហត្ថលេខា "CA" ក្នុងប្រព័ន្ធ។**</p>
+              <p className="text-slate-500 mt-1.5 text-sm font-normal">របាយការណ៍បញ្ជីបង្កាន់ដៃ Stock In ដែលមិនទាន់បានចុះហត្ថលេខា "CA" ក្នុងប្រព័ន្ធ។</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all">📊 KPI</button>
+              <button onClick={clearAllData} className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all shadow-xs">🗑️ Clear All</button>
+              <button onClick={() => setShowKPIModal(true)} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm">📊 KPI</button>
             </div>
           </div>
         </div>
 
         {/* ─── TOOLBAR ─── */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
           <div className="flex flex-wrap gap-3 justify-between items-center">
             <div className="flex flex-wrap gap-2">
-              <button onClick={() => setShowPasteModal(true)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-1.5">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-1.5">📎 Export</button>
+              <button onClick={() => setShowPasteModal(true)} className="px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-xl text-sm font-semibold shadow-xs transition-all flex items-center gap-1.5">🔄 Smart Import</button>
+              <button onClick={exportToExcel} className="px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5">📎 Export</button>
               {selectedRows.size > 0 && (
                 <button onClick={deleteSelectedRows} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-semibold shadow-sm hover:shadow-md transition-all flex items-center gap-1.5">🗑️ Complete ({selectedRows.size})</button>
               )}
