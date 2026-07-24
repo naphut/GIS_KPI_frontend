@@ -1395,18 +1395,7 @@ export const Restock_out = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
-              <div className="text-sm text-blue-800">
-                <strong className="font-bold">📌 How Unit Extraction Works:</strong>
-                <ul className="mt-1.5 ml-4 list-disc space-y-0.5 text-blue-700">
-                  <li>🥇 <strong>Priority 1:</strong> Request Export Code (YCXGIS_...)</li>
-                  <li>🥈 <strong>Priority 2:</strong> Group Request (GIS_...)</li>
-                  <li>🥉 <strong>Priority 3:</strong> Stock Out (XXX_STOCK_NOC)</li>
-                  <li>📋 <strong>FBC</strong> → KANZ1, PNPZ1, PNPZ2</li>
-                  <li>📋 <strong>SOS</strong> → KAN, PNP</li>
-                </ul>
-              </div>
-            </div>
+
           </div>
           <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
             <button onClick={() => setShowKPIModal(false)} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm">Close</button>

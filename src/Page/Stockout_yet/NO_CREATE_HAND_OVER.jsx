@@ -1153,17 +1153,6 @@ const NO_CREATE_HAND_OVER = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="text-sm text-blue-800">
-                <strong>📌 How KPI Dashboard Works:</strong>
-                <ul className="mt-1 ml-4 list-disc">
-                  <li>🎯 <strong>Target</strong> = Auto-created from data count (can be edited)</li>
-                  <li>✅ <strong>Result</strong> = Hand over notes that are confirmed</li>
-                  <li>📋 <strong>Remain</strong> = Target - Result</li>
-                  <li>📊 <strong>Ratio</strong> = (Result / Target) × 100%</li>
-                </ul>
-              </div>
-            </div>
           </div>
 
           <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">

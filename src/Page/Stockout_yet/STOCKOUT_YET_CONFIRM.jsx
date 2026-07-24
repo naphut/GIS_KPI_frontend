@@ -1332,20 +1332,7 @@ const STOCKOUT_YET_CONFIRM = () => {
               </div>
             </div>
             
-            {/* Info Box */}
-            <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="text-sm text-blue-800">
-                <strong>📌 How Unit Extraction Works:</strong>
-                <ul className="mt-1 ml-4 list-disc">
-                  <li>🎯 <strong>Unit</strong> extracted from <strong>Group Receiver</strong> (highest priority)</li>
-                  <li>📋 Falls back to <strong>Export Code / Export No</strong> if not found</li>
-                  <li>🚫 <strong>GPON</strong> removed from Construction Receiver</li>
-                  <li>🚫 <strong>GIS_MOD</strong> removed from Group Receiver</li>
-                  <li>🌅 <strong>Morning Target</strong> = Auto-created at start of day</li>
-                  <li>🌙 <strong>Evening Target</strong> = Can be edited manually</li>
-                </ul>
-              </div>
-            </div>
+
           </div>
 
           <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">

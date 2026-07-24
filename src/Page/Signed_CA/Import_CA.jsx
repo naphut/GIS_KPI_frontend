@@ -1225,19 +1225,7 @@ const Import_CA = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
-              <div className="text-sm text-blue-800">
-                <strong className="font-bold">📌 How Unit Extraction Works:</strong>
-                <ul className="mt-1.5 ml-4 list-disc space-y-0.5 text-blue-700">
-                  <li>🎯 <strong>Priority 1:</strong> Extract from Code of receipt note</li>
-                  <li>🎯 <strong>Priority 2:</strong> Extract from Code of command</li>
-                  <li>🎯 <strong>Priority 3:</strong> Extract from Warehouse</li>
-                  <li>📋 <strong>FBC</strong> → PNPZ1, PNPZ2, KANZ1</li>
-                  <li>📋 <strong>SOS</strong> → PNP, KAN</li>
-                  <li>📋 <strong>PLA</strong> → PNP, KAN</li>
-                </ul>
-              </div>
-            </div>
+
           </div>
           <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
             <button onClick={() => setShowKPIModal(false)} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm">Close</button>

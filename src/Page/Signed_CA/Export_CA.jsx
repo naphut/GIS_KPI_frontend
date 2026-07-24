@@ -1387,19 +1387,7 @@ export const Export_CA = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-              <div className="text-sm text-blue-800">
-                <strong>📌 Unit Extraction Priority:</strong>
-                <ul className="mt-1 ml-4 list-disc">
-                  <li>🥇 <strong>Export Warehouse</strong> - អាទិភាពខ្ពស់បំផុត</li>
-                  <li>🥈 <strong>Export Note Code</strong> - សម្រាប់បែងចែក PNPZ1/PNPZ2/KANZ1</li>
-                  <li>🥉 <strong>Export Command Code</strong> - ជាជម្រើសចុងក្រោយ</li>
-                  <li>📋 <strong>FBC</strong> → PNPZ1, PNPZ2, KANZ1</li>
-                  <li>📋 <strong>SOS</strong> → PNP, KAN</li>
-                  <li>📋 <strong>PLA</strong> → PNP, KAN</li>
-                </ul>
-              </div>
-            </div>
+
           </div>
           <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
             <button onClick={() => setShowKPIModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Close</button>
