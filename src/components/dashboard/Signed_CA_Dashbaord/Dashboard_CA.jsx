@@ -2212,7 +2212,7 @@ const Dashboard_CA = () => {
       </div>
 
       {/* ─── SUMMARY CARDS ─── */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-2xl shadow-md p-5 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -2258,21 +2258,6 @@ const Dashboard_CA = () => {
             <span className="text-emerald-600">✅ {stats.totalStockOut.signing}</span>
             <span className="w-px h-4 bg-gray-300"></span>
             <span className="text-rose-600">❌ {stats.totalStockOut.unsigned}</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-md p-5 border-l-4 border-amber-500 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Stock In</div>
-              <div className="text-3xl font-bold text-amber-600 mt-1">{formatNumber(stats.totalStockIn.total)}</div>
-            </div>
-            <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center text-2xl">📥</div>
-          </div>
-          <div className="mt-3 flex items-center gap-2 text-xs text-gray-500">
-            <span className="text-emerald-600">✅ {stats.totalStockIn.signing}</span>
-            <span className="w-px h-4 bg-gray-300"></span>
-            <span className="text-rose-600">❌ {stats.totalStockIn.unsigned}</span>
           </div>
         </div>
       </div>
@@ -2478,68 +2463,11 @@ const Dashboard_CA = () => {
           <div className="mt-3 text-xs text-gray-400">Total: <strong className="text-gray-600">{stockOutUnsigned.length}</strong> records</div>
         </div>
 
-        {/* Stock In Signing */}
-        <div className="bg-white rounded-2xl shadow-md p-6 border-t-4 border-emerald-500 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-xl">✅</div>
-              <div>
-                <h3 className="font-bold text-gray-800">Stock In Signing</h3>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider">02 STOCK IN IS SIGNING</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-emerald-600">{formatNumber(stats.stockInSigning.total)}</div>
-              <div className="text-[10px] text-gray-400">Records</div>
-            </div>
-          </div>
-          <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-            {stockInSigning.slice(0, 5).map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-2.5 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors">
-                <span className="text-xs font-medium text-gray-700 font-mono">{item.codeReceipt || item.code}</span>
-                <span className="text-xs text-gray-500">{item.warehouse}</span>
-              </div>
-            ))}
-            {stockInSigning.length === 0 && (
-              <div className="text-center text-gray-400 py-4 text-sm">📭 No records</div>
-            )}
-          </div>
-          <div className="mt-3 text-xs text-gray-400">Total: <strong className="text-gray-600">{stockInSigning.length}</strong> records</div>
-        </div>
-
-        {/* Stock In Unsigned */}
-        <div className="bg-white rounded-2xl shadow-md p-6 border-t-4 border-rose-500 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center text-xl">❌</div>
-              <div>
-                <h3 className="font-bold text-gray-800">Stock In Unsigned</h3>
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider">STOCK IN UNSIGNED</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-rose-600">{formatNumber(stats.stockInUnsigned.total)}</div>
-              <div className="text-[10px] text-gray-400">Records</div>
-            </div>
-          </div>
-          <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-            {stockInUnsigned.slice(0, 5).map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-2.5 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors">
-                <span className="text-xs font-medium text-gray-700 font-mono">{item.codeReceipt || item.code}</span>
-                <span className="text-xs text-gray-500">{item.warehouse}</span>
-              </div>
-            ))}
-            {stockInUnsigned.length === 0 && (
-              <div className="text-center text-gray-400 py-4 text-sm">📭 No records</div>
-            )}
-          </div>
-          <div className="mt-3 text-xs text-gray-400">Total: <strong className="text-gray-600">{stockInUnsigned.length}</strong> records</div>
-        </div>
       </div>
 
       {/* ─── PROGRESS BARS ─── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
+      <div className="mb-6">
+        <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100 max-w-xl">
           <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
             <span>📤</span> Stock Out Progress
           </h3>
@@ -2560,32 +2488,10 @@ const Dashboard_CA = () => {
             <span>📊 <strong className="text-gray-700">{stats.totalStockOut.total}</strong> Total</span>
           </div>
         </div>
-
-        <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-100">
-          <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <span>📥</span> Stock In Progress
-          </h3>
-          <div className="flex items-center gap-4 mb-2">
-            <div className="flex-1">
-              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                <div className={`h-4 rounded-full ${getProgressColor(stats.totalStockIn.rate)} transition-all duration-500`} 
-                     style={{ width: `${stats.totalStockIn.rate}%` }}></div>
-              </div>
-            </div>
-            <span className={`font-bold ${getRateColor(stats.totalStockIn.rate)}`}>
-              {stats.totalStockIn.rate.toFixed(1)}%
-            </span>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>✅ <strong className="text-emerald-600">{stats.totalStockIn.signing}</strong> Signing</span>
-            <span>❌ <strong className="text-rose-600">{stats.totalStockIn.unsigned}</strong> Unsigned</span>
-            <span>📊 <strong className="text-gray-700">{stats.totalStockIn.total}</strong> Total</span>
-          </div>
-        </div>
       </div>
 
       {/* ─── FOOTER STATS ─── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 gap-4">
         <div className="bg-white rounded-2xl shadow-sm p-4 text-center border border-gray-100 hover:shadow-md transition-shadow">
           <div className="text-[10px] text-gray-500 uppercase tracking-wider">Stock Out Signing</div>
           <div className="text-2xl font-bold text-emerald-600 mt-1">
@@ -2596,18 +2502,6 @@ const Dashboard_CA = () => {
           <div className="text-[10px] text-gray-500 uppercase tracking-wider">Stock Out Unsigned</div>
           <div className="text-2xl font-bold text-rose-600 mt-1">
             {formatNumber(stats.stockOutUnsigned.total)}
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm p-4 text-center border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider">Stock In Signing</div>
-          <div className="text-2xl font-bold text-emerald-600 mt-1">
-            {formatNumber(stats.stockInSigning.total)}
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-sm p-4 text-center border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="text-[10px] text-gray-500 uppercase tracking-wider">Stock In Unsigned</div>
-          <div className="text-2xl font-bold text-rose-600 mt-1">
-            {formatNumber(stats.stockInUnsigned.total)}
           </div>
         </div>
       </div>
