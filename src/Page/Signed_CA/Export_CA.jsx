@@ -1445,7 +1445,7 @@ export const Export_CA = () => {
     if (!showAlarmModal) return null;
     return (
       <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 overflow-hidden flex flex-col max-h-[85vh]">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full mx-4 overflow-hidden flex flex-col max-h-[85vh]">
           <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
@@ -1489,21 +1489,44 @@ export const Export_CA = () => {
                 <p>No alarm items match your search.</p>
               </div>
             ) : (
-              filteredAlarmItems.map(item => (
-                <div key={item.id} className="mb-3 p-3 bg-rose-50 rounded-xl border border-rose-200">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="text-xs">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-rose-700 text-sm">{item.unit}</span>
-                        <span className="text-gray-500 font-mono">| Export: {item.exportNoteCode}</span>
-                      </div>
-                      <div className="text-gray-600 mt-1">📅 Date: {item.dateCreate} | Year: {item.year} | ⏰ Delay: <span className="font-semibold text-rose-600 font-mono">+{item.daysDiff} days</span></div>
-                      <div className="text-[11px] text-gray-500 mt-1">Warehouse: {item.exportWarehouse} | Status CA: {item.statusCA}</div>
-                    </div>
-                    <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-2.5 py-1 text-xs bg-white border border-rose-300 rounded-xl hover:bg-rose-50 text-rose-700 transition-colors">Dismiss</button>
-                  </div>
-                </div>
-              ))
+              <div className="overflow-x-auto border border-rose-100 rounded-2xl shadow-sm">
+                <table className="min-w-full divide-y divide-rose-100 text-left text-xs bg-white">
+                  <thead className="bg-rose-50/50 text-rose-900 font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-3 text-center">#</th>
+                      <th className="px-4 py-3">Export Note Code</th>
+                      <th className="px-4 py-3 text-center">Status</th>
+                      <th className="px-4 py-3 text-center">Status CA</th>
+                      <th className="px-4 py-3 text-center">Days</th>
+                      <th className="px-4 py-3 text-center">TEAM</th>
+                      <th className="px-4 py-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-rose-100">
+                    {filteredAlarmItems.map((item, idx) => (
+                      <tr key={item.id} className="hover:bg-rose-50/30 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-500 text-center">{idx + 1}</td>
+                        <td className="px-4 py-3 font-mono font-semibold text-gray-800">{item.exportNoteCode || '-'}</td>
+                        <td className="px-4 py-3 text-center">{getStatusBadge(item.status)}</td>
+                        <td className="px-4 py-3 text-center">{getStatusCABadge(item.statusCA)}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
+                            +{item.daysDiff}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex px-2 py-0.5 rounded-xl font-bold bg-purple-50 text-purple-700 border border-purple-100 font-mono">
+                            {item.team || '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-2 py-1 text-[11px] font-semibold text-rose-700 bg-white border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors shadow-xs">Dismiss</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
           

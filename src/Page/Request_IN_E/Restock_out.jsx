@@ -1472,7 +1472,7 @@ export const Restock_out = () => {
     if (!showAlarmModal) return null;
     return (
       <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 overflow-hidden flex flex-col max-h-[85vh] border border-gray-100 animate-scaleIn">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full mx-4 overflow-hidden flex flex-col max-h-[85vh] border border-gray-100 animate-scaleIn">
           <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-4">
             <div className="flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
@@ -1516,21 +1516,38 @@ export const Restock_out = () => {
                 <p className="text-base font-semibold">No alarm items match your search.</p>
               </div>
             ) : (
-              filteredAlarmItems.map(item => (
-                <div key={item.id} className="mb-3 p-3.5 bg-rose-50/50 rounded-2xl border border-rose-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="text-xs">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-rose-700 text-sm">{item.unit}</span>
-                        <span className="text-gray-500 font-mono">| Request: {item.requestExportCode}</span>
-                      </div>
-                      <div className="text-gray-600 mt-1">📅 Date: {item.createDate} | Year: {item.year} | ⏰ Delay: <span className="font-bold text-rose-600 font-mono">+{item.daysDiff} days</span></div>
-                      <div className="text-[11px] text-gray-500 mt-1">Stock Out: {item.stockOut} | Status CA: {item.statusCA}</div>
-                    </div>
-                    <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-3 py-1 text-xs bg-white border border-rose-200 rounded-xl hover:bg-rose-50 text-rose-700 font-semibold shadow-sm transition-colors">Dismiss</button>
-                  </div>
-                </div>
-              ))
+              <div className="overflow-x-auto border border-rose-100 rounded-2xl shadow-sm animate-fadeIn">
+                <table className="min-w-full divide-y divide-rose-100 text-left text-xs bg-white">
+                  <thead className="bg-rose-50/50 text-rose-900 font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-4 py-3 text-center">#</th>
+                      <th className="px-4 py-3">Request export code</th>
+                      <th className="px-4 py-3">Receiving Unit</th>
+                      <th className="px-4 py-3">Creator</th>
+                      <th className="px-4 py-3 text-center">Q'ty of day</th>
+                      <th className="px-4 py-3 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-rose-100">
+                    {filteredAlarmItems.map((item, idx) => (
+                      <tr key={item.id} className="hover:bg-rose-50/30 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-500 text-center">{idx + 1}</td>
+                        <td className="px-4 py-3 font-mono font-semibold text-gray-800">{item.requestExportCode || '-'}</td>
+                        <td className="px-4 py-3 text-gray-700">{item.receivingUnit || '-'}</td>
+                        <td className="px-4 py-3 text-gray-700">{item.creator || '-'}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
+                            +{item.daysDiff}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-3 py-1 text-xs bg-white border border-rose-200 rounded-xl hover:bg-rose-50 text-rose-700 font-semibold shadow-sm transition-colors animate-fadeIn">Dismiss</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
           
