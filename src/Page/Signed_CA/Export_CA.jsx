@@ -465,7 +465,8 @@ export const Export_CA = () => {
 
   const getStatusBadge = (status) => {
     const upper = (status || '').toUpperCase();
-    const isCompleted = upper.includes('ACTUAL EXPORT ALL') || upper.includes('THỰC XUẤT HẾT') || upper.includes('THUC XUAT HET');
+    const isNotExported = upper.includes('CHƯA THỰC XUẤT') || upper.includes('CHUA THUC XUAT') || upper.includes('NOT ACTUAL EXPORT');
+    const isCompleted = status && !isNotExported;
     if (isCompleted) {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">✅ {status}</span>;
     }
@@ -604,6 +605,11 @@ export const Export_CA = () => {
       const warehouse = (item.exportWarehouse || '').toUpperCase().replace(/\s+/g, '');
       const isGIS = warehouse.includes('GIS');
       
+      const status = (item.status || '').toUpperCase().replace(/\s+/g, ' ').trim();
+      const isNotActualExport = status.includes('CHƯA THỰC XUẤT') || 
+                                status.includes('CHUA THUC XUAT') || 
+                                status.includes('NOT ACTUAL EXPORT');
+
       const statusCA = (item.statusCA || '').toUpperCase().replace(/\s+/g, ' ').trim();
       const isCAOK = statusCA.includes('UNSIGNED') || 
                      statusCA.includes('IS SIGNING') || 
@@ -613,11 +619,11 @@ export const Export_CA = () => {
                      statusCA.includes('CANCEL') ||
                      statusCA.includes('HỦY') ||
                      statusCA.includes('HUY');
-      return isGIS && isCAOK;
+      return isGIS && isCAOK && !isNotActualExport;
     });
 
     if (filteredData.length === 0) {
-      showNotification('⚠️ No matching records found! (GIS + Unsigned/Is signing/Cancel)', 'warning');
+      showNotification("⚠️ No matching records found! (GIS + Unsigned/Is signing/Cancel, excluding 'Not actual export')", 'warning');
       return;
     }
 
@@ -870,7 +876,8 @@ export const Export_CA = () => {
         }
         if (field === 'status') {
           const upperVal = (value || '').toUpperCase();
-          updated.isCompleted = upperVal.includes('ACTUAL EXPORT ALL') || upperVal.includes('THỰC XUẤT HẾT') || upperVal.includes('THUC XUAT HET');
+          const isNotExported = upperVal.includes('CHƯA THỰC XUẤT') || upperVal.includes('CHUA THUC XUAT') || upperVal.includes('NOT ACTUAL EXPORT');
+          updated.isCompleted = value && !isNotExported;
         }
         return updated;
       }
@@ -1407,7 +1414,7 @@ export const Export_CA = () => {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold text-white">🔄 Smart Import</h2>
-                <p className="text-blue-100 text-sm">Auto-filters GIS Warehouse + Actual Export all + Unsigned/Is signing</p>
+                <p className="text-blue-100 text-sm">Auto-filters GIS Warehouse + Unsigned/Is signing (excluding 'Not actual export')</p>
               </div>
               <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
             </div>
@@ -1416,7 +1423,7 @@ export const Export_CA = () => {
             <textarea 
               value={pasteData} 
               onChange={(e) => setPasteData(e.target.value)} 
-              placeholder="Paste your system data here...&#10;&#10;Format: Export Note Code, Export Command Code, Export Request, Create Requester, Date Create, Date Export, Export Warehouse, Reason export, Name Warehouse Entering, Unit Entering, Code Contruction, Status, Disapprove not, Status CA, Description&#10;&#10;Note: Only GIS Warehouse + Actual Export all + Unsigned/Is signing will be imported." 
+              placeholder="Paste your system data here...&#10;&#10;Format: Export Note Code, Export Command Code, Export Request, Create Requester, Date Create, Date Export, Export Warehouse, Reason export, Name Warehouse Entering, Unit Entering, Code Contruction, Status, Disapprove not, Status CA, Description&#10;&#10;Note: Only GIS Warehouse + Unsigned/Is signing (excluding 'Not actual export') will be imported." 
               className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
 
@@ -1751,7 +1758,7 @@ export const Export_CA = () => {
                     <div className="flex flex-col items-center gap-3">
                       <div className="text-4xl">📭</div>
                       <p className="text-lg font-medium">No records found matching filters</p>
-                      <p className="text-sm text-gray-400">Filters: GIS Warehouse + Actual Export all + Unsigned/Is signing</p>
+                      <p className="text-sm text-gray-400">Filters: GIS Warehouse + Unsigned/Is signing (excluding 'Not actual export')</p>
                     </div>
                   </td>
                 </tr>
@@ -1821,7 +1828,7 @@ export const Export_CA = () => {
 
         {/* ─── FOOTER ─── */}
         <div className="bg-gray-50 px-6 py-3 border-t text-sm text-gray-500 flex justify-between flex-wrap gap-2">
-          <span>📋 Total GIS (Actual Export all + Unsigned/Is signing): <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
+          <span>📋 Total GIS (Unsigned/Is signing, excluding 'Not actual export'): <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
           {/* <div className="flex gap-3 flex-wrap">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>GIS Warehouse</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&ge;{alarmThreshold}d)</span>
