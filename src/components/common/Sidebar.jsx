@@ -1,9 +1,45 @@
 import React, { useState } from 'react';
+import { 
+  generateAllModulesExcelBlob,
+  getConfiguredUnits 
+} from '../../services/telegramBot';
 
-const Sidebar = ({ onSelect, selected }) => {
+const unitOptions = [
+  { code: 'BAN', name: 'BAN (បន្ទាយមានជ័យ)' },
+  { code: 'BAT', name: 'BAT (បាត់ដំបង)' },
+  { code: 'CHA', name: 'CHA (កំពង់ចាម)' },
+  { code: 'CHH', name: 'CHH (កំពង់ឆ្នាំង)' },
+  { code: 'KAM', name: 'KAM (កំពត)' },
+  { code: 'KAN', name: 'KAN (កណ្តាល)' },
+  { code: 'KANZ1', name: 'KANZ1 (កណ្តាល ហ្សូន ១)' },
+  { code: 'KOH', name: 'KOH (កោះកុង)' },
+  { code: 'KRA', name: 'KRA (ក្រចេះ)' },
+  { code: 'MON', name: 'MON (មណ្ឌលគិរី)' },
+  { code: 'ODD', name: 'ODD (ឧត្តរមានជ័យ)' },
+  { code: 'PNP', name: 'PNP (ភ្នំពេញ)' },
+  { code: 'PNPZ1', name: 'PNPZ1 (ភ្នំពេញ ហ្សូន ១)' },
+  { code: 'PNPZ2', name: 'PNPZ2 (ភ្នំពេញ ហ្សូន ២)' },
+  { code: 'PRE', name: 'PRE (ព្រៃវែង)' },
+  { code: 'PRH', name: 'PRH (ព្រះវិហារ)' },
+  { code: 'PUR', name: 'PUR (ពោធិ៍សាត់)' },
+  { code: 'ROT', name: 'ROT (រតនគិរី)' },
+  { code: 'SIE', name: 'SIE (សៀមរាប)' },
+  { code: 'SIH', name: 'SIH (ព្រះសីហនុ)' },
+  { code: 'SPE', name: 'SPE (កំពង់ស្ពឺ)' },
+  { code: 'STU', name: 'STU (ស្ទឹងត្រែង)' },
+  { code: 'SVA', name: 'SVA (ស្វាយរៀង)' },
+  { code: 'TAK', name: 'TAK (តាកែវ)' },
+  { code: 'THO', name: 'THO (កំពង់ធំ)' }
+];
+
+const Sidebar = ({ onSelect, selected, onSendTelegram }) => {
   const [isStockoutOpen, setIsStockoutOpen] = useState(false);
   const [isSignedCAOpen, setIsSignedCAOpen] = useState(false);
   const [isRestockOpen, setIsRestockOpen] = useState(false);
+  const [isSendAllOpen, setIsSendAllOpen] = useState(false);
+  const [isSendSingleOpen, setIsSendSingleOpen] = useState(false);
+  const [selectedUnit, setSelectedUnit] = useState('BAT');
+  const [isSending, setIsSending] = useState(false);
 
   React.useEffect(() => {
     if (['STOCKOUT_YET_CONFIRM', 'NO_CREATE_HAND_OVER', 'STOCK_OUT_NOTE_CONFIRMED', 'stockout_group'].includes(selected)) {
@@ -145,8 +181,75 @@ const Sidebar = ({ onSelect, selected }) => {
     return false;
   };
 
+  const handleExportAll = async () => {
+    try {
+      const unit = 'ALL';
+      const blob = generateAllModulesExcelBlob(unit);
+      
+      // Download file locally
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const filename = `GIS_DASHBOARD_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to export dashboard data:', error);
+    }
+  };
+
+  const handleSendByProvince = async () => {
+    if (isSending) return;
+    try {
+      const confirmSend = window.confirm("តើអ្នកពិតជាចង់ផ្ញើរបាយការណ៍បំបែកតាមខេត្តនីមួយៗ (UNIT) ទៅកាន់ Telegram មែនទេ?");
+      if (!confirmSend) return;
+
+      const units = getConfiguredUnits();
+      if (units.length === 0) {
+        alert('⚠️ គ្មានក្រុម Telegram ណាត្រូវបានកំណត់នៅក្នុង config ទេ!');
+        return;
+      }
+      
+      setIsSending(true);
+      for (const u of units) {
+        if (onSendTelegram) {
+          await onSendTelegram(u);
+        }
+      }
+      alert('✅ ផ្ញើទិន្នន័យតាម UNIT នីមួយៗបានជោគជ័យ!');
+    } catch (error) {
+      console.error('Failed to send data by province:', error);
+      alert('❌ ផ្ញើទិន្នន័យតាម UNIT នីមួយៗបរាជ័យ!');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+
+  const handleSendSingle = async () => {
+    if (isSending) return;
+    try {
+      const confirmSend = window.confirm(`តើអ្នកពិតជាចង់ផ្ញើរបាយការណ៍របស់ UNIT ${selectedUnit} ទៅកាន់ Telegram មែនទេ?`);
+      if (!confirmSend) return;
+
+      setIsSending(true);
+      if (onSendTelegram) {
+        await onSendTelegram(selectedUnit);
+      }
+      alert(`✅ ផ្ញើទិន្នន័យរបស់ UNIT ${selectedUnit} បានជោគជ័យ!`);
+    } catch (error) {
+      console.error(`Failed to send data for unit ${selectedUnit}:`, error);
+      alert(`❌ ផ្ញើទិន្នន័យរបស់ UNIT ${selectedUnit} បរាជ័យ!`);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
-    <div className="w-64 h-full bg-white shadow-xl flex flex-col border-r border-gray-100">
+    <div className="w-64 h-full bg-white shadow-xl flex flex-col border-r border-gray-100 animate-fadeIn">
       {/* ─── LOGO ─── */}
       <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex items-center gap-3">
@@ -278,9 +381,101 @@ const Sidebar = ({ onSelect, selected }) => {
             </div>
           ))}
         </div>
-
-
       </nav>
+
+      {/* ─── EXPORT & TELEGRAM ACTIONS PANEL ─── */}
+      <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
+        <div className="flex items-center gap-2 px-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            របាយការណ៍ & ផ្ញើ TELEGRAM
+          </span>
+        </div>
+
+        {/* 1. Download Local Excel */}
+        <button
+          onClick={handleExportAll}
+          className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-black tracking-wide uppercase shadow-md shadow-emerald-500/10 hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer"
+        >
+          <span className="text-sm">📊</span>
+          <span>ទាញទិន្នន័យទាំងអស់ (Excel)</span>
+        </button>
+
+        {/* Accordion 1: Send All (25) */}
+        <div className="border border-slate-100/80 bg-white rounded-2xl overflow-hidden shadow-xs transition-all duration-300">
+          <button
+            onClick={() => setIsSendAllOpen(!isSendAllOpen)}
+            className={`w-full flex items-center justify-between px-3.5 py-3 transition-colors duration-200 cursor-pointer ${
+              isSendAllOpen ? 'bg-slate-100/70 text-slate-900 font-black' : 'bg-slate-50/60 hover:bg-slate-100/50 text-slate-700 font-extrabold'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">🚀</span>
+              <span className="text-xs uppercase tracking-tight">Send All (25)</span>
+            </div>
+            <span className={`transition-transform duration-300 text-[8px] text-slate-400 font-bold ${isSendAllOpen ? 'rotate-180 text-slate-700' : ''}`}>▼</span>
+          </button>
+          
+          {isSendAllOpen && (
+            <div className="p-3 space-y-2.5 border-t border-slate-100 bg-white/50">
+              <button
+                onClick={handleSendByProvince}
+                disabled={isSending}
+                className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-xs active:scale-[0.98] transition-all duration-200 ${isSending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <span className="text-sm">📤</span>
+                <span>{isSending ? 'កំពុងផ្ញើ...' : 'ផ្ញើតាមខេត្តនីមួយៗ (Excel)'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Accordion 2: Send Single Branch (1) */}
+        <div className="border border-slate-100/80 bg-white rounded-2xl overflow-hidden shadow-xs transition-all duration-300">
+          <button
+            onClick={() => setIsSendSingleOpen(!isSendSingleOpen)}
+            disabled={isSending}
+            className={`w-full flex items-center justify-between px-3.5 py-3 transition-colors duration-200 ${isSending ? 'cursor-not-allowed text-slate-400' : 'cursor-pointer'} ${
+              isSendSingleOpen ? 'bg-slate-100/70 text-slate-900 font-black' : 'bg-slate-50/60 hover:bg-slate-100/50 text-slate-700 font-extrabold'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-base">🎯</span>
+              <span className="text-xs uppercase tracking-tight">Send Single Branch (1)</span>
+            </div>
+            <span className={`transition-transform duration-300 text-[8px] text-slate-400 font-bold ${isSendSingleOpen ? 'rotate-180 text-slate-700' : ''}`}>▼</span>
+          </button>
+          
+          {isSendSingleOpen && (
+            <div className="p-3 space-y-2.5 border-t border-slate-100 bg-white/50">
+              <div className="relative">
+                <select
+                  value={selectedUnit}
+                  onChange={(e) => setSelectedUnit(e.target.value)}
+                  disabled={isSending}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/40 text-slate-700 text-xs font-extrabold focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'none\'%3E%3Cpath d=\'M7 9l3 3 3-3\' stroke=\'%2364748B\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")', backgroundPosition: 'right 10px center', backgroundSize: '16px', backgroundRepeat: 'no-repeat' }}
+                >
+                  {unitOptions.map((opt) => (
+                    <option key={opt.code} value={opt.code}>
+                      {opt.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <button
+                onClick={handleSendSingle}
+                disabled={isSending}
+                className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white text-xs font-bold shadow-xs active:scale-[0.98] transition-all duration-200 ${isSending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <span className="text-sm">📤</span>
+                <span>{isSending ? 'កំពុងផ្ញើ...' : 'ផ្ញើទិន្នន័យ UNIT នេះ'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ─── FOOTER ─── */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/80">
@@ -295,7 +490,7 @@ const Sidebar = ({ onSelect, selected }) => {
           <span className="text-[9px] text-slate-400 font-bold bg-white px-2 py-0.5 rounded-full border border-slate-200">v1.0.0</span>
         </div>
         <div className="mt-1.5 text-[8px] text-slate-400 font-medium">
-          © 2026 KPI Management asset
+          © 2026 KPI  Management asset
         </div>
       </div>
 

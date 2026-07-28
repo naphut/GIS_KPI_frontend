@@ -26,7 +26,8 @@ import { loadFromDb } from '../../../services/dbStore';
 import STOCKOUT_YET_CONFIRM from '../../../Page/Stockout_yet/STOCKOUT_YET_CONFIRM';
 import STOCK_OUT_NOTE_CONFIRMED from '../../../Page/Stockout_yet/stock_out_note_confirmed';
 
-const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
+const Dashboad_Stockout = (props = {}) => {
+  const { isEmbedded = false, onNavigate } = props;
   const [selectedComponent, setSelectedComponent] = useState('dashboard');
   const [syncVersion, setSyncVersion] = useState(0);
 
@@ -85,7 +86,10 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [sendResults, setSendResults] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [screenshotUnit, setScreenshotUnit] = useState(null);
+  const [internalScreenshotUnit, setInternalScreenshotUnit] = useState(null);
+  const screenshotUnit = props.screenshotUnit !== undefined ? props.screenshotUnit : internalScreenshotUnit;
+  const setScreenshotUnit = props.setScreenshotUnit || setInternalScreenshotUnit;
+  
   const [screenshotMode, setScreenshotMode] = useState(false);
   const [activeM1Items, setActiveM1Items] = useState([]);
   const [activeM2Items, setActiveM2Items] = useState([]);
@@ -94,7 +98,10 @@ const Dashboad_Stockout = ({ isEmbedded = false, onNavigate }) => {
   const [screenshotPartText, setScreenshotPartText] = useState("");
   // eslint-disable-next-line no-unused-vars
   const [screenshotTitle, setScreenshotTitle] = useState("CONFIRMED HAND OVER REPORT");
-  const [summaryImageMode, setSummaryImageMode] = useState(false);
+  
+  const [internalSummaryImageMode, setInternalSummaryImageMode] = useState(false);
+  const summaryImageMode = props.summaryImageMode !== undefined ? props.summaryImageMode : internalSummaryImageMode;
+  const setSummaryImageMode = props.setSummaryImageMode || setInternalSummaryImageMode;
   const [isSelectingForSummary, setIsSelectingForSummary] = useState(false);
   const [openBatchDropdown, setOpenBatchDropdown] = useState(false);
   const [openSingleDropdown, setOpenSingleDropdown] = useState(false);

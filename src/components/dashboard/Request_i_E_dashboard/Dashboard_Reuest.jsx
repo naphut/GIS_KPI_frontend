@@ -92,7 +92,7 @@ const calculateDaysDiff = (dateString) => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-const Dashboard_Request = () => {
+const Dashboard_Request = (props = {}) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update time every minute
@@ -192,9 +192,16 @@ const Dashboard_Request = () => {
   const [sendProgress, setSendProgress] = useState(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [sendResults, setSendResults] = useState(null);
-  const [screenshotUnit, setScreenshotUnit] = useState(null);
+  
+  const [internalScreenshotUnit, setInternalScreenshotUnit] = useState(null);
+  const screenshotUnit = props.screenshotUnit !== undefined ? props.screenshotUnit : internalScreenshotUnit;
+  const setScreenshotUnit = props.setScreenshotUnit || setInternalScreenshotUnit;
+  
   const [screenshotMode, setScreenshotMode] = useState(false);
-  const [summaryImageMode, setSummaryImageMode] = useState(false);
+  
+  const [internalSummaryImageMode, setInternalSummaryImageMode] = useState(false);
+  const summaryImageMode = props.summaryImageMode !== undefined ? props.summaryImageMode : internalSummaryImageMode;
+  const setSummaryImageMode = props.setSummaryImageMode || setInternalSummaryImageMode;
   const [isSelectingForSummary, setIsSelectingForSummary] = useState(false);
   const [openBatchDropdown, setOpenBatchDropdown] = useState(false);
   const [openSingleDropdown, setOpenSingleDropdown] = useState(false);

@@ -1704,91 +1704,634 @@ const escapeXml = (str) => {
 };
 
 const createExcelXmlBlob = (sheets) => {
-  let xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40"><Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style><Style ss:ID="Header"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#0F172A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/></Borders><Font ss:FontName="Arial" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#1E293B" ss:Pattern="Solid"/></Style><Style ss:ID="CellLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style><Style ss:ID="CellLeftBold"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A" ss:Bold="1"/></Style><Style ss:ID="CellCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style><Style ss:ID="DaysRed"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#991B1B" ss:Bold="1"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style><Style ss:ID="DaysYellow"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#92400E" ss:Bold="1"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style><Style ss:ID="DaysSlate"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#475569" ss:Bold="1"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style><Style ss:ID="StatusYellow"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#B45309" ss:Bold="1"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style><Style ss:ID="StatusRed"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#B91C1C" ss:Bold="1"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style></Styles>`;
+  let xml = `<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">
+<Styles>
+  <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style>
+  <Style ss:ID="Header"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#0F172A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#475569"/></Borders><Font ss:FontName="Arial" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#1E293B" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="HeaderStockout"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#7C2D12"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#EA580C"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#EA580C"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#EA580C"/></Borders><Font ss:FontName="Arial" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#F97316" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="HeaderStockoutSub"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#EA580C"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FED7AA"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FED7AA"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FED7AA"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#FB923C" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="HeaderSignedCA"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#3730A3"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#4F46E5"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#4F46E5"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#4F46E5"/></Borders><Font ss:FontName="Arial" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#6366F1" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="HeaderSignedCASub"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#4F46E5"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#C7D2FE"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#C7D2FE"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#C7D2FE"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#818CF8" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="HeaderRequest"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#115E59"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0D9488"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0D9488"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0D9488"/></Borders><Font ss:FontName="Arial" ss:Size="11" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#14B8A6" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="HeaderRequestSub"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0D9488"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#99F6E4"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#99F6E4"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#99F6E4"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#FFFFFF" ss:Bold="1"/><Interior ss:Color="#2DD4BF" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="SheetTitle"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="12" ss:Bold="1" ss:Color="#1E293B"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="CellLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style>
+  <Style ss:ID="CellLeftBold"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A" ss:Bold="1"/></Style>
+  <Style ss:ID="CellCenter"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A"/></Style>
+  <Style ss:ID="DaysRed"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#991B1B" ss:Bold="1"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="DaysYellow"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#92400E" ss:Bold="1"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="DaysSlate"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#475569" ss:Bold="1"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="StatusYellow"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FDE68A"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#B45309" ss:Bold="1"/><Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="StatusRed"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#B91C1C" ss:Bold="1"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style>
+  
+  <Style ss:ID="RowYellowTotal"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A" ss:Bold="1"/><Interior ss:Color="#FEF08A" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="RowYellowTotalLeft"><Alignment ss:Horizontal="Left" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A" ss:Bold="1"/><Interior ss:Color="#FEF08A" ss:Pattern="Solid"/></Style>
+  
+  <Style ss:ID="CellGreen"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BBF7D0"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BBF7D0"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BBF7D0"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BBF7D0"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#166534" ss:Bold="1"/><Interior ss:Color="#DCFCE7" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="CellRed"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FCA5A5"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#991B1B" ss:Bold="1"/><Interior ss:Color="#FEE2E2" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="CellTotal"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CBD5E1"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#0F172A" ss:Bold="1"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="CellDarkRose"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FECDD3"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FECDD3"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FECDD3"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#FECDD3"/></Borders><Font ss:FontName="Arial" ss:Size="10" ss:Color="#9F1239" ss:Bold="1"/><Interior ss:Color="#FFE4E6" ss:Pattern="Solid"/></Style>
+</Styles>`;
 
   sheets.forEach(sheet => {
-    xml += `<Worksheet ss:Name="${escapeXml(sheet.name)}"><Table>`;
-    
-    if (sheet.rows && sheet.rows.length > 0 && sheet.headers) {
-      sheet.headers.forEach(h => {
-        let maxLen = h.length;
-        sheet.rows.forEach(r => {
-          const val = r[h];
-          if (val !== null && val !== undefined) maxLen = Math.max(maxLen, val.toString().length);
-        });
-        const colWidth = Math.min(Math.max(maxLen * 8, 75), 320);
-        xml += `<Column ss:Width="${colWidth}"/>`;
-      });
+    if (sheet.customXml) {
+      xml += sheet.customXml;
+      return;
     }
 
-    // Header Row
-    xml += `<Row ss:Height="24">`;
-    sheet.headers.forEach(h => {
-      xml += `<Cell ss:StyleID="Header"><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`;
-    });
-    xml += `</Row>`;
+    xml += `<Worksheet ss:Name="${escapeXml(sheet.name)}"><Table>`;
+    const hStyle = sheet.headerStyle || 'Header';
 
-    // Data Rows
-    sheet.rows.forEach(r => {
-      xml += `<Row ss:Height="20">`;
-      sheet.headers.forEach(h => {
-        const val = r[h] !== undefined && r[h] !== null ? r[h] : '-';
-        let styleId = 'CellLeft';
-        if (h === '#' || h === 'Nº' || h === 'Year' || h === 'Unit' || h === 'UNIT') {
-          styleId = 'CellCenter';
-        } else if (h === 'Export Note Code' || h === 'Receipt Code' || h === 'Export No' || h === 'Code of stock-out note' || h === 'Import Request code') {
-          styleId = 'CellLeftBold';
-        } else if (h === 'Days' || h === "Q'ty of day") {
-          const daysNum = parseInt(val.toString().replace(/[^0-9]/g, '')) || 0;
-          if (daysNum >= 5) styleId = 'DaysRed';
-          else if (daysNum >= 3) styleId = 'DaysYellow';
-          else styleId = 'DaysSlate';
-        } else if (h === 'Status CA' || h === 'Status') {
-          const valStr = val.toString();
-          if (valStr.includes('Is signing')) styleId = 'StatusYellow';
-          else if (valStr.includes('Unsigned') || valStr.includes('Pending')) styleId = 'StatusRed';
-          else styleId = 'CellCenter';
+    if (sheet.tables && sheet.tables.length > 0) {
+      const colWidths = [];
+      sheet.tables.forEach(table => {
+        if (table.rows && table.rows.length > 0 && table.headers) {
+          table.headers.forEach((h, colIdx) => {
+            let maxLen = h.toString().length;
+            table.rows.forEach(r => {
+              const val = r[h];
+              if (val !== null && val !== undefined) maxLen = Math.max(maxLen, val.toString().length);
+            });
+            colWidths[colIdx] = Math.max(colWidths[colIdx] || 0, Math.min(Math.max(maxLen * 8, 75), 320));
+          });
         }
+      });
+      colWidths.forEach(width => {
+        xml += `<Column ss:Width="${width}"/>`;
+      });
 
-        const isNum = typeof val === 'number';
-        const typeStr = isNum ? 'Number' : 'String';
-        xml += `<Cell ss:StyleID="${styleId}"><Data ss:Type="${typeStr}">${escapeXml(val)}</Data></Cell>`;
+      sheet.tables.forEach((table, tIdx) => {
+        if (tIdx > 0) {
+          xml += `<Row ss:Height="24"></Row>`;
+        }
+        const mergeCount = Math.max(1, table.headers.length - 1);
+        xml += `<Row ss:Height="28"><Cell ss:MergeAcross="${mergeCount}" ss:StyleID="SheetTitle"><Data ss:Type="String">${escapeXml(table.title)}</Data></Cell></Row>`;
+        
+        xml += `<Row ss:Height="24">`;
+        table.headers.forEach(h => {
+          xml += `<Cell ss:StyleID="${table.headerStyle || hStyle}"><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`;
+        });
+        xml += `</Row>`;
+
+        table.rows.forEach(r => {
+          xml += `<Row ss:Height="20">`;
+          table.headers.forEach(h => {
+            const val = r[h] !== undefined && r[h] !== null ? r[h] : '-';
+            let styleId = 'CellLeft';
+            if (h === '#' || h === 'Nº' || h === 'No' || h === 'Year' || h === 'Unit' || h === 'UNIT') {
+              styleId = 'CellCenter';
+            } else if (h === 'Export Note Code' || h === 'Receipt Code' || h === 'Export No' || h === 'Code of stock-out note' || h === 'Import Request code' || h === 'Code' || h === 'Request export code' || h === 'Import Request Code') {
+              styleId = 'CellLeftBold';
+            } else if (h === 'Days' || h === "Q'ty of day") {
+              const daysNum = parseInt(val.toString().replace(/[^0-9]/g, '')) || 0;
+              if (daysNum >= 5) styleId = 'DaysRed';
+              else if (daysNum >= 3) styleId = 'DaysYellow';
+              else styleId = 'DaysSlate';
+            } else if (h === 'Status CA' || h === 'Status') {
+              const valStr = val.toString();
+              if (valStr.includes('Is signing') || valStr.includes('Signing')) styleId = 'StatusYellow';
+              else if (valStr.includes('Unsigned') || valStr.includes('Pending') || valStr.includes('ALARM')) styleId = 'StatusRed';
+              else styleId = 'CellCenter';
+            }
+
+            const isNum = typeof val === 'number';
+            const typeStr = isNum ? 'Number' : 'String';
+            xml += `<Cell ss:StyleID="${styleId}"><Data ss:Type="${typeStr}">${escapeXml(val)}</Data></Cell>`;
+          });
+          xml += `</Row>`;
+        });
+      });
+    } else {
+      if (sheet.rows && sheet.rows.length > 0 && sheet.headers) {
+        sheet.headers.forEach(h => {
+          let maxLen = h.toString().length;
+          sheet.rows.forEach(r => {
+            const val = r[h];
+            if (val !== null && val !== undefined) maxLen = Math.max(maxLen, val.toString().length);
+          });
+          const colWidth = Math.min(Math.max(maxLen * 8, 75), 320);
+          xml += `<Column ss:Width="${colWidth}"/>`;
+        });
+      }
+
+      xml += `<Row ss:Height="24">`;
+      sheet.headers.forEach(h => {
+        xml += `<Cell ss:StyleID="${hStyle}"><Data ss:Type="String">${escapeXml(h)}</Data></Cell>`;
       });
       xml += `</Row>`;
-    });
 
-    xml += `</Table></Worksheet>`;
+      if (sheet.rows && sheet.rows.length > 0) {
+        sheet.rows.forEach(r => {
+          xml += `<Row ss:Height="20">`;
+          sheet.headers.forEach(h => {
+            const val = r[h] !== undefined && r[h] !== null ? r[h] : '-';
+            let styleId = 'CellLeft';
+            if (h === '#' || h === 'Nº' || h === 'No' || h === 'Year' || h === 'Unit' || h === 'UNIT') {
+              styleId = 'CellCenter';
+            } else if (h === 'Export Note Code' || h === 'Receipt Code' || h === 'Export No' || h === 'Code of stock-out note' || h === 'Import Request code' || h === 'Code' || h === 'Request export code' || h === 'Import Request Code') {
+              styleId = 'CellLeftBold';
+            } else if (h === 'Days' || h === "Q'ty of day") {
+              const daysNum = parseInt(val.toString().replace(/[^0-9]/g, '')) || 0;
+              if (daysNum >= 5) styleId = 'DaysRed';
+              else if (daysNum >= 3) styleId = 'DaysYellow';
+              else styleId = 'DaysSlate';
+            } else if (h === 'Status CA' || h === 'Status') {
+              const valStr = val.toString();
+              if (valStr.includes('Is signing') || valStr.includes('Signing')) styleId = 'StatusYellow';
+              else if (valStr.includes('Unsigned') || valStr.includes('Pending') || valStr.includes('ALARM')) styleId = 'StatusRed';
+              else styleId = 'CellCenter';
+            }
+
+            const isNum = typeof val === 'number';
+            const typeStr = isNum ? 'Number' : 'String';
+            xml += `<Cell ss:StyleID="${styleId}"><Data ss:Type="${typeStr}">${escapeXml(val)}</Data></Cell>`;
+          });
+          xml += `</Row>`;
+        });
+      }
+    }
+
+    xml += `</Table>`;
+    if (sheet.tabColorIndex) {
+      xml += `<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><TabColorIndex>${sheet.tabColorIndex}</TabColorIndex></WorksheetOptions>`;
+    }
+    xml += `</Worksheet>`;
   });
 
   xml += `</Workbook>`;
   return new Blob([xml], { type: 'application/vnd.ms-excel' });
 };
 
-// ============================================================
-// 📌 GENERATE RESTOCK EXCEL BLOB
-// ============================================================
+const extractUnit = (item) => {
+  if (item.unit) return item.unit;
+  const str = String(item.exportWarehouse || item.warehouse || item.unitEntering || item.importRequestCode || item.requestExportCode || item.codeReceipt || '').toUpperCase();
+  const VALID_UNITS = [
+    'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
+    'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
+    'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
+  ];
+  for (const u of VALID_UNITS) {
+    if (str.includes(u)) return u;
+  }
+  if (str.includes('KANZ')) return 'KANZ1';
+  if (str.includes('PNPZ')) return 'PNPZ1';
+  return null;
+};
+
+const getStorageData = (key) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const allUnits = [
+  'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
+  'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
+  'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
+];
+
+const getStockoutTeamKpiRows = (m1Items = [], m2Items = [], m3Items = [], unit) => {
+  const cleanM1 = (m1Items || []).filter(Boolean);
+  const cleanM2 = (m2Items || []).filter(Boolean);
+  const cleanM3 = (m3Items || []).filter(Boolean);
+  const unitsToProcess = unit !== 'ALL' ? [unit] : allUnits;
+  const rows = [];
+  
+  unitsToProcess.forEach(u => {
+    const uM1 = cleanM1.filter(item => (item.unit || extractUnit(item)) === u);
+    const uM2 = cleanM2.filter(item => (item.unit || extractUnit(item)) === u);
+    const uM3 = cleanM3.filter(item => (item.unit || extractUnit(item)) === u);
+
+    const teamsSet = new Set();
+    uM1.forEach(item => {
+      const teamName = getTeamFromRecipient(item.team || item.groupReceiver || item.warehouse || '-');
+      if (teamName && teamName !== '-') {
+        const resolvedUnit = getUnitFromTeam(teamName);
+        if (!resolvedUnit || resolvedUnit === u) teamsSet.add(teamName);
+      }
+    });
+    uM2.forEach(item => {
+      const teamName = getTeamFromRecipient(item.team || item.recipient || '-');
+      if (teamName && teamName !== '-') {
+        const resolvedUnit = getUnitFromTeam(teamName);
+        if (!resolvedUnit || resolvedUnit === u) teamsSet.add(teamName);
+      }
+    });
+    uM3.forEach(item => {
+      const teamName = getTeamFromRecipient(item.team || item.unitConfirm || '-');
+      if (teamName && teamName !== '-') {
+        const resolvedUnit = getUnitFromTeam(teamName);
+        if (!resolvedUnit || resolvedUnit === u) teamsSet.add(teamName);
+      }
+    });
+
+    const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
+
+    teams.forEach(team => {
+      const matchesTeam = (item, raw) => getTeamFromRecipient(raw || '-') === team;
+      
+      const s1Under = uM1.filter(item => matchesTeam(item, item.team || item.groupReceiver || item.warehouse) && (parseInt(item.daysDiff) || 0) <= 4).length;
+      const s1Over = uM1.filter(item => matchesTeam(item, item.team || item.groupReceiver || item.warehouse) && (parseInt(item.daysDiff) || 0) > 4).length;
+      
+      const s2Under = uM2.filter(item => matchesTeam(item, item.team || item.recipient) && (parseInt(item.daysDiff) || 0) <= 3).length;
+      const s2Over = uM2.filter(item => matchesTeam(item, item.team || item.recipient) && (parseInt(item.daysDiff) || 0) > 3).length;
+      
+      const s3Under = uM3.filter(item => matchesTeam(item, item.team || item.unitConfirm) && (parseInt(item.daysDiff) || 0) <= 3).length;
+      const s3Over = uM3.filter(item => matchesTeam(item, item.team || item.unitConfirm) && (parseInt(item.daysDiff) || 0) > 3).length;
+
+      const underKpi = s1Under + s2Under + s3Under;
+      const overKpi = s1Over + s2Over + s3Over;
+      const total = underKpi + overKpi;
+
+      rows.push({
+        unit: u,
+        team,
+        s1Under,
+        s1Over,
+        s1Total: s1Under + s1Over,
+        s2Under,
+        s2Over,
+        s2Total: s2Under + s2Over,
+        s3Under,
+        s3Over,
+        s3Total: s3Under + s3Over,
+        underKpi,
+        overKpi,
+        total
+      });
+    });
+  });
+
+  return rows;
+};
+
+const getSignedCATeamKpiRows = (exportItems = [], importItems = [], unit) => {
+  const cleanExport = (exportItems || []).filter(Boolean);
+  const cleanImport = (importItems || []).filter(Boolean);
+  const unitsToProcess = unit !== 'ALL' ? [unit] : allUnits;
+  const rows = [];
+
+  unitsToProcess.forEach(u => {
+    const outItems = cleanExport.filter(item => (item.unit || extractUnit(item)) === u);
+    const inItems = cleanImport.filter(item => (item.unit || extractUnit(item)) === u);
+
+    const teamsSet = new Set();
+    outItems.forEach(item => {
+      const teamName = cleanWarehouseName(item.exportWarehouse || item.unitEntering || '');
+      if (teamName && teamName !== '-') teamsSet.add(teamName);
+    });
+    inItems.forEach(item => {
+      const teamName = cleanWarehouseName(item.warehouse || '');
+      if (teamName && teamName !== '-') teamsSet.add(teamName);
+    });
+
+    const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
+
+    teams.forEach(team => {
+      const teamOutItems = outItems.filter(item => cleanWarehouseName(item.exportWarehouse || item.unitEntering || '') === team);
+      const teamInItems = inItems.filter(item => cleanWarehouseName(item.warehouse || '') === team);
+
+      const isStatus = (item, status) => {
+        const s = (item.statusCA || '').toLowerCase();
+        if (status === 'unsigned') return s.includes('unsigned') || s === '';
+        if (status === 'signing') return s.includes('signing') || s.includes('is signing');
+        if (status === 'cancel') return s.includes('cancel') || s.includes('cancelled');
+        return false;
+      };
+
+      const sOutUnsignedOver = teamOutItems.filter(item => isStatus(item, 'unsigned') && (parseInt(item.daysDiff) || 0) > 1).length;
+      const sOutUnsignedTotal = teamOutItems.filter(item => isStatus(item, 'unsigned')).length;
+
+      const sOutSigningUnder = teamOutItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) <= 4).length;
+      const sOutSigningOver = teamOutItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) > 4).length;
+      const sOutSigningTotal = teamOutItems.filter(item => isStatus(item, 'signing')).length;
+
+      const sOutCancelUnder = teamOutItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) <= 4).length;
+      const sOutCancelOver = teamOutItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) > 4).length;
+      const sOutCancelTotal = teamOutItems.filter(item => isStatus(item, 'cancel')).length;
+
+      const sOutTotal = sOutUnsignedTotal + sOutSigningTotal + sOutCancelTotal;
+
+      const sInUnsignedOver = teamInItems.filter(item => isStatus(item, 'unsigned') && (parseInt(item.daysDiff) || 0) > 1).length;
+      const sInUnsignedTotal = teamInItems.filter(item => isStatus(item, 'unsigned')).length;
+
+      const sInSigningUnder = teamInItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) <= 4).length;
+      const sInSigningOver = teamInItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) > 4).length;
+      const sInSigningTotal = teamInItems.filter(item => isStatus(item, 'signing')).length;
+
+      const sInCancelUnder = teamInItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) <= 4).length;
+      const sInCancelOver = teamInItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) > 4).length;
+      const sInCancelTotal = teamInItems.filter(item => isStatus(item, 'cancel')).length;
+
+      const sInTotal = sInUnsignedTotal + sInSigningTotal + sInCancelTotal;
+
+      const outUnderKpi = (sOutUnsignedTotal - sOutUnsignedOver) + sOutSigningUnder + sOutCancelUnder;
+      const inUnderKpi = (sInUnsignedTotal - sInUnsignedOver) + sInSigningUnder + sInCancelUnder;
+      const underKpi = outUnderKpi + inUnderKpi;
+
+      const outOverKpi = sOutUnsignedOver + sOutSigningOver + sOutCancelOver;
+      const inOverKpi = sInUnsignedOver + sInSigningOver + sInCancelOver;
+      const overKpi = outOverKpi + inOverKpi;
+
+      const total = underKpi + overKpi;
+
+      rows.push({
+        unit: u,
+        team,
+        sOutUnsignedOver,
+        sOutUnsignedTotal,
+        sOutSigningUnder,
+        sOutSigningOver,
+        sOutSigningTotal,
+        sOutCancelUnder,
+        sOutCancelOver,
+        sOutCancelTotal,
+        sOutTotal,
+        sInUnsignedOver,
+        sInUnsignedTotal,
+        sInSigningUnder,
+        sInSigningOver,
+        sInSigningTotal,
+        sInCancelUnder,
+        sInCancelOver,
+        sInCancelTotal,
+        sInTotal,
+        underKpi,
+        overKpi,
+        total
+      });
+    });
+  });
+
+  return rows;
+};
+
+const getRestockTeamKpiRows = (unsignedOutItems = [], unsignedInItems = [], unit) => {
+  const cleanOut = (unsignedOutItems || []).filter(Boolean);
+  const cleanIn = (unsignedInItems || []).filter(Boolean);
+  const unitsList = ['BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA', 'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT', 'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'];
+  const unitsToProcess = unit !== 'ALL' ? [unit] : unitsList;
+  const rows = [];
+
+  const getInTeamName = (item) => {
+    const raw = item.unitRequests || item.unitReceive || item.importWarehouse || item.warehouse || '-';
+    return cleanWarehouseName(raw);
+  };
+
+  const getOutTeamName = (item) => {
+    const raw = item.groupRequest || item.receivingUnit || item.stockOut || item.stockReceive || item.warehouse || '-';
+    return cleanWarehouseName(raw);
+  };
+
+  unitsToProcess.forEach(u => {
+    const allInForUnit = cleanIn.filter(item => (item.unit || extractUnit(item)) === u);
+    const allOutForUnit = cleanOut.filter(item => (item.unit || extractUnit(item)) === u);
+
+    const teamMap = {};
+
+    allInForUnit.forEach(item => {
+      const t = getInTeamName(item);
+      if (!t || t === '-') return;
+      if (!teamMap[t]) teamMap[t] = { inItems: [], outItems: [] };
+      teamMap[t].inItems.push(item);
+    });
+
+    allOutForUnit.forEach(item => {
+      const t = getOutTeamName(item);
+      if (!t || t === '-') return;
+      if (!teamMap[t]) teamMap[t] = { inItems: [], outItems: [] };
+      teamMap[t].outItems.push(item);
+    });
+
+    const teamNames = Object.keys(teamMap).sort();
+
+    teamNames.forEach(tName => {
+      const tData = teamMap[tName] || { inItems: [], outItems: [] };
+      const tIn = tData.inItems;
+      const tOut = tData.outItems;
+
+      const cat1_d1 = tIn.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
+      const cat1_d2 = tIn.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+      const cat1_d3 = tIn.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
+      const cat1_tot = cat1_d1 + cat1_d2 + cat1_d3;
+
+      const cat2_items = tOut.filter(i => i.commandExportCode || i.commandCode);
+      const cat2_d1 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
+      const cat2_d2 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+      const cat2_d3 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
+      const cat2_tot = cat2_d1 + cat2_d2 + cat2_d3;
+
+      const cat3_items = tOut.filter(i => !i.commandExportCode && !i.commandCode);
+      const cat3_d1 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
+      const cat3_d2 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+      const cat3_d3 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
+      const cat3_tot = cat3_d1 + cat3_d2 + cat3_d3;
+
+      const tot_d1 = cat1_d1 + cat2_d1 + cat3_d1;
+      const tot_d2 = cat1_d2 + cat2_d2 + cat3_d2;
+      const tot_d3 = cat1_d3 + cat2_d3 + cat3_d3;
+      const tot_all = tot_d1 + tot_d2 + tot_d3;
+
+      if (tot_all > 0) {
+        rows.push({
+          unit: u,
+          team: tName,
+          tot_d1,
+          tot_d2,
+          tot_d3,
+          tot_all,
+          cat1_d1,
+          cat1_d2,
+          cat1_d3,
+          cat1_tot,
+          cat2_d1,
+          cat2_d2,
+          cat2_d3,
+          cat2_tot,
+          cat3_d1,
+          cat3_d2,
+          cat3_d3,
+          cat3_tot
+        });
+      }
+    });
+  });
+
+  return rows;
+};
+
+const generateStockoutKpiSheetXml = (m1Items, m2Items, m3Items, unit) => {
+  const rows = getStockoutTeamKpiRows(m1Items, m2Items, m3Items, unit);
+  
+  const totalS1Under = rows.reduce((sum, r) => sum + r.s1Under, 0);
+  const totalS1Over = rows.reduce((sum, r) => sum + r.s1Over, 0);
+  const totalS1Total = totalS1Under + totalS1Over;
+  
+  const totalS2Under = rows.reduce((sum, r) => sum + r.s2Under, 0);
+  const totalS2Over = rows.reduce((sum, r) => sum + r.s2Over, 0);
+  const totalS2Total = totalS2Under + totalS2Over;
+  
+  const totalS3Under = rows.reduce((sum, r) => sum + r.s3Under, 0);
+  const totalS3Over = rows.reduce((sum, r) => sum + r.s3Over, 0);
+  const totalS3Total = totalS3Under + totalS3Over;
+  
+  const totalUnder = totalS1Under + totalS2Under + totalS3Under;
+  const totalOver = totalS1Over + totalS2Over + totalS3Over;
+  const totalAll = totalUnder + totalOver;
+
+  let xml = `<Worksheet ss:Name="Stockout_Detail"><Table>`;
+  xml += `<Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="160"/>`;
+  for (let i = 0; i < 12; i++) {
+    xml += `<Column ss:Width="65"/>`;
+  }
+  xml += `<Row ss:Height="26"><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">No</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Code</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Units name</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">TEAM STEP 1 (Stock out not Confirm goods)</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">ASSET STEP :2 (Stock out not create hand over)</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">TEAM STEP 3 (Hand over not Confirmed)</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Total Summary</Data></Cell></Row>`;
+  xml += `<Row ss:Height="20"><Cell ss:Index="4" ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 4 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 3 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 3 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI TARGETS</Data></Cell></Row>`;
+  xml += `<Row ss:Height="22"><Cell ss:Index="4" ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Under KPI</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Over KPI</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Overall Total</Data></Cell></Row>`;
+  xml += `<Row ss:Height="20"><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String">-</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String"></Data></Cell><Cell ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Under > 0 ? 'Number' : 'String'}">${totalS1Under > 0 ? totalS1Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Over > 0 ? 'Number' : 'String'}">${totalS1Over > 0 ? totalS1Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Total > 0 ? 'Number' : 'String'}">${totalS1Total > 0 ? totalS1Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Under > 0 ? 'Number' : 'String'}">${totalS2Under > 0 ? totalS2Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Over > 0 ? 'Number' : 'String'}">${totalS2Over > 0 ? totalS2Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Total > 0 ? 'Number' : 'String'}">${totalS2Total > 0 ? totalS2Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Under > 0 ? 'Number' : 'String'}">${totalS3Under > 0 ? totalS3Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Over > 0 ? 'Number' : 'String'}">${totalS3Over > 0 ? totalS3Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Total > 0 ? 'Number' : 'String'}">${totalS3Total > 0 ? totalS3Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalUnder > 0 ? 'Number' : 'String'}">${totalUnder > 0 ? totalUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOver > 0 ? 'Number' : 'String'}">${totalOver > 0 ? totalOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalAll > 0 ? 'Number' : 'String'}">${totalAll > 0 ? totalAll : '-'}</Data></Cell></Row>`;
+  rows.forEach((r, idx) => {
+    xml += `<Row ss:Height="20">`;
+    xml += `<Cell ss:StyleID="CellCenter"><Data ss:Type="Number">${idx + 1}</Data></Cell><Cell ss:StyleID="CellCenter"><Data ss:Type="String">${escapeXml(r.unit)}</Data></Cell><Cell ss:StyleID="CellLeft"><Data ss:Type="String">${escapeXml(r.team)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.s1Under > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.s1Under > 0 ? 'Number' : 'String'}">${r.s1Under > 0 ? r.s1Under : '-'}</Data></Cell><Cell ss:StyleID="${r.s1Over > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.s1Over > 0 ? 'Number' : 'String'}">${r.s1Over > 0 ? r.s1Over : '-'}</Data></Cell><Cell ss:StyleID="${r.s1Total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.s1Total > 0 ? 'Number' : 'String'}">${r.s1Total > 0 ? r.s1Total : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.s2Under > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.s2Under > 0 ? 'Number' : 'String'}">${r.s2Under > 0 ? r.s2Under : '-'}</Data></Cell><Cell ss:StyleID="${r.s2Over > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.s2Over > 0 ? 'Number' : 'String'}">${r.s2Over > 0 ? r.s2Over : '-'}</Data></Cell><Cell ss:StyleID="${r.s2Total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.s2Total > 0 ? 'Number' : 'String'}">${r.s2Total > 0 ? r.s2Total : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.s3Under > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.s3Under > 0 ? 'Number' : 'String'}">${r.s3Under > 0 ? r.s3Under : '-'}</Data></Cell><Cell ss:StyleID="${r.s3Over > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.s3Over > 0 ? 'Number' : 'String'}">${r.s3Over > 0 ? r.s3Over : '-'}</Data></Cell><Cell ss:StyleID="${r.s3Total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.s3Total > 0 ? 'Number' : 'String'}">${r.s3Total > 0 ? r.s3Total : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.underKpi > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.underKpi > 0 ? 'Number' : 'String'}">${r.underKpi > 0 ? r.underKpi : '-'}</Data></Cell><Cell ss:StyleID="${r.overKpi > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.overKpi > 0 ? 'Number' : 'String'}">${r.overKpi > 0 ? r.overKpi : '-'}</Data></Cell><Cell ss:StyleID="${r.total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.total > 0 ? 'Number' : 'String'}">${r.total > 0 ? r.total : '-'}</Data></Cell>`;
+    xml += `</Row>`;
+  });
+  xml += `</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><TabColorIndex>45</TabColorIndex></WorksheetOptions></Worksheet>`;
+  return xml;
+};
+
+const generateSignedCaKpiSheetXml = (exportItems, importItems, unit) => {
+  const rows = getSignedCATeamKpiRows(exportItems, importItems, unit);
+  const totalOutUnsignedOver = rows.reduce((sum, r) => sum + r.sOutUnsignedOver, 0);
+  const totalOutUnsignedTotal = rows.reduce((sum, r) => sum + r.sOutUnsignedTotal, 0);
+  const totalOutSigningUnder = rows.reduce((sum, r) => sum + r.sOutSigningUnder, 0);
+  const totalOutSigningOver = rows.reduce((sum, r) => sum + r.sOutSigningOver, 0);
+  const totalOutSigningTotal = rows.reduce((sum, r) => sum + r.sOutSigningTotal, 0);
+  const totalOutCancelUnder = rows.reduce((sum, r) => sum + r.sOutCancelUnder, 0);
+  const totalOutCancelOver = rows.reduce((sum, r) => sum + r.sOutCancelOver, 0);
+  const totalOutCancelTotal = rows.reduce((sum, r) => sum + r.sOutCancelTotal, 0);
+  const totalOutTotal = rows.reduce((sum, r) => sum + r.sOutTotal, 0);
+  
+  const totalInUnsignedOver = rows.reduce((sum, r) => sum + r.sInUnsignedOver, 0);
+  const totalInUnsignedTotal = rows.reduce((sum, r) => sum + r.sInUnsignedTotal, 0);
+  const totalInSigningUnder = rows.reduce((sum, r) => sum + r.sInSigningUnder, 0);
+  const totalInSigningOver = rows.reduce((sum, r) => sum + r.sInSigningOver, 0);
+  const totalInSigningTotal = rows.reduce((sum, r) => sum + r.sInSigningTotal, 0);
+  const totalInCancelUnder = rows.reduce((sum, r) => sum + r.sInCancelUnder, 0);
+  const totalInCancelOver = rows.reduce((sum, r) => sum + r.sInCancelOver, 0);
+  const totalInCancelTotal = rows.reduce((sum, r) => sum + r.sInCancelTotal, 0);
+  const totalInTotal = rows.reduce((sum, r) => sum + r.sInTotal, 0);
+  
+  const totalUnder = rows.reduce((sum, r) => sum + r.underKpi, 0);
+  const totalOver = rows.reduce((sum, r) => sum + r.overKpi, 0);
+  const totalAll = totalUnder + totalOver;
+
+  let xml = `<Worksheet ss:Name="Signed_CA_Detail"><Table>`;
+  xml += `<Column ss:Width="40"/><Column ss:Width="65"/><Column ss:Width="160"/>`;
+  for (let i = 0; i < 21; i++) {
+    xml += `<Column ss:Width="65"/>`;
+  }
+  xml += `<Row ss:Height="26"><Cell ss:MergeDown="3" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">NO</Data></Cell><Cell ss:MergeDown="3" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">CODE BRANCH</Data></Cell><Cell ss:MergeDown="3" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">UNITS NAME</Data></Cell><Cell ss:MergeAcross="8" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">STOCK OUT RECEIPT</Data></Cell><Cell ss:MergeAcross="8" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">STOCK IN RECEIPT</Data></Cell><Cell ss:MergeDown="2" ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">TOTAL</Data></Cell></Row>`;
+  xml += `<Row ss:Height="20"><Cell ss:Index="4" ss:MergeAcross="1" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Unsigned</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Is signing</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Cancel</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Total</Data></Cell><Cell ss:MergeAcross="1" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Unsigned</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Is signing</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Cancel</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Total</Data></Cell></Row>`;
+  xml += `<Row ss:Height="20"><Cell ss:Index="4" ss:MergeAcross="1" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 1DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 7DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 7DAYS</Data></Cell><Cell ss:Index="13" ss:MergeAcross="1" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 1DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 7DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 7DAYS</Data></Cell></Row>`;
+  xml += `<Row ss:Height="22"><Cell ss:Index="4" ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 1</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:Index="13" ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 1</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:Index="22" ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Under KPI</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Over KPI</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell></Row>`;
+  xml += `<Row ss:Height="20"><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String">-</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String"></Data></Cell><Cell ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutUnsignedOver > 0 ? 'Number' : 'String'}">${totalOutUnsignedOver > 0 ? totalOutUnsignedOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutUnsignedTotal > 0 ? 'Number' : 'String'}">${totalOutUnsignedTotal > 0 ? totalOutUnsignedTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningUnder > 0 ? 'Number' : 'String'}">${totalOutSigningUnder > 0 ? totalOutSigningUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningOver > 0 ? 'Number' : 'String'}">${totalOutSigningOver > 0 ? totalOutSigningOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningTotal > 0 ? 'Number' : 'String'}">${totalOutSigningTotal > 0 ? totalOutSigningTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelUnder > 0 ? 'Number' : 'String'}">${totalOutCancelUnder > 0 ? totalOutCancelUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelOver > 0 ? 'Number' : 'String'}">${totalOutCancelOver > 0 ? totalOutCancelOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelTotal > 0 ? 'Number' : 'String'}">${totalOutCancelTotal > 0 ? totalOutCancelTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutTotal > 0 ? 'Number' : 'String'}">${totalOutTotal > 0 ? totalOutTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInUnsignedOver > 0 ? 'Number' : 'String'}">${totalInUnsignedOver > 0 ? totalInUnsignedOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInUnsignedTotal > 0 ? 'Number' : 'String'}">${totalInUnsignedTotal > 0 ? totalInUnsignedTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningUnder > 0 ? 'Number' : 'String'}">${totalInSigningUnder > 0 ? totalInSigningUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningOver > 0 ? 'Number' : 'String'}">${totalInSigningOver > 0 ? totalInSigningOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningTotal > 0 ? 'Number' : 'String'}">${totalInSigningTotal > 0 ? totalInSigningTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelUnder > 0 ? 'Number' : 'String'}">${totalInCancelUnder > 0 ? totalInCancelUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelOver > 0 ? 'Number' : 'String'}">${totalInCancelOver > 0 ? totalInCancelOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelTotal > 0 ? 'Number' : 'String'}">${totalInCancelTotal > 0 ? totalInCancelTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInTotal > 0 ? 'Number' : 'String'}">${totalInTotal > 0 ? totalInTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalUnder > 0 ? 'Number' : 'String'}">${totalUnder > 0 ? totalUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOver > 0 ? 'Number' : 'String'}">${totalOver > 0 ? totalOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalAll > 0 ? 'Number' : 'String'}">${totalAll > 0 ? totalAll : '-'}</Data></Cell></Row>`;
+  rows.forEach((r, idx) => {
+    xml += `<Row ss:Height="20">`;
+    xml += `<Cell ss:StyleID="CellCenter"><Data ss:Type="Number">${idx + 1}</Data></Cell><Cell ss:StyleID="CellCenter"><Data ss:Type="String">${escapeXml(r.unit)}</Data></Cell><Cell ss:StyleID="CellLeft"><Data ss:Type="String">${escapeXml(r.team)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.sOutUnsignedOver > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.sOutUnsignedOver > 0 ? 'Number' : 'String'}">${r.sOutUnsignedOver > 0 ? r.sOutUnsignedOver : '-'}</Data></Cell><Cell ss:StyleID="${r.sOutUnsignedTotal > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.sOutUnsignedTotal > 0 ? 'Number' : 'String'}">${r.sOutUnsignedTotal > 0 ? r.sOutUnsignedTotal : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.sOutSigningUnder > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.sOutSigningUnder > 0 ? 'Number' : 'String'}">${r.sOutSigningUnder > 0 ? r.sOutSigningUnder : '-'}</Data></Cell><Cell ss:StyleID="${r.sOutSigningOver > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.sOutSigningOver > 0 ? 'Number' : 'String'}">${r.sOutSigningOver > 0 ? r.sOutSigningOver : '-'}</Data></Cell><Cell ss:StyleID="${r.sOutSigningTotal > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.sOutSigningTotal > 0 ? 'Number' : 'String'}">${r.sOutSigningTotal > 0 ? r.sOutSigningTotal : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.sOutCancelUnder > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.sOutCancelUnder > 0 ? 'Number' : 'String'}">${r.sOutCancelUnder > 0 ? r.sOutCancelUnder : '-'}</Data></Cell><Cell ss:StyleID="${r.sOutCancelOver > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.sOutCancelOver > 0 ? 'Number' : 'String'}">${r.sOutCancelOver > 0 ? r.sOutCancelOver : '-'}</Data></Cell><Cell ss:StyleID="${r.sOutCancelTotal > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.sOutCancelTotal > 0 ? 'Number' : 'String'}">${r.sOutCancelTotal > 0 ? r.sOutCancelTotal : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.sOutTotal > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.sOutTotal > 0 ? 'Number' : 'String'}">${r.sOutTotal > 0 ? r.sOutTotal : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.sInUnsignedOver > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.sInUnsignedOver > 0 ? 'Number' : 'String'}">${r.sInUnsignedOver > 0 ? r.sInUnsignedOver : '-'}</Data></Cell><Cell ss:StyleID="${r.sInUnsignedTotal > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.sInUnsignedTotal > 0 ? 'Number' : 'String'}">${r.sInUnsignedTotal > 0 ? r.sInUnsignedTotal : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.sInSigningUnder > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.sInSigningUnder > 0 ? 'Number' : 'String'}">${r.sInSigningUnder > 0 ? r.sInSigningUnder : '-'}</Data></Cell><Cell ss:StyleID="${r.sInSigningOver > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.sInSigningOver > 0 ? 'Number' : 'String'}">${r.sInSigningOver > 0 ? r.sInSigningOver : '-'}</Data></Cell><Cell ss:StyleID="${r.sInSigningTotal > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.sInSigningTotal > 0 ? 'Number' : 'String'}">${r.sInSigningTotal > 0 ? r.sInSigningTotal : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.sInCancelUnder > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.sInCancelUnder > 0 ? 'Number' : 'String'}">${r.sInCancelUnder > 0 ? r.sInCancelUnder : '-'}</Data></Cell><Cell ss:StyleID="${r.sInCancelOver > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.sInCancelOver > 0 ? 'Number' : 'String'}">${r.sInCancelOver > 0 ? r.sInCancelOver : '-'}</Data></Cell><Cell ss:StyleID="${r.sInCancelTotal > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.sInCancelTotal > 0 ? 'Number' : 'String'}">${r.sInCancelTotal > 0 ? r.sInCancelTotal : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.sInTotal > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.sInTotal > 0 ? 'Number' : 'String'}">${r.sInTotal > 0 ? r.sInTotal : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.underKpi > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.underKpi > 0 ? 'Number' : 'String'}">${r.underKpi > 0 ? r.underKpi : '-'}</Data></Cell><Cell ss:StyleID="${r.overKpi > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.overKpi > 0 ? 'Number' : 'String'}">${r.overKpi > 0 ? r.overKpi : '-'}</Data></Cell><Cell ss:StyleID="${r.total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.total > 0 ? 'Number' : 'String'}">${r.total > 0 ? r.total : '-'}</Data></Cell>`;
+    xml += `</Row>`;
+  });
+  xml += `</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><TabColorIndex>41</TabColorIndex></WorksheetOptions></Worksheet>`;
+  return xml;
+};
+
+const generateRequestInEKpiSheetXml = (unsignedOutItems, unsignedInItems, unit) => {
+  const rows = getRestockTeamKpiRows(unsignedOutItems, unsignedInItems, unit);
+  const grandTotals = {
+    tot_d1: rows.reduce((sum, r) => sum + r.tot_d1, 0),
+    tot_d2: rows.reduce((sum, r) => sum + r.tot_d2, 0),
+    tot_d3: rows.reduce((sum, r) => sum + r.tot_d3, 0),
+    tot_all: rows.reduce((sum, r) => sum + r.tot_all, 0),
+    cat1_d1: rows.reduce((sum, r) => sum + r.cat1_d1, 0),
+    cat1_d2: rows.reduce((sum, r) => sum + r.cat1_d2, 0),
+    cat1_d3: rows.reduce((sum, r) => sum + r.cat1_d3, 0),
+    cat1_tot: rows.reduce((sum, r) => sum + r.cat1_tot, 0),
+    cat2_d1: rows.reduce((sum, r) => sum + r.cat2_d1, 0),
+    cat2_d2: rows.reduce((sum, r) => sum + r.cat2_d2, 0),
+    cat2_d3: rows.reduce((sum, r) => sum + r.cat2_d3, 0),
+    cat2_tot: rows.reduce((sum, r) => sum + r.cat2_tot, 0),
+    cat3_d1: rows.reduce((sum, r) => sum + r.cat3_d1, 0),
+    cat3_d2: rows.reduce((sum, r) => sum + r.cat3_d2, 0),
+    cat3_d3: rows.reduce((sum, r) => sum + r.cat3_d3, 0),
+    cat3_tot: rows.reduce((sum, r) => sum + r.cat3_tot, 0),
+  };
+
+  let xml = `<Worksheet ss:Name="Request_IN_E_Detail"><Table>`;
+  xml += `<Column ss:Width="40"/><Column ss:Width="65"/><Column ss:Width="160"/>`;
+  for (let i = 0; i < 16; i++) {
+    xml += `<Column ss:Width="65"/>`;
+  }
+  xml += `<Row ss:Height="26"><Cell ss:MergeDown="1" ss:StyleID="HeaderRequest"><Data ss:Type="String">No</Data></Cell><Cell ss:MergeDown="1" ss:StyleID="HeaderRequest"><Data ss:Type="String">Unit</Data></Cell><Cell ss:MergeDown="1" ss:StyleID="HeaderRequest"><Data ss:Type="String">TEAM</Data></Cell><Cell ss:MergeAcross="3" ss:StyleID="HeaderRequest"><Data ss:Type="String">TOTAL</Data></Cell><Cell ss:MergeAcross="3" ss:StyleID="HeaderRequest"><Data ss:Type="String">Request import but NOT CREATED COMMAND YET</Data></Cell><Cell ss:MergeAcross="3" ss:StyleID="HeaderRequest"><Data ss:Type="String">Request export command but REJECTED</Data></Cell><Cell ss:MergeAcross="3" ss:StyleID="HeaderRequest"><Data ss:Type="String">Request export but NOT CREATED COMMAND YET</Data></Cell></Row>`;
+  xml += `<Row ss:Height="22"><Cell ss:Index="4" ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 7</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">7 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 7</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">7 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 7</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">7 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 7</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">7 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell></Row>`;
+  xml += `<Row ss:Height="20"><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String">-</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String"></Data></Cell><Cell ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d1 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d1 > 0 ? grandTotals.tot_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d2 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d2 > 0 ? grandTotals.tot_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d3 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d3 > 0 ? grandTotals.tot_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_all > 0 ? 'Number' : 'String'}">${grandTotals.tot_all > 0 ? grandTotals.tot_all : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d1 > 0 ? grandTotals.cat1_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d2 > 0 ? grandTotals.cat1_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d3 > 0 ? grandTotals.cat1_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat1_tot > 0 ? grandTotals.cat1_tot : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d1 > 0 ? grandTotals.cat2_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d2 > 0 ? grandTotals.cat2_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d3 > 0 ? grandTotals.cat2_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat2_tot > 0 ? grandTotals.cat2_tot : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d1 > 0 ? grandTotals.cat3_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d2 > 0 ? grandTotals.cat3_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d3 > 0 ? grandTotals.cat3_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat3_tot > 0 ? grandTotals.cat3_tot : '-'}</Data></Cell></Row>`;
+  rows.forEach((r, idx) => {
+    xml += `<Row ss:Height="20">`;
+    xml += `<Cell ss:StyleID="CellCenter"><Data ss:Type="Number">${idx + 1}</Data></Cell><Cell ss:StyleID="CellCenter"><Data ss:Type="String">${escapeXml(r.unit)}</Data></Cell><Cell ss:StyleID="CellLeft"><Data ss:Type="String">${escapeXml(r.team)}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.tot_d1 > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.tot_d1 > 0 ? 'Number' : 'String'}">${r.tot_d1 > 0 ? r.tot_d1 : '-'}</Data></Cell><Cell ss:StyleID="${r.tot_d2 > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.tot_d2 > 0 ? 'Number' : 'String'}">${r.tot_d2 > 0 ? r.tot_d2 : '-'}</Data></Cell><Cell ss:StyleID="${r.tot_d3 > 0 ? 'CellDarkRose' : 'CellCenter'}"><Data ss:Type="${r.tot_d3 > 0 ? 'Number' : 'String'}">${r.tot_d3 > 0 ? r.tot_d3 : '-'}</Data></Cell><Cell ss:StyleID="${r.tot_all > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.tot_all > 0 ? 'Number' : 'String'}">${r.tot_all > 0 ? r.tot_all : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.cat1_d1 > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.cat1_d1 > 0 ? 'Number' : 'String'}">${r.cat1_d1 > 0 ? r.cat1_d1 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat1_d2 > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.cat1_d2 > 0 ? 'Number' : 'String'}">${r.cat1_d2 > 0 ? r.cat1_d2 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat1_d3 > 0 ? 'CellDarkRose' : 'CellCenter'}"><Data ss:Type="${r.cat1_d3 > 0 ? 'Number' : 'String'}">${r.cat1_d3 > 0 ? r.cat1_d3 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat1_tot > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.cat1_tot > 0 ? 'Number' : 'String'}">${r.cat1_tot > 0 ? r.cat1_tot : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.cat2_d1 > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.cat2_d1 > 0 ? 'Number' : 'String'}">${r.cat2_d1 > 0 ? r.cat2_d1 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat2_d2 > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.cat2_d2 > 0 ? 'Number' : 'String'}">${r.cat2_d2 > 0 ? r.cat2_d2 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat2_d3 > 0 ? 'CellDarkRose' : 'CellCenter'}"><Data ss:Type="${r.cat2_d3 > 0 ? 'Number' : 'String'}">${r.cat2_d3 > 0 ? r.cat2_d3 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat2_tot > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.cat2_tot > 0 ? 'Number' : 'String'}">${r.cat2_tot > 0 ? r.cat2_tot : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.cat3_d1 > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.cat3_d1 > 0 ? 'Number' : 'String'}">${r.cat3_d1 > 0 ? r.cat3_d1 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat3_d2 > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.cat3_d2 > 0 ? 'Number' : 'String'}">${r.cat3_d2 > 0 ? r.cat3_d2 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat3_d3 > 0 ? 'CellDarkRose' : 'CellCenter'}"><Data ss:Type="${r.cat3_d3 > 0 ? 'Number' : 'String'}">${r.cat3_d3 > 0 ? r.cat3_d3 : '-'}</Data></Cell><Cell ss:StyleID="${r.cat3_tot > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.cat3_tot > 0 ? 'Number' : 'String'}">${r.cat3_tot > 0 ? r.cat3_tot : '-'}</Data></Cell>`;
+    xml += `</Row>`;
+  });
+  xml += `</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><TabColorIndex>10</TabColorIndex></WorksheetOptions></Worksheet>`;
+  return xml;
+};
 
 export const generateRestockExcelBlob = (unsignedOutItems = [], unsignedInItems = [], unit = 'ALL') => {
-  const outRows = unsignedOutItems.map((item, idx) => ({
-    "Nº": idx + 1,
-    "Request export code": item.code || item.requestExportCode || '-',
+  const isUnitUser = unit !== 'ALL';
+  const userUnit = unit;
+
+  let filteredIn = (unsignedInItems || []).filter(Boolean);
+  let filteredOut = (unsignedOutItems || []).filter(Boolean);
+  if (isUnitUser) {
+    const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
+    filteredIn = filteredIn.filter(filterFn);
+    filteredOut = filteredOut.filter(filterFn);
+  }
+
+  const outRows = filteredOut.map((item, idx) => ({
+    "No": idx + 1,
+    "Request export code": item.requestExportCode || item.code || '-',
     "Command Export Code": item.commandExportCode || item.commandCode || '-',
-    "Date Create": item.dateCreate || item.createdDate || item.date || '-',
-    "Warehouse Export": cleanWarehouseName(item.warehouseExport || item.warehouse || '-'),
-    "Contract": item.contract || '-',
-    "Requester": item.requester || '-',
-    "Unit Request": cleanWarehouseName(item.unitRequest || item.requestingUnit || '-'),
-    "Unit Entering": cleanWarehouseName(item.unitEntering || item.enteringUnit || '-'),
-    "Date Export": item.dateExport || item.exportDate || '-',
+    "Date Create": item.createDate || item.dateCreate || item.createdDate || item.date || '-',
+    "Warehouse Export": cleanWarehouseName(item.stockOut || item.warehouseExport || item.warehouse || '-'),
+    "Contract": item.contract || item.noteExportCode || '-',
+    "Requester": item.creator || item.requester || '-',
+    "Unit Request": cleanWarehouseName(item.groupRequest || item.unitRequest || item.requestingUnit || '-'),
+    "Unit Entering": cleanWarehouseName(item.receivingUnit || item.unitEntering || item.enteringUnit || '-'),
+    "Date Export": item.dateExport || item.exportDate || item.dateDelivery || item.deliveryDate || '-',
     "Status CA": item.statusCA || 'Unsigned',
-    "Unit": item.unit || unit || '-',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
     "Q'ty of day": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
-    "Year": item.year || (item.createDate ? item.createDate.split('/')[2] : '-')
+    "Year": item.year || (item.createDate ? item.createDate.split('/')[2] : (item.dateCreate ? item.dateCreate.split('/')[2] : '-'))
   }));
 
-  const inRows = unsignedInItems.map((item, idx) => ({
-    "Nº": idx + 1,
-    "Import Request code": item.code || item.importRequestCode || '-',
+  const inRows = filteredIn.map((item, idx) => ({
+    "No": idx + 1,
+    "Import Request code": item.importRequestCode || item.code || '-',
     "Import Command code": item.importCommandCode || item.commandCode || '-',
     "Date Create": item.dateCreate || item.createdDate || item.date || '-',
     "Import warehouse": cleanWarehouseName(item.importWarehouse || item.warehouse || '-'),
@@ -1798,60 +2341,51 @@ export const generateRestockExcelBlob = (unsignedOutItems = [], unsignedInItems 
     "Unit Receive": cleanWarehouseName(item.unitReceive || item.receivingUnit || '-'),
     "Date Delivery": item.dateDelivery || item.deliveryDate || '-',
     "Status CA": item.statusCA || 'Unsigned',
-    "Unit": item.unit || unit || '-',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
     "Q'ty of day": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
-    "Year": item.year || (item.createDate ? item.createDate.split('/')[2] : '-')
+    "Year": item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : (item.createDate ? item.createDate.split('/')[2] : '-'))
   }));
 
   const sheets = [
     {
-      name: "RESTOCK OUT (EXPORT REQUEST)",
-      headers: ["Nº", "Request export code", "Command Export Code", "Date Create", "Warehouse Export", "Contract", "Requester", "Unit Request", "Unit Entering", "Date Export", "Status CA", "Unit", "Q'ty of day", "Year"],
-      rows: outRows.length > 0 ? outRows : [{ "Nº": "-", "Request export code": "No pending items" }]
+      customXml: generateRequestInEKpiSheetXml(filteredOut, filteredIn, unit)
     },
     {
-      name: "RESTOCK IN (IMPORT REQUEST)",
-      headers: ["Nº", "Import Request code", "Import Command code", "Date Create", "Import warehouse", "Contract", "Creator", "Unit Requests", "Unit Receive", "Date Delivery", "Status CA", "Unit", "Q'ty of day", "Year"],
-      rows: inRows.length > 0 ? inRows : [{ "Nº": "-", "Import Request code": "No pending items" }]
+      name: "Restock_in Detail",
+      headerStyle: "HeaderRequest",
+      tabColorIndex: 10,
+      headers: ["No", "Import Request code", "Import Command code", "Date Create", "Import warehouse", "Contract", "Creator", "Unit Requests", "Unit Receive", "Date Delivery", "Status CA", "Unit", "Q'ty of day", "Year"],
+      rows: inRows.length > 0 ? inRows : [{ "No": "-", "Import Request code": "No pending items" }]
+    },
+    {
+      name: "Restock_out Detail",
+      headerStyle: "HeaderRequest",
+      tabColorIndex: 10,
+      headers: ["No", "Request export code", "Command Export Code", "Date Create", "Warehouse Export", "Contract", "Requester", "Unit Request", "Unit Entering", "Date Export", "Status CA", "Unit", "Q'ty of day", "Year"],
+      rows: outRows.length > 0 ? outRows : [{ "No": "-", "Request export code": "No pending items" }]
     }
   ];
 
   return createExcelXmlBlob(sheets);
 };
 
-// ============================================================
-// 📌 GENERATE STOCKOUT EXCEL BLOB
-// ============================================================
-
 export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = [], unit = 'ALL') => {
-  const sheet1Rows = m1Items.map((item, idx) => ({
-    "#": idx + 1,
-    "Warehouse Stock out": cleanWarehouseName(item.exportCode || item.warehouse || item.stockOut || item.warehouseStockOut || '-'),
-    "Export No": item.exportNo || item.code || '-',
-    "Date": item.realExport || item.date || item.dateCreate || item.createdDate || '-',
-    "Stock Receiver": cleanWarehouseName(item.stockReceiver || item.receivingUnit || item.stockReceive || item.receiver || '-'),
-    "Group Receiver": cleanWarehouseName(item.groupReceiver || item.groupRequest || '-'),
-    "Construction": item.constructionReceiver || item.construction || '-',
-    "Unit": item.unit || unit || '-',
-    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days !== undefined ? `${item.days}d` : '-'),
-    "TEAM": cleanWarehouseName(item.team || item.groupReceiver || item.stockReceiver || '-')
-  }));
+  const isUnitUser = unit !== 'ALL';
+  const userUnit = unit;
 
-  const sheet2Rows = m2Items.map((item, idx) => ({
-    "#": idx + 1,
-    "Code of stock-out note": item.code || item.noteCode || '-',
-    "Warehouse": cleanWarehouseName(item.warehouse || item.stockOut || '-'),
-    "Recipient": cleanWarehouseName(item.recipient || item.receivingUnit || '-'),
-    "Creator": item.creator || '-',
-    "Creating date": item.date || item.createDate || item.dateCreate || '-',
-    "TEAM": cleanWarehouseName(item.team || item.recipient || item.warehouse || '-'),
-    "Unit": item.unit || unit || '-',
-    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
-    "Status": item.status || 'Pending'
-  }));
+  let filteredM1 = (m1Items || []).filter(Boolean);
+  let filteredM2 = (m2Items || []).filter(Boolean);
+  let filteredM3 = (m3Items || []).filter(Boolean);
 
-  const sheet3Rows = m3Items.map((item, idx) => ({
-    "#": idx + 1,
+  if (isUnitUser) {
+    const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
+    filteredM1 = filteredM1.filter(filterFn);
+    filteredM2 = filteredM2.filter(filterFn);
+    filteredM3 = filteredM3.filter(filterFn);
+  }
+
+  const sheet1Rows = filteredM3.map((item, idx) => ({
+    "No": idx + 1,
     "Code of handover minutes": item.code || item.handoverCode || '-',
     "Type of handover": item.type || item.handoverType || '-',
     "Handover unit": cleanWarehouseName(item.handoverUnit || item.warehouse || '-'),
@@ -1860,37 +2394,81 @@ export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = 
     "Status": item.status || 'Pending',
     "TEAM": cleanWarehouseName(item.team || item.confirmUnit || item.handoverUnit || '-'),
     "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
-    "UNIT": item.unit || unit || '-'
+    "UNIT": item.unit || extractUnit(item) || unit || '-'
+  }));
+
+  const sheet2Rows = filteredM2.map((item, idx) => ({
+    "No": idx + 1,
+    "Code of stock-out note": item.code || item.noteCode || '-',
+    "Warehouse": cleanWarehouseName(item.warehouse || item.stockOut || '-'),
+    "Recipient": cleanWarehouseName(item.recipient || item.receivingUnit || '-'),
+    "Creator": item.creator || '-',
+    "Creating date": item.date || item.createDate || item.dateCreate || '-',
+    "TEAM": cleanWarehouseName(item.team || item.recipient || item.warehouse || '-'),
+    "Unit": item.unit || extractUnit(item) || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "Status": item.status || 'Pending'
+  }));
+
+  const sheet3Rows = filteredM1.map((item, idx) => ({
+    "No": idx + 1,
+    "Warehouse Stock out": cleanWarehouseName(item.exportCode || item.warehouse || item.stockOut || item.warehouseStockOut || '-'),
+    "Export No": item.exportNo || item.code || '-',
+    "Date": item.realExport || item.date || item.dateCreate || item.createdDate || '-',
+    "Stock Receiver": cleanWarehouseName(item.stockReceiver || item.receivingUnit || item.stockReceive || item.receiver || '-'),
+    "Group Receiver": cleanWarehouseName(item.groupReceiver || item.groupRequest || '-'),
+    "Construction": item.constructionReceiver || item.construction || '-',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days !== undefined ? `${item.days}d` : '-'),
+    "TEAM": cleanWarehouseName(item.team || item.groupReceiver || item.stockReceiver || '-'),
+    "Status": item.daysDiff >= 5 ? 'ALARM' : 'Normal'
   }));
 
   const sheets = [
     {
-      name: "STOCKOUT YET",
-      headers: ["#", "Warehouse Stock out", "Export No", "Date", "Stock Receiver", "Group Receiver", "Construction", "Unit", "Days", "TEAM"],
-      rows: sheet1Rows.length > 0 ? sheet1Rows : [{ "#": "-", "Export No": "No pending items" }]
+      customXml: generateStockoutKpiSheetXml(filteredM1, filteredM2, filteredM3, unit)
     },
     {
-      name: "STOCKOUT NOTE CONFIRMED",
-      headers: ["#", "Code of stock-out note", "Warehouse", "Recipient", "Creator", "Creating date", "TEAM", "Unit", "Days", "Status"],
-      rows: sheet2Rows.length > 0 ? sheet2Rows : [{ "#": "-", "Code of stock-out note": "No pending items" }]
+      name: "NO_CREATE_HAND_OVER Detail",
+      headerStyle: "HeaderStockout",
+      tabColorIndex: 45,
+      headers: ["No", "Code of handover minutes", "Type of handover", "Handover unit", "Unit confirm handover", "Handover date", "Status", "TEAM", "Days", "UNIT"],
+      rows: sheet1Rows.length > 0 ? sheet1Rows : [{ "No": "-", "Code of handover minutes": "No pending items" }]
     },
     {
-      name: "NO CREATE HAND OVER",
-      headers: ["#", "Code of handover minutes", "Type of handover", "Handover unit", "Unit confirm handover", "Handover date", "Status", "TEAM", "Days", "UNIT"],
-      rows: sheet3Rows.length > 0 ? sheet3Rows : [{ "#": "-", "Code of handover minutes": "No pending items" }]
+      name: "stock_out_note_confirmed Detail",
+      headerStyle: "HeaderStockout",
+      tabColorIndex: 45,
+      headers: ["No", "Code of stock-out note", "Warehouse", "Recipient", "Creator", "Creating date", "TEAM", "Unit", "Days", "Status"],
+      rows: sheet2Rows.length > 0 ? sheet2Rows : [{ "No": "-", "Code of stock-out note": "No pending items" }]
+    },
+    {
+      name: "STOCKOUT_YET_CONFIRM Detail",
+      headerStyle: "HeaderStockout",
+      tabColorIndex: 45,
+      headers: ["No", "Warehouse Stock out", "Export No", "Date", "Stock Receiver", "Group Receiver", "Construction", "Unit", "Days", "TEAM", "Status"],
+      rows: sheet3Rows.length > 0 ? sheet3Rows : [{ "No": "-", "Export No": "No pending items" }]
     }
   ];
 
   return createExcelXmlBlob(sheets);
 };
 
-// ============================================================
-// 📌 GENERATE SIGNED CA EXCEL BLOB
-// ============================================================
-
 export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], unit = 'ALL') => {
-  const exportRows = exportItems.map((item, idx) => ({
-    "#": idx + 1,
+  const isUnitUser = unit !== 'ALL';
+  const userUnit = unit;
+
+  let filteredExport = (exportItems || []).filter(Boolean);
+  let filteredImport = (importItems || []).filter(Boolean);
+
+  if (isUnitUser) {
+    const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
+    filteredExport = filteredExport.filter(filterFn);
+    filteredImport = filteredImport.filter(filterFn);
+  }
+
+  const exportRows = filteredExport.map((item, idx) => ({
+    "No": idx + 1,
     "Export Note Code": item.exportNoteCode || item.code || item.noteCode || '-',
     "Export Command Code": item.exportCommandCode || item.commandCode || '-',
     "Export Request": item.exportRequest || item.requestCode || '-',
@@ -1906,14 +2484,14 @@ export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], un
     "Disapprove": item.disapprove || item.disapproveReason || '-',
     "Status CA": item.statusCA || item.caStatus || 'Unsigned',
     "Description": item.description || item.note || '-',
-    "Unit": item.unit || unit || '-',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
     "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
     "TEAM": cleanWarehouseName(item.team || item.requester || item.exportWarehouse || '-'),
     "Year": item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : (item.date ? item.date.split('/')[2] : '-'))
   }));
 
-  const importRows = importItems.map((item, idx) => ({
-    "#": idx + 1,
+  const importRows = filteredImport.map((item, idx) => ({
+    "No": idx + 1,
     "Receipt Code": item.receiptCode || item.code || item.importCode || '-',
     "Command Code": item.commandCode || item.importCommandCode || '-',
     "Date": item.date || item.dateCreate || item.createdDate || '-',
@@ -1921,7 +2499,7 @@ export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], un
     "Creator": item.creator || item.requester || '-',
     "Status": item.status || '-',
     "Status CA": item.statusCA || item.caStatus || 'Unsigned',
-    "Unit": item.unit || unit || '-',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
     "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
     "TEAM": cleanWarehouseName(item.team || item.creator || item.warehouse || '-'),
     "Year": item.year || (item.date ? item.date.split('/')[2] : '-')
@@ -1929,14 +2507,255 @@ export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], un
 
   const sheets = [
     {
-      name: "SIGNED CA EXPORT",
-      headers: ["#", "Export Note Code", "Export Command Code", "Export Request", "Requester", "Date Create", "Date Export", "Export Warehouse", "Reason", "Warehouse Entering", "Unit Entering", "Construction Code", "Status", "Disapprove", "Status CA", "Description", "Unit", "Days", "TEAM", "Year"],
-      rows: exportRows.length > 0 ? exportRows : [{ "#": "-", "Export Note Code": "No pending items" }]
+      customXml: generateSignedCaKpiSheetXml(filteredExport, filteredImport, unit)
     },
     {
-      name: "SIGNED CA IMPORT",
-      headers: ["#", "Receipt Code", "Command Code", "Date", "Warehouse", "Creator", "Status", "Status CA", "Unit", "Days", "TEAM", "Year"],
-      rows: importRows.length > 0 ? importRows : [{ "#": "-", "Receipt Code": "No pending items" }]
+      name: "Export_CA Detail",
+      headerStyle: "HeaderSignedCA",
+      tabColorIndex: 41,
+      headers: ["No", "Export Note Code", "Export Command Code", "Export Request", "Requester", "Date Create", "Date Export", "Export Warehouse", "Reason", "Warehouse Entering", "Unit Entering", "Construction Code", "Status", "Disapprove", "Status CA", "Description", "Unit", "Days", "TEAM", "Year"],
+      rows: exportRows.length > 0 ? exportRows : [{ "No": "-", "Export Note Code": "No pending items" }]
+    },
+    {
+      name: "Import_CA Detail",
+      headerStyle: "HeaderSignedCA",
+      tabColorIndex: 41,
+      headers: ["No", "Receipt Code", "Command Code", "Date", "Warehouse", "Creator", "Status", "Status CA", "Unit", "Days", "TEAM", "Year"],
+      rows: importRows.length > 0 ? importRows : [{ "No": "-", "Receipt Code": "No pending items" }]
+    }
+  ];
+
+  return createExcelXmlBlob(sheets);
+};
+
+export const generateAllModulesExcelBlob = (unit = 'ALL') => {
+  const isUnitUser = unit !== 'ALL';
+  const userUnit = unit;
+
+  // Module 1: Stockout
+  let m1Items = getStorageData('kpi_stockout_data');
+  if (!Array.isArray(m1Items)) m1Items = [];
+  let m2Items = getStorageData('kpi_notconfirmed_data');
+  if (!Array.isArray(m2Items)) m2Items = [];
+  let m3Items = getStorageData('kpi_nocreate_data');
+  if (!Array.isArray(m3Items)) m3Items = [];
+
+  m1Items = m1Items.filter(Boolean);
+  m2Items = m2Items.filter(Boolean);
+  m3Items = m3Items.filter(Boolean);
+  
+  if (isUnitUser) {
+    const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
+    m1Items = m1Items.filter(filterFn);
+    m2Items = m2Items.filter(filterFn);
+    m3Items = m3Items.filter(filterFn);
+  }
+
+  const sheet1Rows = m3Items.map((item, idx) => ({
+    "No": idx + 1,
+    "Code of handover minutes": item.code || item.handoverCode || '-',
+    "Type of handover": item.type || item.handoverType || '-',
+    "Handover unit": cleanWarehouseName(item.handoverUnit || item.warehouse || '-'),
+    "Unit confirm handover": cleanWarehouseName(item.confirmUnit || item.receivingUnit || '-'),
+    "Handover date": item.date || item.handoverDate || '-',
+    "Status": item.status || 'Pending',
+    "TEAM": cleanWarehouseName(item.team || item.confirmUnit || item.handoverUnit || '-'),
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "UNIT": item.unit || extractUnit(item) || unit || '-'
+  }));
+
+  const sheet2Rows = m2Items.map((item, idx) => ({
+    "No": idx + 1,
+    "Code of stock-out note": item.code || item.noteCode || '-',
+    "Warehouse": cleanWarehouseName(item.warehouse || item.stockOut || '-'),
+    "Recipient": cleanWarehouseName(item.recipient || item.receivingUnit || '-'),
+    "Creator": item.creator || '-',
+    "Creating date": item.date || item.createDate || item.dateCreate || '-',
+    "TEAM": cleanWarehouseName(item.team || item.recipient || item.warehouse || '-'),
+    "Unit": item.unit || extractUnit(item) || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "Status": item.status || 'Pending'
+  }));
+
+  const sheet3Rows = m1Items.map((item, idx) => ({
+    "No": idx + 1,
+    "Warehouse Stock out": cleanWarehouseName(item.exportCode || item.warehouse || item.stockOut || item.warehouseStockOut || '-'),
+    "Export No": item.exportNo || item.code || '-',
+    "Date": item.realExport || item.date || item.dateCreate || item.createdDate || '-',
+    "Stock Receiver": cleanWarehouseName(item.stockReceiver || item.receivingUnit || item.stockReceive || item.receiver || '-'),
+    "Group Receiver": cleanWarehouseName(item.groupReceiver || item.groupRequest || '-'),
+    "Construction": item.constructionReceiver || item.construction || '-',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days !== undefined ? `${item.days}d` : '-'),
+    "TEAM": cleanWarehouseName(item.team || item.groupReceiver || item.stockReceiver || '-'),
+    "Status": item.daysDiff >= 5 ? 'ALARM' : 'Normal'
+  }));
+
+  // Module 2: Signed CA
+  let exportItems = getStorageData('export_ca_data');
+  if (!Array.isArray(exportItems)) exportItems = [];
+  let importItems = getStorageData('import_ca_data');
+  if (!Array.isArray(importItems)) importItems = [];
+
+  exportItems = exportItems.filter(Boolean);
+  importItems = importItems.filter(Boolean);
+
+  if (isUnitUser) {
+    const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
+    exportItems = exportItems.filter(filterFn);
+    importItems = importItems.filter(filterFn);
+  }
+
+  const exportRows = exportItems.map((item, idx) => ({
+    "No": idx + 1,
+    "Export Note Code": item.exportNoteCode || item.code || item.noteCode || '-',
+    "Export Command Code": item.exportCommandCode || item.commandCode || '-',
+    "Export Request": item.exportRequest || item.requestCode || '-',
+    "Requester": item.requester || item.creator || '-',
+    "Date Create": item.dateCreate || item.createdDate || item.date || '-',
+    "Date Export": item.dateExport || item.exportDate || '-',
+    "Export Warehouse": cleanWarehouseName(item.exportWarehouse || item.warehouse || '-'),
+    "Reason": item.reason || '-',
+    "Warehouse Entering": cleanWarehouseName(item.warehouseEntering || item.enteringWarehouse || '-'),
+    "Unit Entering": cleanWarehouseName(item.unitEntering || item.enteringUnit || '-'),
+    "Construction Code": item.constructionCode || item.construction || '-',
+    "Status": item.status || '-',
+    "Disapprove": item.disapprove || item.disapproveReason || '-',
+    "Status CA": item.statusCA || item.caStatus || 'Unsigned',
+    "Description": item.description || item.note || '-',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "TEAM": cleanWarehouseName(item.team || item.requester || item.exportWarehouse || '-'),
+    "Year": item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : (item.date ? item.date.split('/')[2] : '-'))
+  }));
+
+  const importRows = importItems.map((item, idx) => ({
+    "No": idx + 1,
+    "Receipt Code": item.receiptCode || item.code || item.importCode || '-',
+    "Command Code": item.commandCode || item.importCommandCode || '-',
+    "Date": item.date || item.dateCreate || item.createdDate || '-',
+    "Warehouse": cleanWarehouseName(item.warehouse || item.importWarehouse || '-'),
+    "Creator": item.creator || item.requester || '-',
+    "Status": item.status || '-',
+    "Status CA": item.statusCA || item.caStatus || 'Unsigned',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : (item.days ? `${item.days}d` : '-'),
+    "TEAM": cleanWarehouseName(item.team || item.creator || item.warehouse || '-'),
+    "Year": item.year || (item.date ? item.date.split('/')[2] : '-')
+  }));
+
+  // Module 3: Restock
+  let unsignedInItems = getStorageData('restock_in_data');
+  if (!Array.isArray(unsignedInItems)) unsignedInItems = [];
+  let unsignedOutItems = getStorageData('restock_out_data');
+  if (!Array.isArray(unsignedOutItems)) unsignedOutItems = [];
+
+  unsignedInItems = unsignedInItems.filter(Boolean);
+  unsignedOutItems = unsignedOutItems.filter(Boolean);
+
+  if (isUnitUser) {
+    const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
+    unsignedInItems = unsignedInItems.filter(filterFn);
+    unsignedOutItems = unsignedOutItems.filter(filterFn);
+  }
+
+  const outRows = unsignedOutItems.map((item, idx) => ({
+    "No": idx + 1,
+    "Request export code": item.requestExportCode || item.code || '-',
+    "Command Export Code": item.commandExportCode || item.commandCode || '-',
+    "Date Create": item.createDate || item.dateCreate || item.createdDate || item.date || '-',
+    "Warehouse Export": cleanWarehouseName(item.stockOut || item.warehouseExport || item.warehouse || '-'),
+    "Contract": item.contract || item.noteExportCode || '-',
+    "Requester": item.creator || item.requester || '-',
+    "Unit Request": cleanWarehouseName(item.groupRequest || item.unitRequest || item.requestingUnit || '-'),
+    "Unit Entering": cleanWarehouseName(item.receivingUnit || item.unitEntering || item.enteringUnit || '-'),
+    "Date Export": item.dateExport || item.exportDate || item.dateDelivery || item.deliveryDate || '-',
+    "Status CA": item.statusCA || 'Unsigned',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
+    "Q'ty of day": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "Year": item.year || (item.createDate ? item.createDate.split('/')[2] : (item.dateCreate ? item.dateCreate.split('/')[2] : '-'))
+  }));
+
+  const inRows = unsignedInItems.map((item, idx) => ({
+    "No": idx + 1,
+    "Import Request code": item.importRequestCode || item.code || '-',
+    "Import Command code": item.importCommandCode || item.commandCode || '-',
+    "Date Create": item.dateCreate || item.createdDate || item.date || '-',
+    "Import warehouse": cleanWarehouseName(item.importWarehouse || item.warehouse || '-'),
+    "Contract": item.contract || '-',
+    "Creator": item.creator || '-',
+    "Unit Requests": cleanWarehouseName(item.unitRequests || '-'),
+    "Unit Receive": cleanWarehouseName(item.unitReceive || item.receivingUnit || '-'),
+    "Date Delivery": item.dateDelivery || item.deliveryDate || '-',
+    "Status CA": item.statusCA || 'Unsigned',
+    "Unit": item.unit || extractUnit(item) || unit || '-',
+    "Q'ty of day": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "Year": item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : (item.createDate ? item.createDate.split('/')[2] : '-'))
+  }));
+
+  const sheets = [
+    // 🍊 STOCKOUT
+    {
+      customXml: generateStockoutKpiSheetXml(m1Items, m2Items, m3Items, unit)
+    },
+    {
+      name: "NO_CREATE_HAND_OVER Detail",
+      headerStyle: "HeaderStockout",
+      tabColorIndex: 45,
+      headers: ["No", "Code of handover minutes", "Type of handover", "Handover unit", "Unit confirm handover", "Handover date", "Status", "TEAM", "Days", "UNIT"],
+      rows: sheet1Rows.length > 0 ? sheet1Rows : [{ "No": "-", "Code of handover minutes": "No pending items" }]
+    },
+    {
+      name: "stock_out_note_confirmed Detail",
+      headerStyle: "HeaderStockout",
+      tabColorIndex: 45,
+      headers: ["No", "Code of stock-out note", "Warehouse", "Recipient", "Creator", "Creating date", "TEAM", "Unit", "Days", "Status"],
+      rows: sheet2Rows.length > 0 ? sheet2Rows : [{ "No": "-", "Code of stock-out note": "No pending items" }]
+    },
+    {
+      name: "STOCKOUT_YET_CONFIRM Detail",
+      headerStyle: "HeaderStockout",
+      tabColorIndex: 45,
+      headers: ["No", "Warehouse Stock out", "Export No", "Date", "Stock Receiver", "Group Receiver", "Construction", "Unit", "Days", "TEAM", "Status"],
+      rows: sheet3Rows.length > 0 ? sheet3Rows : [{ "No": "-", "Export No": "No pending items" }]
+    },
+
+    // 💎 SIGNED CA
+    {
+      customXml: generateSignedCaKpiSheetXml(exportItems, importItems, unit)
+    },
+    {
+      name: "Export_CA Detail",
+      headerStyle: "HeaderSignedCA",
+      tabColorIndex: 41,
+      headers: ["No", "Export Note Code", "Export Command Code", "Export Request", "Requester", "Date Create", "Date Export", "Export Warehouse", "Reason", "Warehouse Entering", "Unit Entering", "Construction Code", "Status", "Disapprove", "Status CA", "Description", "Unit", "Days", "TEAM", "Year"],
+      rows: exportRows.length > 0 ? exportRows : [{ "No": "-", "Export Note Code": "No pending items" }]
+    },
+    {
+      name: "Import_CA Detail",
+      headerStyle: "HeaderSignedCA",
+      tabColorIndex: 41,
+      headers: ["No", "Receipt Code", "Command Code", "Date", "Warehouse", "Creator", "Status", "Status CA", "Unit", "Days", "TEAM", "Year"],
+      rows: importRows.length > 0 ? importRows : [{ "No": "-", "Receipt Code": "No pending items" }]
+    },
+
+    // 🟢 RESTOCK
+    {
+      customXml: generateRequestInEKpiSheetXml(unsignedOutItems, unsignedInItems, unit)
+    },
+    {
+      name: "Restock_in Detail",
+      headerStyle: "HeaderRequest",
+      tabColorIndex: 10,
+      headers: ["No", "Import Request code", "Import Command code", "Date Create", "Import warehouse", "Contract", "Creator", "Unit Requests", "Unit Receive", "Date Delivery", "Status CA", "Unit", "Q'ty of day", "Year"],
+      rows: inRows.length > 0 ? inRows : [{ "No": "-", "Import Request code": "No pending items" }]
+    },
+    {
+      name: "Restock_out Detail",
+      headerStyle: "HeaderRequest",
+      tabColorIndex: 10,
+      headers: ["No", "Request export code", "Command Export Code", "Date Create", "Warehouse Export", "Contract", "Requester", "Unit Request", "Unit Entering", "Date Export", "Status CA", "Unit", "Q'ty of day", "Year"],
+      rows: outRows.length > 0 ? outRows : [{ "No": "-", "Request export code": "No pending items" }]
     }
   ];
 
