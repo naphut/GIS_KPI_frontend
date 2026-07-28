@@ -13,38 +13,6 @@ const BOT_TOKENS = {
 const DEFAULT_TOKEN = '8571996109:AAHiDszOTGk4uEnb0iPKcnNXlGoTSE7K740';
 
 // Group IDs for each province
-
-// Group IDs for each province (NEW)
-// Group IDs for each province
-// Group IDs for each province (NEW)
-// const GROUP_IDS = {
-//   'BAN': '-5586791976',
-//   'BAT': '-1004433153728',
-//   'CHA': '-5420693532',
-//   'CHH': '-5387431077',
-//   'KAM': '-5482545376',
-//   'KAN': '-5236231454',
-//   'KANZ1': '-5274252058',
-//   'KOH': '-5145897116',
-//   'KRA': '-5593536064',
-//   'MON': '-5319493942',
-//   'ODD': '-4995836337',
-//   'PNP': '-5359041682',
-//   'PNPZ1': '-5588093737',
-//   'PNPZ2': '-1004382725579',
-//   'PRE': '-5428590077',
-//   'PRH': '-5250837883',
-//   'PUR': '-5562024723',
-//   'ROT': '-5358830807',
-//   'SIE': '-5558011159',
-//   'SIH': '-5074490053',
-//   'SPE': '-5460603162',
-//   'STU': '-5339037019',
-//   'SVA': '-1004477126515',
-//   'TAK': '-5519166799',
-//   'THO': '-5163441169',
-// };
-// Group IDs for each province
 const GROUP_IDS = {
   'BAN': '-4064404599',
   'BAT': '-4040029628',
