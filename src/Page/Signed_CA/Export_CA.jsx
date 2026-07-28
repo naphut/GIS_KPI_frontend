@@ -465,9 +465,8 @@ export const Export_CA = () => {
 
   const getStatusBadge = (status) => {
     const upper = (status || '').toUpperCase();
-    const isNotExported = upper.includes('CHƯA THỰC XUẤT') || upper.includes('CHUA THUC XUAT') || upper.includes('NOT ACTUAL EXPORT');
-    const isCompleted = status && !isNotExported;
-    if (isCompleted) {
+    const isUncompleted = upper.includes('CHƯA THỰC XUẤT') || upper.includes('CHUA THUC XUAT') || upper.includes('NOT ACTUAL EXPORT');
+    if (!isUncompleted) {
       return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">✅ {status}</span>;
     }
     return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-800">⏳ {status}</span>;
@@ -605,11 +604,6 @@ export const Export_CA = () => {
       const warehouse = (item.exportWarehouse || '').toUpperCase().replace(/\s+/g, '');
       const isGIS = warehouse.includes('GIS');
       
-      const status = (item.status || '').toUpperCase().replace(/\s+/g, ' ').trim();
-      const isNotActualExport = status.includes('CHƯA THỰC XUẤT') || 
-                                status.includes('CHUA THUC XUAT') || 
-                                status.includes('NOT ACTUAL EXPORT');
-
       const statusCA = (item.statusCA || '').toUpperCase().replace(/\s+/g, ' ').trim();
       const isCAOK = statusCA.includes('UNSIGNED') || 
                      statusCA.includes('IS SIGNING') || 
@@ -619,11 +613,16 @@ export const Export_CA = () => {
                      statusCA.includes('CANCEL') ||
                      statusCA.includes('HỦY') ||
                      statusCA.includes('HUY');
+
+      const status = (item.status || '').toUpperCase().trim();
+      const isNotActualExport = status.includes('CHƯA THỰC XUẤT') || 
+                                status.includes('CHUA THUC XUAT') || 
+                                status.includes('NOT ACTUAL EXPORT');
       return isGIS && isCAOK && !isNotActualExport;
     });
 
     if (filteredData.length === 0) {
-      showNotification("⚠️ No matching records found! (GIS + Unsigned/Is signing/Cancel, excluding 'Not actual export')", 'warning');
+      showNotification('⚠️ No matching records found! (GIS + Excluding "Not actual export" + CA Pending)', 'warning');
       return;
     }
 
@@ -876,8 +875,8 @@ export const Export_CA = () => {
         }
         if (field === 'status') {
           const upperVal = (value || '').toUpperCase();
-          const isNotExported = upperVal.includes('CHƯA THỰC XUẤT') || upperVal.includes('CHUA THUC XUAT') || upperVal.includes('NOT ACTUAL EXPORT');
-          updated.isCompleted = value && !isNotExported;
+          const isUncompleted = upperVal.includes('CHƯA THỰC XUẤT') || upperVal.includes('CHUA THUC XUAT') || upperVal.includes('NOT ACTUAL EXPORT') || upperVal.includes('CHƯា THỰC XUẤT');
+          updated.isCompleted = !isUncompleted;
         }
         return updated;
       }
@@ -1121,36 +1120,11 @@ export const Export_CA = () => {
 
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
-    const headers = ['Unit', 'Export Note Code', 'Date Create', 'Year', 'Delay (Days)', 'Warehouse', 'Status CA'];
-    const rows = filteredAlarmItems.map(item => [
-      item.unit || '',
-      item.exportNoteCode || '',
-      item.dateCreate || '',
-      item.year || '',
-      item.daysDiff !== undefined ? `+${item.daysDiff}` : '',
-      item.exportWarehouse || '',
-      item.statusCA || ''
-    ]);
-
-    const colWidths = headers.map((header, colIdx) => {
-      const lengths = rows.map(row => String(row[colIdx] || '').length);
-      return Math.max(header.length, ...lengths);
-    });
-
-    const pad = (str, width) => {
-      const s = String(str);
-      return s + ' '.repeat(Math.max(0, width - s.length));
-    };
-
-    const headerLine = headers.map((h, i) => pad(h, colWidths[i])).join('   ');
-    const separatorLine = colWidths.map(w => '-'.repeat(w)).join('   ');
-    const rowLines = rows.map(row => 
-      row.map((val, i) => pad(val, colWidths[i])).join('   ')
-    );
-
-    const text = '```\n' + [headerLine, separatorLine, ...rowLines].join('\n') + '\n```';
+    const text = filteredAlarmItems.map(item => 
+      `${item.unit}\n| Export Note: ${item.exportNoteCode}\n📅 Date Create: ${item.dateCreate} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.exportWarehouse || '-'}`
+    ).join('\n\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied in Telegram table format!', 'success');
+    showNotification('📋 Alarm list copied to clipboard!', 'success');
   };
 
   useEffect(() => {
@@ -1439,7 +1413,7 @@ export const Export_CA = () => {
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold text-white">🔄 Smart Import</h2>
-                <p className="text-blue-100 text-sm">Auto-filters GIS Warehouse + Unsigned/Is signing (excluding 'Not actual export')</p>
+                <p className="text-blue-100 text-sm">Auto-filters GIS Warehouse + Excluding "Not actual export" + CA Pending</p>
               </div>
               <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
             </div>
@@ -1448,7 +1422,7 @@ export const Export_CA = () => {
             <textarea 
               value={pasteData} 
               onChange={(e) => setPasteData(e.target.value)} 
-              placeholder="Paste your system data here...&#10;&#10;Format: Export Note Code, Export Command Code, Export Request, Create Requester, Date Create, Date Export, Export Warehouse, Reason export, Name Warehouse Entering, Unit Entering, Code Contruction, Status, Disapprove not, Status CA, Description&#10;&#10;Note: Only GIS Warehouse + Unsigned/Is signing (excluding 'Not actual export') will be imported." 
+              placeholder="Paste your system data here...&#10;&#10;Format: Export Note Code, Export Command Code, Export Request, Create Requester, Date Create, Date Export, Export Warehouse, Reason export, Name Warehouse Entering, Unit Entering, Code Contruction, Status, Disapprove not, Status CA, Description&#10;&#10;Note: Only GIS Warehouse + Excluding 'Chưa thực xuất / Not actual export' + Unsigned/Is signing will be imported." 
               className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
 
@@ -1783,7 +1757,7 @@ export const Export_CA = () => {
                     <div className="flex flex-col items-center gap-3">
                       <div className="text-4xl">📭</div>
                       <p className="text-lg font-medium">No records found matching filters</p>
-                      <p className="text-sm text-gray-400">Filters: GIS Warehouse + Unsigned/Is signing (excluding 'Not actual export')</p>
+                      <p className="text-sm text-gray-400">Filters: GIS Warehouse + Excluding 'Not actual export' + CA Pending</p>
                     </div>
                   </td>
                 </tr>
@@ -1853,14 +1827,14 @@ export const Export_CA = () => {
 
         {/* ─── FOOTER ─── */}
         <div className="bg-gray-50 px-6 py-3 border-t text-sm text-gray-500 flex justify-between flex-wrap gap-2">
-          <span>📋 Total GIS (Unsigned/Is signing, excluding 'Not actual export'): <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
+          <span>📋 Total GIS (Excluding "Not actual export" + CA Pending): <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
           {/* <div className="flex gap-3 flex-wrap">
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>GIS Warehouse</span>
             <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&ge;{alarmThreshold}d)</span>
             <span className="flex items-center gap-1 text-gray-400">|</span>
             <span className="flex items-center gap-1"><span className="text-amber-600">✍️</span> Is signing</span>
             <span className="flex items-center gap-1"><span className="text-gray-600">📝</span> Unsigned</span>
-            <span className="flex items-center gap-1"><span className="text-emerald-600">✅</span> Actual Export all</span>
+            <span className="flex items-center gap-1"><span className="text-emerald-600">✅</span> Status OK</span>
           </div> */}
         </div>
       </div>
