@@ -1018,36 +1018,11 @@ export const Restock_in = () => {
 
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
-    const headers = ['Unit', 'Import Request Code', 'Date Create', 'Year', 'Delay (Days)', 'Import Warehouse', 'Status'];
-    const rows = filteredAlarmItems.map(item => [
-      item.unit || '',
-      item.importRequestCode || '',
-      item.dateCreate || '',
-      item.year || '',
-      item.daysDiff !== undefined ? `+${item.daysDiff}` : '',
-      item.importWarehouse || '',
-      item.status || ''
-    ]);
-
-    const colWidths = headers.map((header, colIdx) => {
-      const lengths = rows.map(row => String(row[colIdx] || '').length);
-      return Math.max(header.length, ...lengths);
-    });
-
-    const pad = (str, width) => {
-      const s = String(str);
-      return s + ' '.repeat(Math.max(0, width - s.length));
-    };
-
-    const headerLine = headers.map((h, i) => pad(h, colWidths[i])).join('   ');
-    const separatorLine = colWidths.map(w => '-'.repeat(w)).join('   ');
-    const rowLines = rows.map(row => 
-      row.map((val, i) => pad(val, colWidths[i])).join('   ')
-    );
-
-    const text = '```\n' + [headerLine, separatorLine, ...rowLines].join('\n') + '\n```';
+    const text = filteredAlarmItems.map(item => 
+      `${item.unit}\n| Request Code: ${item.importRequestCode || '-'}\n📅 Date: ${item.dateCreate || '-'} | Year: ${item.year || '-'}\nUnit Requests: ${item.unitRequests || '-'}\nStatus CA: ${item.statusCA || '-'}\nQ'ty of day: +${item.daysDiff || 0}`
+    ).join('\n\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied in Telegram table format!', 'success');
+    showNotification('📋 Alarm list copied to clipboard!', 'success');
   };
 
   useEffect(() => {

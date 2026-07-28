@@ -1121,7 +1121,7 @@ export const Export_CA = () => {
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
     const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Export Note: ${item.exportNoteCode}\n📅 Date Create: ${item.dateCreate} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.exportWarehouse || '-'}`
+      `${item.unit}\n| Export Note: ${item.exportNoteCode}\n📅 Date Create: ${item.dateCreate} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.exportWarehouse || '-'}\nTEAM: ${item.team || '-'}\nStatus: ${item.status || '-'}\nStatus CA: ${item.statusCA || '-'}`
     ).join('\n\n');
     navigator.clipboard.writeText(text);
     showNotification('📋 Alarm list copied to clipboard!', 'success');

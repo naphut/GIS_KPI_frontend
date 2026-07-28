@@ -953,7 +953,7 @@ const Import_CA = () => {
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
     const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Receipt: ${item.codeReceipt}\n📅 Date: ${item.date} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.warehouse || '-'}`
+      `${item.unit}\n| Receipt: ${item.codeReceipt}\n📅 Date: ${item.date} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.warehouse || '-'}\nTEAM: ${item.team || '-'}\nStatus: ${item.status || '-'}\nStatus CA: ${item.statusCA || '-'}`
     ).join('\n\n');
     navigator.clipboard.writeText(text);
     showNotification('📋 Alarm list copied to clipboard!', 'success');

@@ -1019,7 +1019,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
     const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Code: ${item.exportCode} | No: ${item.exportNo}\n📅 Date: ${item.realExport} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.stockReceiver || '-'} (${item.groupReceiver || '-'})`
+      `${item.unit}\n| Code: ${item.exportCode} | No: ${item.exportNo}\n📅 Date: ${item.realExport} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.stockReceiver || '-'} (${item.groupReceiver || '-'})\nConstruction: ${item.constructionReceiver || '-'}\nTEAM: ${item.team || '-'}`
     ).join('\n\n');
     navigator.clipboard.writeText(text);
     showNotification('📋 Alarm list copied to clipboard!', 'success');

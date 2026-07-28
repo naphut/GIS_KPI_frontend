@@ -875,7 +875,7 @@ const NO_CREATE_HAND_OVER = () => {
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
     const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Code: ${item.code}\n📅 Date: ${item.date} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.recipient || '-'} (${item.warehouse || '-'})`
+      `${item.unit}\n| Code: ${item.code}\n📅 Date: ${item.date} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.recipient || '-'} (${item.warehouse || '-'})\nTEAM: ${item.team || '-'}\nStatus: ${item.status || '-'}`
     ).join('\n\n');
     navigator.clipboard.writeText(text);
     showNotification('📋 Alarm list copied to clipboard!', 'success');

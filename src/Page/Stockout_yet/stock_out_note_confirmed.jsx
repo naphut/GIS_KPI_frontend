@@ -870,7 +870,7 @@ const StockOutNoteConfirmed = () => {
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
     const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Code: ${item.code}\n📅 Date: ${item.date} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.unitConfirm || '-'} (${item.handoverUnit || '-'})`
+      `${item.unit}\n| Code: ${item.code}\n📅 Date: ${item.date} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.unitConfirm || '-'} (${item.handoverUnit || '-'})\nTEAM: ${item.team || '-'}\nStatus: ${item.status || '-'}`
     ).join('\n\n');
     navigator.clipboard.writeText(text);
     showNotification('📋 Alarm list copied to clipboard!', 'success');
