@@ -1028,9 +1028,26 @@ const STOCKOUT_YET_CONFIRM = () => {
       item.stockReceiver || '',
       item.groupReceiver || ''
     ]);
-    const text = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
+
+    const colWidths = headers.map((header, colIdx) => {
+      const lengths = rows.map(row => String(row[colIdx] || '').length);
+      return Math.max(header.length, ...lengths);
+    });
+
+    const pad = (str, width) => {
+      const s = String(str);
+      return s + ' '.repeat(Math.max(0, width - s.length));
+    };
+
+    const headerLine = headers.map((h, i) => pad(h, colWidths[i])).join('   ');
+    const separatorLine = colWidths.map(w => '-'.repeat(w)).join('   ');
+    const rowLines = rows.map(row => 
+      row.map((val, i) => pad(val, colWidths[i])).join('   ')
+    );
+
+    const text = '```\n' + [headerLine, separatorLine, ...rowLines].join('\n') + '\n```';
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard (Excel format)!', 'success');
+    showNotification('📋 Alarm list copied in Telegram table format!', 'success');
   };
 
   useEffect(() => {
