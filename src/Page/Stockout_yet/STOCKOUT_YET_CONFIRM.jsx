@@ -1018,11 +1018,19 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
-    const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Code: ${item.exportCode} | No: ${item.exportNo}\n📅 Date: ${item.realExport} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.stockReceiver || '-'} (${item.groupReceiver || '-'})`
-    ).join('\n\n');
+    const headers = ['Unit', 'Export Code', 'Export No', 'Real Export Date', 'Delay (Days)', 'Stock Receiver', 'Group Receiver'];
+    const rows = filteredAlarmItems.map(item => [
+      item.unit || '',
+      item.exportCode || '',
+      item.exportNo || '',
+      item.realExport || '',
+      item.daysDiff !== undefined ? `+${item.daysDiff}` : '',
+      item.stockReceiver || '',
+      item.groupReceiver || ''
+    ]);
+    const text = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('📋 Alarm list copied to clipboard (Excel format)!', 'success');
   };
 
   useEffect(() => {

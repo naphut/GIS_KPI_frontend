@@ -1121,11 +1121,19 @@ export const Export_CA = () => {
 
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
-    const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Export Note: ${item.exportNoteCode}\n📅 Date Create: ${item.dateCreate} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.exportWarehouse || '-'}`
-    ).join('\n\n');
+    const headers = ['Unit', 'Export Note Code', 'Date Create', 'Year', 'Delay (Days)', 'Warehouse', 'Status CA'];
+    const rows = filteredAlarmItems.map(item => [
+      item.unit || '',
+      item.exportNoteCode || '',
+      item.dateCreate || '',
+      item.year || '',
+      item.daysDiff !== undefined ? `+${item.daysDiff}` : '',
+      item.exportWarehouse || '',
+      item.statusCA || ''
+    ]);
+    const text = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('📋 Alarm list copied to clipboard (Excel format)!', 'success');
   };
 
   useEffect(() => {

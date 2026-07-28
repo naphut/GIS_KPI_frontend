@@ -869,11 +869,18 @@ const StockOutNoteConfirmed = () => {
 
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
-    const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Code: ${item.code}\n📅 Date: ${item.date} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.unitConfirm || '-'} (${item.handoverUnit || '-'})`
-    ).join('\n\n');
+    const headers = ['Unit', 'Code', 'Date', 'Delay (Days)', 'Receiver (Unit Confirm)', 'Handover Unit'];
+    const rows = filteredAlarmItems.map(item => [
+      item.unit || '',
+      item.code || '',
+      item.date || '',
+      item.daysDiff !== undefined ? `+${item.daysDiff}` : '',
+      item.unitConfirm || '',
+      item.handoverUnit || ''
+    ]);
+    const text = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('📋 Alarm list copied to clipboard (Excel format)!', 'success');
   };
 
   useEffect(() => {

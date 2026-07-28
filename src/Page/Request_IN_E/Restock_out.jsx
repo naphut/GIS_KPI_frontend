@@ -1120,11 +1120,19 @@ export const Restock_out = () => {
 
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
-    const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Request: ${item.requestExportCode}\n📅 Date: ${item.createDate} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nStock Out: ${item.stockOut || '-'}`
-    ).join('\n\n');
+    const headers = ['Unit', 'Request Export Code', 'Create Date', 'Year', 'Delay (Days)', 'Stock Out', 'Status'];
+    const rows = filteredAlarmItems.map(item => [
+      item.unit || '',
+      item.requestExportCode || '',
+      item.createDate || '',
+      item.year || '',
+      item.daysDiff !== undefined ? `+${item.daysDiff}` : '',
+      item.stockOut || '',
+      item.status || ''
+    ]);
+    const text = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('📋 Alarm list copied to clipboard (Excel format)!', 'success');
   };
 
   useEffect(() => {

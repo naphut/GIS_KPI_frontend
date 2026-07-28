@@ -952,11 +952,19 @@ const Import_CA = () => {
 
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
-    const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Receipt: ${item.codeReceipt}\n📅 Date: ${item.date} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.warehouse || '-'}`
-    ).join('\n\n');
+    const headers = ['Unit', 'Receipt Note Code', 'Date', 'Year', 'Delay (Days)', 'Warehouse', 'Status CA'];
+    const rows = filteredAlarmItems.map(item => [
+      item.unit || '',
+      item.codeReceipt || '',
+      item.date || '',
+      item.year || '',
+      item.daysDiff !== undefined ? `+${item.daysDiff}` : '',
+      item.warehouse || '',
+      item.statusCA || ''
+    ]);
+    const text = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('📋 Alarm list copied to clipboard (Excel format)!', 'success');
   };
 
   useEffect(() => {

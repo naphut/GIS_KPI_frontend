@@ -1018,11 +1018,19 @@ export const Restock_in = () => {
 
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
-    const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Request: ${item.importRequestCode}\n📅 Date: ${item.dateCreate} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.importWarehouse || '-'}`
-    ).join('\n\n');
+    const headers = ['Unit', 'Import Request Code', 'Date Create', 'Year', 'Delay (Days)', 'Import Warehouse', 'Status'];
+    const rows = filteredAlarmItems.map(item => [
+      item.unit || '',
+      item.importRequestCode || '',
+      item.dateCreate || '',
+      item.year || '',
+      item.daysDiff !== undefined ? `+${item.daysDiff}` : '',
+      item.importWarehouse || '',
+      item.status || ''
+    ]);
+    const text = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('📋 Alarm list copied to clipboard (Excel format)!', 'success');
   };
 
   useEffect(() => {
