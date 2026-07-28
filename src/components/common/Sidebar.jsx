@@ -32,14 +32,24 @@ const unitOptions = [
   { code: 'THO', name: 'THO (កំពង់ធំ)' }
 ];
 
-const Sidebar = ({ onSelect, selected, onSendTelegram }) => {
+const Sidebar = ({ 
+  onSelect, 
+  selected, 
+  onSendTelegram,
+  isSending: parentIsSending,
+  setIsSending: parentSetIsSending,
+  cancelRef
+}) => {
   const [isStockoutOpen, setIsStockoutOpen] = useState(false);
   const [isSignedCAOpen, setIsSignedCAOpen] = useState(false);
   const [isRestockOpen, setIsRestockOpen] = useState(false);
   const [isSendAllOpen, setIsSendAllOpen] = useState(false);
   const [isSendSingleOpen, setIsSendSingleOpen] = useState(false);
   const [selectedUnit, setSelectedUnit] = useState('BAT');
-  const [isSending, setIsSending] = useState(false);
+
+  const [localIsSending, localSetIsSending] = useState(false);
+  const isSending = parentIsSending !== undefined ? parentIsSending : localIsSending;
+  const setIsSending = parentSetIsSending !== undefined ? parentSetIsSending : localSetIsSending;
 
   React.useEffect(() => {
     if (['STOCKOUT_YET_CONFIRM', 'NO_CREATE_HAND_OVER', 'STOCK_OUT_NOTE_CONFIRMED', 'stockout_group'].includes(selected)) {
@@ -201,6 +211,14 @@ const Sidebar = ({ onSelect, selected, onSendTelegram }) => {
     }
   };
 
+  const handleCancel = () => {
+    if (cancelRef) {
+      cancelRef.current = true;
+    }
+    setIsSending(false);
+    alert('🛑 ការផ្ញើត្រូវបានបោះបង់!');
+  };
+
   const handleSendByProvince = async () => {
     if (isSending) return;
     try {
@@ -213,16 +231,29 @@ const Sidebar = ({ onSelect, selected, onSendTelegram }) => {
         return;
       }
       
+      if (cancelRef) {
+        cancelRef.current = false;
+      }
       setIsSending(true);
       for (const u of units) {
+        if (cancelRef && cancelRef.current) {
+          throw new Error('CANCELLED');
+        }
         if (onSendTelegram) {
           await onSendTelegram(u);
         }
       }
+      if (cancelRef && cancelRef.current) {
+        throw new Error('CANCELLED');
+      }
       alert('✅ ផ្ញើទិន្នន័យតាម UNIT នីមួយៗបានជោគជ័យ!');
     } catch (error) {
-      console.error('Failed to send data by province:', error);
-      alert('❌ ផ្ញើទិន្នន័យតាម UNIT នីមួយៗបរាជ័យ!');
+      if (error.message === 'CANCELLED') {
+        console.log('Sending by province cancelled by user.');
+      } else {
+        console.error('Failed to send data by province:', error);
+        alert('❌ ផ្ញើទិន្នន័យតាម UNIT នីមួយៗបរាជ័យ!');
+      }
     } finally {
       setIsSending(false);
     }
@@ -235,14 +266,24 @@ const Sidebar = ({ onSelect, selected, onSendTelegram }) => {
       const confirmSend = window.confirm(`តើអ្នកពិតជាចង់ផ្ញើរបាយការណ៍របស់ UNIT ${selectedUnit} ទៅកាន់ Telegram មែនទេ?`);
       if (!confirmSend) return;
 
+      if (cancelRef) {
+        cancelRef.current = false;
+      }
       setIsSending(true);
       if (onSendTelegram) {
         await onSendTelegram(selectedUnit);
       }
+      if (cancelRef && cancelRef.current) {
+        throw new Error('CANCELLED');
+      }
       alert(`✅ ផ្ញើទិន្នន័យរបស់ UNIT ${selectedUnit} បានជោគជ័យ!`);
     } catch (error) {
-      console.error(`Failed to send data for unit ${selectedUnit}:`, error);
-      alert(`❌ ផ្ញើទិន្នន័យរបស់ UNIT ${selectedUnit} បរាជ័យ!`);
+      if (error.message === 'CANCELLED') {
+        console.log('Sending single unit cancelled by user.');
+      } else {
+        console.error(`Failed to send data for unit ${selectedUnit}:`, error);
+        alert(`❌ ផ្ញើទិន្នន័យរបស់ UNIT ${selectedUnit} បរាជ័យ!`);
+      }
     } finally {
       setIsSending(false);
     }
@@ -419,12 +460,15 @@ const Sidebar = ({ onSelect, selected, onSendTelegram }) => {
           {isSendAllOpen && (
             <div className="p-3 space-y-2.5 border-t border-slate-100 bg-white/50">
               <button
-                onClick={handleSendByProvince}
-                disabled={isSending}
-                className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-xs active:scale-[0.98] transition-all duration-200 ${isSending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={isSending ? handleCancel : handleSendByProvince}
+                className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-white text-xs font-bold shadow-xs active:scale-[0.98] transition-all duration-200 cursor-pointer ${
+                  isSending 
+                    ? 'bg-gradient-to-r from-rose-500 via-red-600 to-rose-600 hover:from-rose-600 hover:to-red-700' 
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
+                }`}
               >
-                <span className="text-sm">📤</span>
-                <span>{isSending ? 'កំពុងផ្ញើ...' : 'ផ្ញើតាមខេត្តនីមួយៗ (Excel)'}</span>
+                <span className="text-sm">{isSending ? '🛑' : '📤'}</span>
+                <span>{isSending ? 'បោះបង់ (Cancel)' : 'ផ្ញើតាមខេត្តនីមួយៗ (Excel)'}</span>
               </button>
             </div>
           )}
@@ -465,12 +509,15 @@ const Sidebar = ({ onSelect, selected, onSendTelegram }) => {
               </div>
               
               <button
-                onClick={handleSendSingle}
-                disabled={isSending}
-                className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white text-xs font-bold shadow-xs active:scale-[0.98] transition-all duration-200 ${isSending ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={isSending ? handleCancel : handleSendSingle}
+                className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-white text-xs font-bold shadow-xs active:scale-[0.98] transition-all duration-200 cursor-pointer ${
+                  isSending 
+                    ? 'bg-gradient-to-r from-rose-500 via-red-600 to-rose-600 hover:from-rose-600 hover:to-red-700' 
+                    : 'bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500'
+                }`}
               >
-                <span className="text-sm">📤</span>
-                <span>{isSending ? 'កំពុងផ្ញើ...' : 'ផ្ញើទិន្នន័យ UNIT នេះ'}</span>
+                <span className="text-sm">{isSending ? '🛑' : '📤'}</span>
+                <span>{isSending ? 'បោះបង់ (Cancel)' : 'ផ្ញើទិន្នន័យ UNIT នេះ'}</span>
               </button>
             </div>
           )}

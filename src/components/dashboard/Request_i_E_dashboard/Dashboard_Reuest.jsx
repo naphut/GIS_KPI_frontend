@@ -1487,7 +1487,8 @@ const Dashboard_Request = (props = {}) => {
       return <span className="font-bold text-slate-900 text-[10.5px]">{val}</span>;
     };
 
-    const nowStr = `${new Date().getDate()}/${new Date().getMonth() + 1}/${String(new Date().getFullYear()).slice(2)} ${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2, '0')}`;
+    const totalUnder = grandTotals.tot_d1;
+    const totalOver = grandTotals.tot_d2 + grandTotals.tot_d3;
 
     return (
       <div
@@ -1498,14 +1499,57 @@ const Dashboard_Request = (props = {}) => {
           left: '-9999px',
           zIndex: -9999,
           width: '1600px',
-          backgroundColor: '#ffffff',
-          padding: '16px',
-          fontFamily: 'Arial, sans-serif'
+          backgroundColor: '#f8fafc',
+          padding: '24px',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
         }}
       >
-        {/* Top Date Header */}
-        <div className="text-center font-extrabold text-[#dc2626] text-sm mb-1 tracking-tight">
-          {nowStr}
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm mb-4 flex justify-between items-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-amber-500 to-purple-500"></div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-lg">📊</span>
+              <h1 className="text-base font-black text-slate-800 tracking-tight uppercase">
+                Restock KPI Summary Report
+              </h1>
+            </div>
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-600 font-bold uppercase">
+              <span>Branch:</span>
+              <span className="bg-blue-50 text-blue-600 px-2.5 py-0.5 rounded-md border border-blue-100 font-black tracking-wider text-[10px]">
+                {screenshotUnit}
+              </span>
+            </div>
+          </div>
+          <div className="text-right text-[10px] font-semibold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+            <div>Date: <strong className="text-slate-900">{new Date().toLocaleDateString('en-GB')}</strong></div>
+            <div className="mt-0.5">Time: <strong className="text-slate-900">{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</strong></div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">👥</span>
+            <div>
+              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Active Teams</span>
+              <span className="text-sm font-black text-slate-800 mt-1 block leading-none">{teamRows.length}</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">✅</span>
+            <div>
+              <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider block leading-none">Under KPI (On-Time)</span>
+              <span className="text-sm font-black text-emerald-600 mt-1 block leading-none">{totalUnder}</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 flex items-center gap-3">
+            <span className="text-base">🚨</span>
+            <div>
+              <span className="text-[9px] font-bold text-red-500 uppercase tracking-wider block leading-none">Over KPI (Delayed)</span>
+              <span className="text-sm font-black text-red-600 mt-1 block leading-none">{totalOver}</span>
+            </div>
+          </div>
         </div>
 
         {/* Excel Matrix Table */}
@@ -1559,7 +1603,10 @@ const Dashboard_Request = (props = {}) => {
               <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
               <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
             </tr>
+          </thead>
 
+          {/* Team Rows */}
+          <tbody className="text-[11px] font-bold text-black">
             {/* Total Summary Row 3 - Pure Excel Yellow Background */}
             <tr className="bg-[#ffff00] border-b border-black text-[11px] font-black text-black">
               <td className="border border-black py-1">-</td>
@@ -1589,10 +1636,6 @@ const Dashboard_Request = (props = {}) => {
               <td className="border border-black py-1">{renderCell(grandTotals.cat3_d3, 'd3')}</td>
               <td className="border border-black py-1 font-black">{renderCell(grandTotals.cat3_tot, 'tot')}</td>
             </tr>
-          </thead>
-
-          {/* Team Rows */}
-          <tbody className="text-[11px] font-bold text-black">
             {teamRows.map((r, idx) => (
               <tr key={idx} className="border-b border-black">
                 {/* Yellow Highlight Columns (No, Unit, TEAM) */}

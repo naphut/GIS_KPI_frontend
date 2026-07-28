@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import Sidebar from '../common/Sidebar';
 import MainDashboard from '../dashboard/MainDashboard';
@@ -21,12 +21,22 @@ import {
 const DashboardLayout = () => {
   const [selectedMenuItem, setSelectedMenuItem] = useState('dashboard');
   const [screenshotState, setScreenshotState] = useState(null);
+  const [isSending, setIsSending] = useState(false);
+  const cancelRef = useRef(false);
 
   const handleSendTelegram = async (unit) => {
+    const checkCancelled = () => {
+      if (cancelRef.current) {
+        throw new Error('CANCELLED');
+      }
+    };
+
     try {
+      checkCancelled();
       // 1. Capture and send Stockout Summary
       setScreenshotState({ component: 'stockout', unit });
       await new Promise(resolve => setTimeout(resolve, 800));
+      checkCancelled();
       let reportEl = document.getElementById('telegram-summary-report');
       if (reportEl) {
         const canvas = await html2canvas(reportEl, { 
@@ -57,15 +67,19 @@ const DashboardLayout = () => {
             }
           }
         });
+        checkCancelled();
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        checkCancelled();
         if (blob) {
           await sendPhotoToTelegram(unit, blob, `📊 របាយការណ៍ KPI Hand Over (${unit})`);
         }
       }
 
+      checkCancelled();
       // 2. Capture and send CA Signing Summary
       setScreenshotState({ component: 'ca', unit });
       await new Promise(resolve => setTimeout(resolve, 800));
+      checkCancelled();
       reportEl = document.getElementById('telegram-summary-report');
       if (reportEl) {
         const canvas = await html2canvas(reportEl, { 
@@ -96,15 +110,19 @@ const DashboardLayout = () => {
             }
           }
         });
+        checkCancelled();
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        checkCancelled();
         if (blob) {
           await sendPhotoToTelegram(unit, blob, `📊 របាយការណ៍ KPI CA Signing (${unit})`);
         }
       }
 
+      checkCancelled();
       // 3. Capture and send Restock Summary
       setScreenshotState({ component: 'request', unit });
       await new Promise(resolve => setTimeout(resolve, 800));
+      checkCancelled();
       reportEl = document.getElementById('telegram-summary-report');
       if (reportEl) {
         const canvas = await html2canvas(reportEl, { 
@@ -135,17 +153,25 @@ const DashboardLayout = () => {
             }
           }
         });
+        checkCancelled();
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        checkCancelled();
         if (blob) {
           await sendPhotoToTelegram(unit, blob, `📊 របាយការណ៍ KPI Restock (${unit})`);
         }
       }
 
+      checkCancelled();
       // 4. Send the Excel Document
       const excelBlob = generateAllModulesExcelBlob(unit);
       const filename = `GIS_DASHBOARD_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
+      checkCancelled();
       await sendDocumentToTelegram(unit, excelBlob, filename, `📊 របាយការណ៍ KPI ប្រចាំថ្ងៃ Stock Stock out (${unit})`);
     } catch (err) {
+      if (err.message === 'CANCELLED') {
+        console.log('Sending cancelled by user.');
+        throw err;
+      }
       console.error('Error generating or sending screenshots:', err);
       throw err;
     } finally {
@@ -206,6 +232,9 @@ const DashboardLayout = () => {
           onSelect={setSelectedMenuItem} 
           selected={selectedMenuItem} 
           onSendTelegram={handleSendTelegram}
+          isSending={isSending}
+          setIsSending={setIsSending}
+          cancelRef={cancelRef}
         />
       </div>
 
