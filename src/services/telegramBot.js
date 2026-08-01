@@ -1862,8 +1862,9 @@ const extractUnit = (item) => {
   if (item.unit) return item.unit;
   const str = String(item.exportWarehouse || item.warehouse || item.unitEntering || item.importRequestCode || item.requestExportCode || item.codeReceipt || '').toUpperCase();
   const VALID_UNITS = [
-    'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KANZ1', 'KOH', 'KRA',
-    'MON', 'ODD', 'PNP', 'PNPZ1', 'PNPZ2', 'PRE', 'PRH', 'PUR', 'ROT',
+    'KANZ1', 'PNPZ1', 'PNPZ2',
+    'BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KOH', 'KRA',
+    'MON', 'ODD', 'PNP', 'PRE', 'PRH', 'PUR', 'ROT',
     'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'
   ];
   for (const u of VALID_UNITS) {

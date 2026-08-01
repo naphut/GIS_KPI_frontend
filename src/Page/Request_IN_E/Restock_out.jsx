@@ -62,17 +62,18 @@ const getUnitFromRequestExportCode = (requestExportCode) => {
   if (!requestExportCode) return null;
   
   const upper = requestExportCode.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
-  if (!upper.includes('GIS')) return null;
   
   let unitPart = '';
   
-  if (upper.startsWith('YCXGIS_')) {
-    const afterPrefix = upper.substring(7);
-    const parts = afterPrefix.split('/');
-    if (parts.length > 0) unitPart = parts[0];
-  } else if (upper.startsWith('YCX_')) {
-    const afterPrefix = upper.substring(4);
-    const parts = afterPrefix.split('/');
+  if (upper.startsWith('YCX')) {
+    let afterPrefix = upper;
+    if (upper.startsWith('YCXKGIS_')) afterPrefix = upper.substring(8);
+    else if (upper.startsWith('YCXGIS_')) afterPrefix = upper.substring(7);
+    else if (upper.startsWith('YCXK')) afterPrefix = upper.substring(4);
+    else if (upper.startsWith('YCX_')) afterPrefix = upper.substring(4);
+    else if (upper.startsWith('YCX')) afterPrefix = upper.substring(3);
+    
+    const parts = afterPrefix.split(/[_/]/);
     if (parts.length > 0) unitPart = parts[0];
   } else {
     const parts = upper.split('_');
@@ -608,7 +609,10 @@ export const Restock_out = () => {
     console.log('📥 Processing import with data:', newRawData);
     
     const filteredData = newRawData.filter(item => {
-      const isGIS = item.requestExportCode && item.requestExportCode.toUpperCase().includes('GIS');
+      const isGISRequest = item.requestExportCode && item.requestExportCode.toUpperCase().includes('GIS');
+      const isGISCreator = item.creator && item.creator.toUpperCase().includes('GIS');
+      const isGIS = isGISRequest || isGISCreator;
+      
       const isStatusOK = item.status && item.status === 'Command not created';
       const unit = getUnit(
         item.requestExportCode,

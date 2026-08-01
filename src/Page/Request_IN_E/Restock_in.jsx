@@ -155,6 +155,19 @@ const getUnitFromRequestCode = (importRequestCode) => {
         }
       }
     }
+  } else if (importRequestCode.startsWith('YCNK')) {
+    // យកផ្នែកបន្ទាប់ពី YCNK
+    const afterPrefix = importRequestCode.substring(4); // YCNK = 4 characters
+    const parts = afterPrefix.split('_');
+    if (parts.length >= 1) {
+      const unit = parts[0].toUpperCase();
+      if (VALID_UNITS.includes(unit)) {
+        console.log(`✅ Found ${unit} from YCNK code`);
+        return unit;
+      }
+      if (unit === 'KANZ') return 'KANZ1';
+      if (unit === 'PNPZ') return 'PNPZ1';
+    }
   }
   
   console.log('❌ No unit found');
@@ -513,7 +526,10 @@ export const Restock_in = () => {
     console.log('📥 Processing import with data:', newRawData);
     
     const filteredData = newRawData.filter(item => {
-      const isGIS = item.importRequestCode && item.importRequestCode.toUpperCase().includes('GIS');
+      const isGISRequest = item.importRequestCode && item.importRequestCode.toUpperCase().includes('GIS');
+      const isGISCreator = item.creator && item.creator.toUpperCase().includes('GIS');
+      const isGIS = isGISRequest || isGISCreator;
+      
       const sCA = (item.statusCA || '').toUpperCase().trim();
       const isUnsigned = sCA.includes('UNSIGNED') || sCA.includes('CHƯA') || sCA.includes('CHUA');
       const unit = getUnit(item.importRequestCode, item.unitRequests, item.unitReceive);
@@ -736,20 +752,38 @@ export const Restock_in = () => {
         startIndex = 1;
       }
       
-      // ត្រូវការយ៉ាងហោចណាស់ 10 ជួរ
-      if (cells.length - startIndex >= 10) {
-        parsedRows.push({
-          importRequestCode: cells[startIndex + 0] || '',
-          importCommandCode: cells[startIndex + 1] || '',
-          dateCreate: cells[startIndex + 2] || '',
-          importWarehouse: cells[startIndex + 3] || '',
-          contract: cells[startIndex + 4] || '',
-          creator: cells[startIndex + 5] || '',
-          unitRequests: cells[startIndex + 6] || '',
-          unitReceive: cells[startIndex + 7] || '',
-          dateDelivery: cells[startIndex + 8] || '',
-          statusCA: cells[startIndex + 9] || ''
-        });
+      // ត្រូវការយ៉ាងហោចណាស់ 9 ជួរ (គាំទ្រទាំងមាន ឬគ្មាន Import Command code)
+      const availableCells = cells.length - startIndex;
+      if (availableCells >= 9) {
+        if (availableCells === 9) {
+          // Omitted Import Command code (since not created yet)
+          parsedRows.push({
+            importRequestCode: cells[startIndex + 0] || '',
+            importCommandCode: '',
+            dateCreate: cells[startIndex + 1] || '',
+            importWarehouse: cells[startIndex + 2] || '',
+            contract: cells[startIndex + 3] || '',
+            creator: cells[startIndex + 4] || '',
+            unitRequests: cells[startIndex + 5] || '',
+            unitReceive: cells[startIndex + 6] || '',
+            dateDelivery: cells[startIndex + 7] || '',
+            statusCA: cells[startIndex + 8] || ''
+          });
+        } else {
+          // Standard 10 columns
+          parsedRows.push({
+            importRequestCode: cells[startIndex + 0] || '',
+            importCommandCode: cells[startIndex + 1] || '',
+            dateCreate: cells[startIndex + 2] || '',
+            importWarehouse: cells[startIndex + 3] || '',
+            contract: cells[startIndex + 4] || '',
+            creator: cells[startIndex + 5] || '',
+            unitRequests: cells[startIndex + 6] || '',
+            unitReceive: cells[startIndex + 7] || '',
+            dateDelivery: cells[startIndex + 8] || '',
+            statusCA: cells[startIndex + 9] || ''
+          });
+        }
       }
     }
     
