@@ -914,13 +914,6 @@ const StockOutNoteConfirmed = () => {
     }
   }, [alarmItems]);
 
-  const getDaysColor = (days) => {
-    if (days >= alarmThreshold) return 'text-rose-700 bg-rose-100 animate-pulse';
-    if (days === 0) return 'text-amber-600 bg-amber-50';
-    if (days <= 3) return 'text-yellow-600 bg-yellow-50';
-    return 'text-emerald-600 bg-emerald-50';
-  };
-
   const getStatusBadge = (status) => {
     const config = {
       'Completed': { icon: '✅', bg: 'bg-emerald-100', text: 'text-emerald-800' },
