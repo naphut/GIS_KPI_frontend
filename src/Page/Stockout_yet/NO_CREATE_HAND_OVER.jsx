@@ -183,7 +183,9 @@ const NO_CREATE_HAND_OVER = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(50);
+  const [daysFilter, setDaysFilter] = useState('ALL');
+  const [daysSortOrder, setDaysSortOrder] = useState('none');
 
   // Load data from DB on mount
   useEffect(() => {
@@ -254,15 +256,15 @@ const NO_CREATE_HAND_OVER = () => {
 
   // Columns
   const columns = [
-    { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
-    { key: 'code', label: 'Code of stock-out note', width: 'w-32', align: 'text-left' },
+    { key: 'no', label: '#', width: 'w-10', align: 'text-center' },
+    { key: 'code', label: 'Code of stock-out note', width: 'whitespace-nowrap min-w-[170px]', align: 'text-left' },
     { key: 'warehouse', label: 'Warehouse', width: 'w-32', align: 'text-left' },
     { key: 'recipient', label: 'Recipient', width: 'w-36', align: 'text-left' },
     { key: 'creator', label: 'Creator', width: 'w-28', align: 'text-left' },
     { key: 'date', label: 'Creating date', width: 'w-24', align: 'text-center' },
-    { key: 'team', label: 'TEAM', width: 'min-w-[150px]', align: 'text-center' },
-    { key: 'unit', label: 'Unit', width: 'w-24', align: 'text-center' },
-    { key: 'daysDiff', label: 'Days', width: 'w-16', align: 'text-center' },
+    { key: 'team', label: 'TEAM', width: 'min-w-[140px]', align: 'text-center' },
+    { key: 'unit', label: 'Unit', width: 'w-16', align: 'text-center' },
+    { key: 'daysDiff', label: 'Days', width: 'w-14', align: 'text-center' },
     { key: 'status', label: 'Status', width: 'w-20', align: 'text-center' }
   ];
 
@@ -807,6 +809,22 @@ const NO_CREATE_HAND_OVER = () => {
     filtered = filtered.filter(item => 
       item.recipient && item.recipient.toUpperCase().includes('GIS')
     );
+
+    // 🗓️ Days Filter
+    if (daysFilter !== 'ALL') {
+      if (daysFilter === '0') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) === 0);
+      } else if (daysFilter === '1-3') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) >= 1 && (item.daysDiff || 0) <= 3);
+      } else if (daysFilter === '4-6') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) >= 4 && (item.daysDiff || 0) <= 6);
+      } else if (daysFilter === '>=4') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) >= alarmThreshold);
+      } else if (daysFilter === '>=7') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) >= 7);
+      }
+    }
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase().trim();
       const isTermUnit = allUnits.some(u => u.toLowerCase() === term) || term === 'other';
@@ -825,11 +843,22 @@ const NO_CREATE_HAND_OVER = () => {
         );
       });
     }
+
+    // ↕️ Days Sorting
+    if (daysSortOrder !== 'none') {
+      filtered = [...filtered].sort((a, b) => {
+        const aDays = a.daysDiff || 0;
+        const bDays = b.daysDiff || 0;
+        return daysSortOrder === 'desc' ? bDays - aDays : aDays - bDays;
+      });
+    }
+
     return filtered;
-  }, [data, searchTerm]);
+  }, [data, searchTerm, daysFilter, daysSortOrder, alarmThreshold]);
 
   const totalItems = filteredData.length;
-  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+  const effectivePageSize = pageSize === 'ALL' ? (totalItems || 1) : pageSize;
+  const totalPages = Math.ceil(totalItems / effectivePageSize) || 1;
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -838,6 +867,7 @@ const NO_CREATE_HAND_OVER = () => {
   }, [filteredData.length, totalPages, currentPage]);
 
   const paginatedData = useMemo(() => {
+    if (pageSize === 'ALL') return filteredData;
     const startIndex = (currentPage - 1) * pageSize;
     return filteredData.slice(startIndex, startIndex + pageSize);
   }, [filteredData, currentPage, pageSize]);
@@ -1313,7 +1343,7 @@ const NO_CREATE_HAND_OVER = () => {
   );
 
   return (
-    <div className="w-full px-4 py-6 bg-gray-50 min-h-screen">
+    <div className="w-full h-screen max-h-screen p-1 sm:p-1.5 bg-slate-100 flex flex-col overflow-hidden">
       
       {/* ─── MODALS ─── */}
       {renderTargetHistoryModal()}
@@ -1322,153 +1352,208 @@ const NO_CREATE_HAND_OVER = () => {
       {renderAlarmModal()}
       {renderFloatingButtons()}
 
-      {/* ─── MAIN CONTENT ─── */}
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+      {/* ─── MAIN CONTENT CONTAINER (FULL SCREEN FLEX) ─── */}
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
         
-        {/* ─── HEADER ─── */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-5">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* ─── COMPACT EXCEL HEADER RIBBON ─── */}
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 px-3 py-1 border-b border-slate-900 text-white flex-shrink-0">
+          <div className="flex justify-between items-center gap-2 flex-wrap">
             <div>
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
                   <span>📝</span> NO CREATE HAND OVER
                 </h1>
-                <span className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/30">
-                  🟢 Live • {currentTime.toLocaleTimeString()}
+                <span className="bg-indigo-500/30 text-indigo-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-indigo-400/30 font-bold">
+                  🟢 LIVE • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-blue-100 mt-1 text-sm">ASSET STEP :2</p>
-              <p className="text-blue-100 mt-1 text-sm">**តាមដានសម្ភារៈដែលបានទទួលពីស្តុក METFONE រួចហើយ ប៉ុន្តែមិនទាន់បានបង្កើតការប្រគល់ (Create Hand Over) ទៅកាន់ក្រុមការងារ។**</p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={clearAllData} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-sm transition-colors">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl transition-colors">📊 KPI</button>
+            <div className="flex gap-1.5 items-center">
+              <span className="text-slate-300 text-[10px] hidden lg:inline mr-2">
+                <strong>ASSET STEP 2:</strong> តាមដានសម្ភារៈដែលមិនទាន់ Create Hand Over
+              </span>
+              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
+              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer">📊 KPI Matrix</button>
             </div>
           </div>
         </div>
 
-        {/* ─── TOOLBAR ─── */}
-        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-          <div className="flex flex-wrap gap-3 justify-between items-center">
-            <div className="flex flex-wrap gap-2">
-              <button onClick={() => setShowPasteModal(true)} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-sm flex items-center gap-1">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors text-sm flex items-center gap-1">📎 Export</button>
+        {/* ─── TOOLBAR & ACTION BAR ─── */}
+        <div className="px-3 py-1 bg-slate-100 border-b border-slate-300 flex-shrink-0">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">🔄 Smart Import</button>
+              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">📎 Export Excel</button>
               {selectedRows.size > 0 && (
-                <button onClick={deleteSelectedRows} className="px-4 py-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors text-sm flex items-center gap-1">🗑️ Complete ({selectedRows.size})</button>
+                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">🗑️ Complete ({selectedRows.size})</button>
               )}
+
+              {/* 🗓️ DAYS QUICK FILTER CHIPS */}
+              <div className="flex items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
+                <span className="text-[10px] font-extrabold text-slate-600">🗓️ Days:</span>
+                {[
+                  { id: 'ALL', label: 'All' },
+                  { id: '0', label: '0d' },
+                  { id: '1-3', label: '1-3d' },
+                  { id: '4-6', label: '4-6d' },
+                  { id: '>=4', label: '>=4d 🚨' },
+                  { id: '>=7', label: '>=7d 🔴' },
+                ].map(pill => (
+                  <button
+                    key={pill.id}
+                    onClick={() => { setDaysFilter(pill.id); setCurrentPage(1); }}
+                    className={`px-1.5 py-0.25 rounded text-[9.5px] font-black transition-all cursor-pointer ${
+                      daysFilter === pill.id 
+                        ? 'bg-indigo-600 text-white shadow-2xs' 
+                        : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+                    }`}
+                  >
+                    {pill.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex gap-2 items-center flex-wrap">
-              <div className="flex items-center gap-1 bg-amber-100 px-3 py-1.5 rounded-full">
-                <span className="text-sm">⚠️ &ge;</span>
-                <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-16 px-2 py-1 text-sm border rounded-lg text-center bg-white" min="1"/>
-                <span className="text-sm">days</span>
+              <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-xs text-[10px]">
+                <span className="font-bold text-amber-900">⚠️ Threshold &ge;</span>
+                <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-10 px-1 py-0 text-[10px] font-bold border border-amber-300 rounded text-center bg-white" min="1"/>
+                <span className="font-bold text-amber-900">days</span>
               </div>
-              <input type="text" placeholder="Search..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-48 sm:w-64 px-4 py-2 pl-10 text-sm border rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
+              <div className="relative">
+                <input type="text" placeholder="Search code, warehouse, recipient..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-44 sm:w-56 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent transition-all shadow-xs" />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ─── STATS BAR ─── */}
-        <div className="px-6 py-4 bg-gray-100 border-b border-gray-200 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <div className="bg-white rounded-xl px-3 py-2 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Total Records</div>
-            <div className="text-2xl font-black text-blue-600 mt-1">{data.length}</div>
+        {/* ─── STATS SUMMARY BAR (COMPACT INLINE) ─── */}
+        <div className="px-3 py-0.5 bg-slate-200/70 border-b border-slate-300 grid grid-cols-3 sm:grid-cols-6 gap-1.5 flex-shrink-0 text-[9.5px]">
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
+            <span className="font-black uppercase tracking-wider text-slate-500">Total Records</span>
+            <span className="text-xs font-black text-slate-900">{data.length}</span>
           </div>
-          <div className="bg-white rounded-xl px-3 py-2 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">GIS Records</div>
-            <div className="text-2xl font-black text-emerald-600 mt-1">{filteredData.length}</div>
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
+            <span className="font-black uppercase tracking-wider text-emerald-600">GIS Records</span>
+            <span className="text-xs font-black text-emerald-700">{filteredData.length}</span>
           </div>
-          <div className="bg-white rounded-xl px-3 py-2 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Selected</div>
-            <div className="text-2xl font-black text-indigo-600 mt-1">{selectedRows.size}</div>
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
+            <span className="font-black uppercase tracking-wider text-indigo-600">Selected</span>
+            <span className="text-xs font-black text-indigo-700">{selectedRows.size}</span>
           </div>
-          <div className="bg-white rounded-xl px-3 py-2 shadow-sm">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Threshold</div>
-            <div className="text-2xl font-black text-amber-600 mt-1">&ge;{alarmThreshold}d</div>
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
+            <span className="font-black uppercase tracking-wider text-amber-600">Threshold</span>
+            <span className="text-xs font-black text-amber-700">&ge;{alarmThreshold}d</span>
           </div>
-          <div className={`bg-white rounded-xl px-3 py-2 shadow-sm cursor-pointer hover:bg-rose-50 transition-colors ${alarmCount > 0 ? 'border-2 border-rose-500' : ''}`} onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Alarms</div>
-            <div className={`text-2xl font-black ${alarmCount > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{alarmCount}</div>
+          <div className={`bg-white rounded px-2 py-0.5 border shadow-xs cursor-pointer flex items-center justify-between hover:bg-rose-50 transition-all ${alarmCount > 0 ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300'}`} onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}>
+            <span className="font-black uppercase tracking-wider text-rose-700">Alarms</span>
+            <span className={`text-xs font-black ${alarmCount > 0 ? 'text-rose-600 animate-pulse' : 'text-emerald-600'}`}>{alarmCount}</span>
           </div>
-          <div className="bg-white rounded-xl px-3 py-2 shadow-sm cursor-pointer hover:bg-purple-50 transition-colors" onClick={() => setShowKPIModal(true)}>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Total Confirmed</div>
-            <div className="text-2xl font-black text-purple-600 mt-1">{calculateKPIData.summary.result}</div>
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between cursor-pointer hover:bg-purple-50 transition-all" onClick={() => setShowKPIModal(true)}>
+            <span className="font-black uppercase tracking-wider text-purple-600">Total Confirmed</span>
+            <span className="text-xs font-black text-purple-700">{calculateKPIData.summary.result}</span>
           </div>
         </div>
 
-        {/* ─── TABLE WITH STICKY HEADER ─── */}
-        <div className="relative overflow-x-auto overflow-y-auto max-h-[calc(100vh-420px)] border-b border-gray-200">
-          <table className="min-w-full border-separate border-spacing-0 table-auto text-xs">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-2 py-2 w-8 bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)]">
+        {/* ─── EXCEL MATRIX TABLE (DYNAMIC FILL SCREEN) ─── */}
+        <div className="flex-1 min-h-0 overflow-auto bg-white">
+          <table className="min-w-full border-collapse border border-slate-300 text-[9.5px] leading-tight table-auto">
+            <thead>
+              <tr className="bg-slate-800 text-white font-black uppercase tracking-wider text-[9px]">
+                <th className="border border-slate-700 px-1 py-0.5 w-6 text-center sticky top-0 z-20 bg-slate-800">
                   <input type="checkbox" checked={selectedRows.size === filteredData.length && filteredData.length > 0} onChange={toggleSelectAll} className="rounded" />
                 </th>
                 {columns.map(col => (
-                  <th key={col.key} className={`px-2 py-2 text-xs font-semibold text-gray-600 uppercase ${col.width} whitespace-nowrap bg-gray-50 sticky top-0 z-10 border-b border-gray-200 shadow-[inset_0_-1px_0_rgba(229,231,235,1)] ${col.align || 'text-left'}`}>
+                  <th 
+                    key={col.key} 
+                    onClick={() => {
+                      if (col.key === 'daysDiff') {
+                        setDaysSortOrder(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none');
+                      }
+                    }}
+                    className={`border border-slate-700 px-1.5 py-0.5 font-extrabold whitespace-nowrap sticky top-0 z-20 bg-slate-800 ${col.width} ${col.align || 'text-left'} ${col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-700 select-none text-amber-300' : ''}`}
+                    title={col.key === 'daysDiff' ? 'Click to sort by Days (Descending / Ascending)' : ''}
+                  >
                     {col.label}
+                    {col.key === 'daysDiff' && (
+                      <span className="ml-1 text-[9px]">
+                        {daysSortOrder === 'desc' ? '⬇️' : daysSortOrder === 'asc' ? '⬆️' : '↕️'}
+                      </span>
+                    )}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-300 font-normal text-slate-800 bg-white">
               {paginatedData.map((item) => {
                 const isAlarm = item.daysDiff >= alarmThreshold && !dismissedItems.has(item.id);
                 return (
-                  <tr key={item.id} className={`${isAlarm ? 'bg-rose-50' : ''} ${selectedRows.has(item.id) ? 'bg-blue-50' : ''} hover:bg-gray-50 transition-colors`}>
-                    <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" /></td>
-                    <td className="px-2 py-1.5 text-xs text-gray-500 text-center">{item.no}</td>
-                    <td className="px-2 py-1.5 text-xs font-mono break-all">
+                  <tr key={item.id} className={`transition-colors ${isAlarm ? 'bg-rose-50/90 font-semibold' : selectedRows.has(item.id) ? 'bg-blue-50/90' : 'even:bg-slate-50/70 odd:bg-white hover:bg-amber-50/80'}`}>
+                    <td className="border border-slate-300 px-1.5 py-1 text-center bg-white/50">
+                      <input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" />
+                    </td>
+                    <td className="border border-slate-300 px-1.5 py-1 text-slate-500 font-bold text-center bg-slate-100/70">{item.no}</td>
+                    <td className="border border-slate-300 px-1.5 py-0.25 font-mono font-bold text-slate-900 whitespace-nowrap min-w-[170px]">
                       {editingCell?.id === item.id && editingCell?.field === 'code' ? (
-                        <input type="text" defaultValue={item.code} autoFocus onBlur={(e) => saveEdit(item.id, 'code', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'code')} className="w-full px-1.5 py-0.5 border rounded-xl text-xs bg-white" />
+                        <input type="text" defaultValue={item.code} autoFocus onBlur={(e) => saveEdit(item.id, 'code', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'code')} className="w-full px-0.5 py-0 border border-blue-500 rounded text-[9.5px] bg-white font-mono" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'code', item.code)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">{item.code || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'code', item.code)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors font-mono whitespace-nowrap">{item.code || '-'}</div>
                       )}
                     </td>
-                    <td className="px-2 py-1.5 text-xs break-words">
+                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
                       {editingCell?.id === item.id && editingCell?.field === 'warehouse' ? (
-                        <input type="text" defaultValue={item.warehouse} autoFocus onBlur={(e) => saveEdit(item.id, 'warehouse', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'warehouse')} className="w-full px-1.5 py-0.5 border rounded-xl text-xs bg-white" />
+                        <input type="text" defaultValue={item.warehouse} autoFocus onBlur={(e) => saveEdit(item.id, 'warehouse', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'warehouse')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'warehouse', item.warehouse)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">{item.warehouse || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'warehouse', item.warehouse)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{item.warehouse || '-'}</div>
                       )}
                     </td>
-                    <td className="px-2 py-1.5 text-xs break-words">
+                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
                       {editingCell?.id === item.id && editingCell?.field === 'recipient' ? (
-                        <input type="text" defaultValue={item.recipient} autoFocus onBlur={(e) => saveEdit(item.id, 'recipient', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'recipient')} className="w-full px-1.5 py-0.5 border rounded-xl text-xs bg-white" />
+                        <input type="text" defaultValue={item.recipient} autoFocus onBlur={(e) => saveEdit(item.id, 'recipient', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'recipient')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'recipient', item.recipient)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">{getRecipientBadge(item.recipient)}</div>
+                        <div onClick={() => startEdit(item.id, 'recipient', item.recipient)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{getRecipientBadge(item.recipient)}</div>
                       )}
                     </td>
-                    <td className="px-2 py-1.5 text-xs break-words">
+                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
                       {editingCell?.id === item.id && editingCell?.field === 'creator' ? (
-                        <input type="text" defaultValue={item.creator} autoFocus onBlur={(e) => saveEdit(item.id, 'creator', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'creator')} className="w-full px-1.5 py-0.5 border rounded-xl text-xs bg-white" />
+                        <input type="text" defaultValue={item.creator} autoFocus onBlur={(e) => saveEdit(item.id, 'creator', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'creator')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'creator', item.creator)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded transition-colors">{item.creator || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'creator', item.creator)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{item.creator || '-'}</div>
                       )}
                     </td>
-                    <td className="px-2 py-1.5 text-center text-xs font-mono">
+                    <td className="border border-slate-300 px-2 py-1 text-center font-mono text-slate-700 whitespace-nowrap">
                       {editingCell?.id === item.id && editingCell?.field === 'date' ? (
-                        <input type="text" defaultValue={item.date} autoFocus onBlur={(e) => saveEdit(item.id, 'date', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'date')} className="w-full px-1.5 py-0.5 border rounded-xl text-xs font-mono text-center bg-white" />
+                        <input type="text" defaultValue={item.date} autoFocus onBlur={(e) => saveEdit(item.id, 'date', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'date')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] text-center bg-white font-mono" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'date', item.date)} className="cursor-pointer hover:bg-gray-100 px-1 py-0.5 rounded font-mono text-center transition-colors">{item.date || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'date', item.date)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded font-mono text-center transition-colors">{item.date || '-'}</div>
                       )}
                     </td>
-                    <td className="px-2 py-1.5 text-center font-semibold text-gray-700 whitespace-normal break-words">
+                    <td className="border border-slate-300 px-2 py-1 text-center font-bold text-purple-700 whitespace-nowrap bg-purple-50/70 font-mono">
                       {item.team || '-'}
                     </td>
-                    <td className="px-2 py-1.5 text-center"><span className="inline-flex px-1.5 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">{item.unit}</span></td>
-                    <td className="px-2 py-1.5 text-center"><span className={`inline-flex px-1.5 py-0.5 rounded text-xs font-medium ${getDaysColor(item.daysDiff)}`}>{item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} {Math.abs(item.daysDiff) === 1 ? 'day' : 'days'}</span></td>
-                    <td className="px-2 py-1.5 text-center text-gray-700 font-medium whitespace-nowrap">{item.status || '-'}</td>
+                    <td className="border border-slate-300 px-2 py-1 text-center whitespace-nowrap">
+                      <span className="inline-flex px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold bg-slate-200 text-slate-800 border border-slate-300">{item.unit}</span>
+                    </td>
+                    <td className="border border-slate-300 px-2 py-1 text-center font-bold whitespace-nowrap">
+                      <span className={`inline-flex px-1.5 py-0.5 rounded font-mono text-[10px] font-black ${
+                        item.daysDiff >= alarmThreshold ? 'bg-rose-100 text-rose-800 border border-rose-300 animate-pulse' :
+                        item.daysDiff > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                      }`}>
+                        {item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} d
+                      </span>
+                    </td>
+                    <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-700 whitespace-nowrap">
+                      {item.status || '-'}
+                    </td>
                   </tr>
                 );
               })}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={columns.length + 1} className="border border-slate-300 px-6 py-12 text-center text-slate-400 font-bold text-sm bg-white">
                     <div className="flex flex-col items-center gap-3">
                       <div className="text-4xl">📭</div>
-                      <p className="text-lg font-medium">No GIS records found</p>
-                      <p className="text-sm text-gray-400">Please click "Smart Import" to enter data.</p>
+                      <p className="text-lg font-bold text-slate-700">No GIS records found</p>
+                      <p className="text-xs text-slate-500">Please click "Smart Import" to enter data.</p>
                     </div>
                   </td>
                 </tr>
@@ -1477,32 +1562,42 @@ const NO_CREATE_HAND_OVER = () => {
           </table>
         </div>
 
-        {/* ─── PAGINATION ─── */}
-        <div className="bg-white px-6 py-4 border-t flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-700 relative">
-          <div className="flex items-center gap-2 sm:absolute sm:left-6">
-            <span>Show</span>
+        {/* ─── PAGINATION BAR ─── */}
+        <div className="bg-slate-100 px-4 py-2 border-t border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-700 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-slate-600">Show</span>
             <select 
               value={pageSize} 
-              onChange={(e) => { setPageSize(parseInt(e.target.value)); setCurrentPage(1); }} 
-              className="border rounded-xl px-2 py-1 bg-white"
+              onChange={(e) => { 
+                const val = e.target.value;
+                setPageSize(val === 'ALL' ? 'ALL' : parseInt(val)); 
+                setCurrentPage(1); 
+              }} 
+              className="border border-slate-300 rounded-lg px-2 py-1 bg-white font-bold text-slate-800 shadow-xs text-xs"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
+              <option value={200}>200</option>
+              <option value={500}>500</option>
+              <option value={1000}>1000</option>
+              <option value="ALL">All</option>
             </select>
-            <span>entries</span>
-            <span className="text-gray-400">|</span>
-            <span>Showing {totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0} to {Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries</span>
+            <span className="font-semibold text-slate-600">entries</span>
+            <span className="text-slate-400">|</span>
+            <span className="font-bold text-slate-800">
+              Showing {totalItems > 0 ? (pageSize === 'ALL' ? 1 : (currentPage - 1) * pageSize + 1) : 0} to {pageSize === 'ALL' ? totalItems : Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
+            </span>
           </div>
           
-          <div className="flex items-center gap-1 sm:mx-auto">
+          <div className="flex items-center gap-1.5">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-xl border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-blue-600 hover:bg-gray-50'}`}
+              className={`px-3 py-1 rounded-lg border font-bold text-xs cursor-pointer transition-colors ${currentPage === 1 ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
             >
-              Previous
+              Prev
             </button>
             
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -1519,7 +1614,7 @@ const NO_CREATE_HAND_OVER = () => {
                 <button 
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-1 rounded-xl border font-medium ${currentPage === pageNum ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                  className={`px-3 py-1 rounded-lg border text-xs font-black cursor-pointer transition-colors ${currentPage === pageNum ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50'}`}
                 >
                   {pageNum}
                 </button>
@@ -1529,7 +1624,7 @@ const NO_CREATE_HAND_OVER = () => {
             <button 
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-xl border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-blue-600 hover:bg-gray-50'}`}
+              className={`px-3 py-1 rounded-lg border font-bold text-xs cursor-pointer transition-colors ${currentPage === totalPages ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
             >
               Next
             </button>
@@ -1537,14 +1632,8 @@ const NO_CREATE_HAND_OVER = () => {
         </div>
 
         {/* ─── FOOTER ─── */}
-        <div className="bg-gray-50 px-6 py-3 border-t text-sm text-gray-500 flex justify-between flex-wrap gap-2">
+        <div className="bg-slate-100 px-4 py-1.5 border-t border-slate-300 text-[11px] font-semibold text-slate-600 flex justify-between flex-wrap gap-2 flex-shrink-0">
           <span>📋 Total GIS: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
-          {/* <div className="flex gap-3">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-500"></span>GIS Recipient</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-300"></span>Confirmed</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-300"></span>Not Confirmed</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>Alarm (&ge;{alarmThreshold}d)</span>
-          </div> */}
         </div>
       </div>
 

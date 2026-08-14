@@ -12,10 +12,13 @@ import NO_CREATE_HAND_OVER from '../../Page/Stockout_yet/NO_CREATE_HAND_OVER';
 import STOCK_OUT_NOTE_CONFIRMED from '../../Page/Stockout_yet/stock_out_note_confirmed';
 import { Restock_in as RestockIn } from '../../Page/Request_IN_E/Restock_in';
 import { Restock_out as RestockOut } from '../../Page/Request_IN_E/Restock_out';
+import { New_construction as NewConstruction } from '../../Page/Stockout_yet/New_construction';
 import { 
   sendPhotoToTelegram, 
   sendDocumentToTelegram, 
-  generateAllModulesExcelBlob 
+  generateStockoutExcelBlob,
+  generateSignedCAExcelBlob,
+  generateRestockExcelBlob
 } from '../../services/telegramBot';
 
 const DashboardLayout = () => {
@@ -33,7 +36,7 @@ const DashboardLayout = () => {
 
     try {
       checkCancelled();
-      // 1. Capture and send Stockout Summary
+      // 1. Capture and send Stockout / Hand Over Summary Image & Excel
       setScreenshotState({ component: 'stockout', unit });
       await new Promise(resolve => setTimeout(resolve, 800));
       checkCancelled();
@@ -72,11 +75,15 @@ const DashboardLayout = () => {
         checkCancelled();
         if (blob) {
           await sendPhotoToTelegram(unit, blob, `📊 របាយការណ៍ KPI Hand Over (${unit})`);
+          // Send Group 1 Excel (Stockout / Hand Over - 5 sheets)
+          const excelBlob = generateStockoutExcelBlob([], [], [], unit);
+          const filename = `HAND_OVER_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
+          await sendDocumentToTelegram(unit, excelBlob, filename, '');
         }
       }
 
       checkCancelled();
-      // 2. Capture and send CA Signing Summary
+      // 2. Capture and send CA Signing Summary Image & Excel
       setScreenshotState({ component: 'ca', unit });
       await new Promise(resolve => setTimeout(resolve, 800));
       checkCancelled();
@@ -115,11 +122,15 @@ const DashboardLayout = () => {
         checkCancelled();
         if (blob) {
           await sendPhotoToTelegram(unit, blob, `📊 របាយការណ៍ KPI CA Signing (${unit})`);
+          // Send Group 2 Excel (Signed CA - 3 sheets)
+          const excelBlob = generateSignedCAExcelBlob([], [], unit);
+          const filename = `SIGNED_CA_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
+          await sendDocumentToTelegram(unit, excelBlob, filename, '');
         }
       }
 
       checkCancelled();
-      // 3. Capture and send Restock Summary
+      // 3. Capture and send Restock Summary Image & Excel
       setScreenshotState({ component: 'request', unit });
       await new Promise(resolve => setTimeout(resolve, 800));
       checkCancelled();
@@ -158,15 +169,12 @@ const DashboardLayout = () => {
         checkCancelled();
         if (blob) {
           await sendPhotoToTelegram(unit, blob, `📊 របាយការណ៍ KPI Restock (${unit})`);
+          // Send Group 3 Excel (Restock - 3 sheets)
+          const excelBlob = generateRestockExcelBlob([], [], unit);
+          const filename = `RESTOCK_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
+          await sendDocumentToTelegram(unit, excelBlob, filename, '');
         }
       }
-
-      checkCancelled();
-      // 4. Send the Excel Document
-      const excelBlob = generateAllModulesExcelBlob(unit);
-      const filename = `GIS_DASHBOARD_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
-      checkCancelled();
-      await sendDocumentToTelegram(unit, excelBlob, filename, `📊 របាយការណ៍ KPI ប្រចាំថ្ងៃ Stock Stock out (${unit})`);
     } catch (err) {
       if (err.message === 'CANCELLED') {
         console.log('Sending cancelled by user.');
@@ -218,6 +226,10 @@ const DashboardLayout = () => {
       
       case 'RESTOCK_OUT':
         return <RestockOut />;
+      
+      // NEW CONSTRUCTION GROUP
+      case 'NEW_CONSTRUCTION':
+        return <NewConstruction />;
       
       default:
         return <MainDashboard onNavigate={setSelectedMenuItem} />;

@@ -1142,29 +1142,29 @@ const Dashboard_CA = (props = {}) => {
         };
         
         // Stock out
-        const sOutUnsignedOver = teamOutItems.filter(item => isStatus(item, 'unsigned') && (parseInt(item.daysDiff) || 0) > 1).length;
+        const sOutUnsignedOver = teamOutItems.filter(item => isStatus(item, 'unsigned') && (parseInt(item.daysDiff) || 0) > 6).length;
         const sOutUnsignedTotal = teamOutItems.filter(item => isStatus(item, 'unsigned')).length;
         
-        const sOutSigningUnder = teamOutItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) <= 4).length;
-        const sOutSigningOver = teamOutItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) > 4).length;
+        const sOutSigningUnder = teamOutItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) <= 6).length;
+        const sOutSigningOver = teamOutItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) > 6).length;
         const sOutSigningTotal = teamOutItems.filter(item => isStatus(item, 'signing')).length;
         
-        const sOutCancelUnder = teamOutItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) <= 4).length;
-        const sOutCancelOver = teamOutItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) > 4).length;
+        const sOutCancelUnder = teamOutItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) <= 6).length;
+        const sOutCancelOver = teamOutItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) > 6).length;
         const sOutCancelTotal = teamOutItems.filter(item => isStatus(item, 'cancel')).length;
         
         const sOutTotal = sOutUnsignedTotal + sOutSigningTotal + sOutCancelTotal;
         
         // Stock in
-        const sInUnsignedOver = teamInItems.filter(item => isStatus(item, 'unsigned') && (parseInt(item.daysDiff) || 0) > 1).length;
+        const sInUnsignedOver = teamInItems.filter(item => isStatus(item, 'unsigned') && (parseInt(item.daysDiff) || 0) > 6).length;
         const sInUnsignedTotal = teamInItems.filter(item => isStatus(item, 'unsigned')).length;
         
-        const sInSigningUnder = teamInItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) <= 4).length;
-        const sInSigningOver = teamInItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) > 4).length;
+        const sInSigningUnder = teamInItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) <= 6).length;
+        const sInSigningOver = teamInItems.filter(item => isStatus(item, 'signing') && (parseInt(item.daysDiff) || 0) > 6).length;
         const sInSigningTotal = teamInItems.filter(item => isStatus(item, 'signing')).length;
         
-        const sInCancelUnder = teamInItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) <= 4).length;
-        const sInCancelOver = teamInItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) > 4).length;
+        const sInCancelUnder = teamInItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) <= 6).length;
+        const sInCancelOver = teamInItems.filter(item => isStatus(item, 'cancel') && (parseInt(item.daysDiff) || 0) > 6).length;
         const sInCancelTotal = teamInItems.filter(item => isStatus(item, 'cancel')).length;
         
         const sInTotal = sInUnsignedTotal + sInSigningTotal + sInCancelTotal;

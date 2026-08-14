@@ -1411,22 +1411,22 @@ const Dashboard_Request = (props = {}) => {
         const tOut = tData.outItems;
 
         // Cat 1: Request import but NOT CREATED COMMAND YET
-        const cat1_d1 = tIn.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
-        const cat1_d2 = tIn.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+        const cat1_d1 = tIn.filter(i => (parseInt(i.daysDiff) || 0) <= 6).length;
+        const cat1_d2 = tIn.filter(i => (parseInt(i.daysDiff) || 0) > 6 && (parseInt(i.daysDiff) || 0) < 30).length;
         const cat1_d3 = tIn.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
         const cat1_tot = cat1_d1 + cat1_d2 + cat1_d3;
 
         // Cat 2: Request export command but REJECTED
         const cat2_items = tOut.filter(i => i.commandExportCode || i.commandCode);
-        const cat2_d1 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
-        const cat2_d2 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+        const cat2_d1 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) <= 6).length;
+        const cat2_d2 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) > 6 && (parseInt(i.daysDiff) || 0) < 30).length;
         const cat2_d3 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
         const cat2_tot = cat2_d1 + cat2_d2 + cat2_d3;
 
         // Cat 3: Request export but NOT CREATED COMMAND YET
         const cat3_items = tOut.filter(i => !i.commandExportCode && !i.commandCode);
-        const cat3_d1 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
-        const cat3_d2 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+        const cat3_d1 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) <= 6).length;
+        const cat3_d2 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) > 6 && (parseInt(i.daysDiff) || 0) < 30).length;
         const cat3_d3 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
         const cat3_tot = cat3_d1 + cat3_d2 + cat3_d3;
 
@@ -1557,51 +1557,51 @@ const Dashboard_Request = (props = {}) => {
           <thead>
             {/* Super Header Row 1 */}
             <tr className="bg-white border-b border-black text-[11px] font-black">
-              <th rowSpan={2} className="border border-black w-10 py-1.5 align-middle bg-white text-black">No</th>
-              <th rowSpan={2} className="border border-black w-14 py-1.5 align-middle bg-white text-black">Unit</th>
-              <th rowSpan={2} className="border border-black w-36 py-1.5 align-middle bg-white text-left px-2 text-black">TEAM</th>
-              <th colSpan={4} className="border border-black py-1.5 bg-white text-black font-black uppercase">
-                Total
+              <th rowSpan={2} className="border border-black w-10 py-2 align-middle bg-white text-black font-black">No</th>
+              <th rowSpan={2} className="border border-black w-14 py-2 align-middle bg-white text-black font-black">Unit</th>
+              <th rowSpan={2} className="border border-black w-36 py-2 align-middle bg-white text-left px-2 text-black font-black">TEAM</th>
+              <th colSpan={4} className="border border-black py-2 bg-white text-black font-black uppercase align-middle">
+                <span className="text-black block text-[11px] font-black uppercase">TOTAL</span>
               </th>
-              <th colSpan={4} className="border border-black py-1.5 bg-white">
-                <span className="text-[#1d4ed8] block text-[11px] font-extrabold">Request import but</span>
-                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase">NOT CREATED COMMAND YET</span>
+              <th colSpan={4} className="border border-black py-1.5 bg-white align-middle">
+                <span className="text-[#1d4ed8] block text-[11px] font-extrabold leading-tight">Request import but</span>
+                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase leading-tight">NOT CREATED COMMAND YET</span>
               </th>
-              <th colSpan={4} className="border border-black py-1.5 bg-white">
-                <span className="text-[#1d4ed8] block text-[11px] font-extrabold">Request export command but</span>
-                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase">REJECTED</span>
+              <th colSpan={4} className="border border-black py-1.5 bg-white align-middle">
+                <span className="text-[#1d4ed8] block text-[11px] font-extrabold leading-tight">Request export command but</span>
+                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase leading-tight">REJECTED</span>
               </th>
-              <th colSpan={4} className="border border-black py-1.5 bg-white">
-                <span className="text-[#1d4ed8] block text-[11px] font-extrabold">Request export but</span>
-                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase">NOT CREATED COMMAND YET</span>
+              <th colSpan={4} className="border border-black py-1.5 bg-white align-middle">
+                <span className="text-[#1d4ed8] block text-[11px] font-extrabold leading-tight">Request export but</span>
+                <span className="text-[#dc2626] block text-[11px] font-extrabold uppercase leading-tight">NOT CREATED COMMAND YET</span>
               </th>
             </tr>
 
             {/* Sub Header Row 2 - Vivid Color Coded Sub Headers */}
             <tr className="border-b border-black text-[10px] font-black">
               {/* Total Group */}
-              <th className="border border-black py-1 bg-[#e6f4ea] text-[#137333]">Day &lt;= 7</th>
-              <th className="border border-black py-1 bg-[#fce8e6] text-[#c5221f]">7 &lt; Day &lt; 30</th>
-              <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
-              <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#e6f4ea] text-[#137333] align-middle">Day &lt;= 6</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#fce8e6] text-[#c5221f] align-middle">6 &lt; Day &lt; 30</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#fce8e6] text-[#a50e0e] align-middle">Day &gt;= 30</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#ffff00] text-black font-black align-middle">Total</th>
 
               {/* Cat 1 Group */}
-              <th className="border border-black py-1 bg-[#e6f4ea] text-[#137333]">Day &lt;= 7</th>
-              <th className="border border-black py-1 bg-[#fce8e6] text-[#c5221f]">7 &lt; Day &lt; 30</th>
-              <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
-              <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#e6f4ea] text-[#137333] align-middle">Day &lt;= 6</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#fce8e6] text-[#c5221f] align-middle">6 &lt; Day &lt; 30</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#fce8e6] text-[#a50e0e] align-middle">Day &gt;= 30</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#ffff00] text-black font-black align-middle">Total</th>
 
               {/* Cat 2 Group */}
-              <th className="border border-black py-1 bg-[#e6f4ea] text-[#137333]">Day &lt;= 7</th>
-              <th className="border border-black py-1 bg-[#fce8e6] text-[#c5221f]">7 &lt; Day &lt; 30</th>
-              <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
-              <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#e6f4ea] text-[#137333] align-middle">Day &lt;= 6</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#fce8e6] text-[#c5221f] align-middle">6 &lt; Day &lt; 30</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#fce8e6] text-[#a50e0e] align-middle">Day &gt;= 30</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#ffff00] text-black font-black align-middle">Total</th>
 
               {/* Cat 3 Group */}
-              <th className="border border-black py-1 bg-[#e6f4ea] text-[#137333]">Day &lt;= 7</th>
-              <th className="border border-black py-1 bg-[#fce8e6] text-[#c5221f]">7 &lt; Day &lt; 30</th>
-              <th className="border border-black py-1 bg-[#fce8e6] text-[#a50e0e]">Day &gt;=30</th>
-              <th className="border border-black py-1 bg-[#ffff00] text-black font-black">Total</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#e6f4ea] text-[#137333] align-middle">Day &lt;= 6</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#fce8e6] text-[#c5221f] align-middle">6 &lt; Day &lt; 30</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#fce8e6] text-[#a50e0e] align-middle">Day &gt;= 30</th>
+              <th className="border border-black py-1 px-1 whitespace-nowrap bg-[#ffff00] text-black font-black align-middle">Total</th>
             </tr>
           </thead>
 
@@ -1609,8 +1609,7 @@ const Dashboard_Request = (props = {}) => {
           <tbody className="text-[11px] font-bold text-black">
             {/* Total Summary Row 3 - Pure Excel Yellow Background */}
             <tr className="bg-[#ffff00] border-b border-black text-[11px] font-black text-black">
-              <td className="border border-black py-1">-</td>
-              <td className="border border-black py-1 font-extrabold" colSpan={2}>Total</td>
+              <td className="border border-black py-1.5 font-extrabold align-middle uppercase" colSpan={3}>Total Summary</td>
 
               {/* Total Group */}
               <td className="border border-black py-1">{renderCell(grandTotals.tot_d1, 'd1')}</td>

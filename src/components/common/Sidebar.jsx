@@ -52,7 +52,7 @@ const Sidebar = ({
   const setIsSending = parentSetIsSending !== undefined ? parentSetIsSending : localSetIsSending;
 
   React.useEffect(() => {
-    if (['STOCKOUT_YET_CONFIRM', 'NO_CREATE_HAND_OVER', 'STOCK_OUT_NOTE_CONFIRMED', 'stockout_group'].includes(selected)) {
+    if (['STOCKOUT_YET_CONFIRM', 'NO_CREATE_HAND_OVER', 'STOCK_OUT_NOTE_CONFIRMED', 'NEW_CONSTRUCTION', 'stockout_group'].includes(selected)) {
       setIsStockoutOpen(true);
       setIsSignedCAOpen(false);
       setIsRestockOpen(false);
@@ -101,6 +101,13 @@ const Sidebar = ({
           icon: '⚠️',
           number: '03',
           desc: 'Awaiting confirmation'
+        },
+        { 
+          id: 'NEW_CONSTRUCTION', 
+          label: 'NEW CONSTRUCTION', 
+          icon: '🏗️',
+          number: '04',
+          desc: 'Construction tracker'
         },
       ]
     },

@@ -13,6 +13,9 @@ const BOT_TOKENS = {
 const DEFAULT_TOKEN = '8571996109:AAHiDszOTGk4uEnb0iPKcnNXlGoTSE7K740';
 
 // Group IDs for each province
+
+
+
 const GROUP_IDS = {
   'BAN': '-4064404599',
   'BAT': '-4040029628',
@@ -1894,6 +1897,12 @@ const getStockoutTeamKpiRows = (m1Items = [], m2Items = [], m3Items = [], unit) 
   const cleanM1 = (m1Items || []).filter(Boolean);
   const cleanM2 = (m2Items || []).filter(Boolean);
   const cleanM3 = (m3Items || []).filter(Boolean);
+  
+  let construction = getStorageData('construction_data');
+  if (!Array.isArray(construction)) construction = [];
+  const constructionConfirmed = getStorageData('construction_confirmedStatus') || {};
+  const cleanConst = construction.filter(item => item && !constructionConfirmed[item.id]?.confirmed);
+
   const unitsToProcess = unit !== 'ALL' ? [unit] : allUnits;
   const rows = [];
   
@@ -1901,6 +1910,7 @@ const getStockoutTeamKpiRows = (m1Items = [], m2Items = [], m3Items = [], unit) 
     const uM1 = cleanM1.filter(item => (item.unit || extractUnit(item)) === u);
     const uM2 = cleanM2.filter(item => (item.unit || extractUnit(item)) === u);
     const uM3 = cleanM3.filter(item => (item.unit || extractUnit(item)) === u);
+    const uConst = cleanConst.filter(item => item.unit === u);
 
     const teamsSet = new Set();
     uM1.forEach(item => {
@@ -1924,6 +1934,13 @@ const getStockoutTeamKpiRows = (m1Items = [], m2Items = [], m3Items = [], unit) 
         if (!resolvedUnit || resolvedUnit === u) teamsSet.add(teamName);
       }
     });
+    uConst.forEach(item => {
+      const teamName = getTeamFromRecipient(item.teamName || item.team || '-');
+      if (teamName && teamName !== '-') {
+        const resolvedUnit = getUnitFromTeam(teamName);
+        if (!resolvedUnit || resolvedUnit === u) teamsSet.add(teamName);
+      }
+    });
 
     const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
 
@@ -1939,8 +1956,15 @@ const getStockoutTeamKpiRows = (m1Items = [], m2Items = [], m3Items = [], unit) 
       const s3Under = uM3.filter(item => matchesTeam(item, item.team || item.unitConfirm) && (parseInt(item.daysDiff) || 0) <= 3).length;
       const s3Over = uM3.filter(item => matchesTeam(item, item.team || item.unitConfirm) && (parseInt(item.daysDiff) || 0) > 3).length;
 
-      const underKpi = s1Under + s2Under + s3Under;
-      const overKpi = s1Over + s2Over + s3Over;
+      const s4Under = uConst.filter(item => matchesTeam(item, item.teamName || item.team || item.codeUnits) && (parseInt(item.daysDiff) || 0) <= 10).length;
+      const s4Over = uConst.filter(item => matchesTeam(item, item.teamName || item.team || item.codeUnits) && (parseInt(item.daysDiff) || 0) > 10).length;
+
+      // Construction KPI is 3 days
+      const s4UnderKpi = uConst.filter(item => matchesTeam(item, item.teamName || item.team || item.codeUnits) && (parseInt(item.daysDiff) || 0) <= 3).length;
+      const s4OverKpi = uConst.filter(item => matchesTeam(item, item.teamName || item.team || item.codeUnits) && (parseInt(item.daysDiff) || 0) > 3).length;
+
+      const underKpi = s1Under + s2Under + s3Under + s4UnderKpi;
+      const overKpi = s1Over + s2Over + s3Over + s4OverKpi;
       const total = underKpi + overKpi;
 
       rows.push({
@@ -1955,6 +1979,9 @@ const getStockoutTeamKpiRows = (m1Items = [], m2Items = [], m3Items = [], unit) 
         s3Under,
         s3Over,
         s3Total: s3Under + s3Over,
+        s4Under,
+        s4Over,
+        s4Total: s4Under + s4Over,
         underKpi,
         overKpi,
         total
@@ -2110,20 +2137,20 @@ const getRestockTeamKpiRows = (unsignedOutItems = [], unsignedInItems = [], unit
       const tIn = tData.inItems;
       const tOut = tData.outItems;
 
-      const cat1_d1 = tIn.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
-      const cat1_d2 = tIn.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+      const cat1_d1 = tIn.filter(i => (parseInt(i.daysDiff) || 0) <= 6).length;
+      const cat1_d2 = tIn.filter(i => (parseInt(i.daysDiff) || 0) > 6 && (parseInt(i.daysDiff) || 0) < 30).length;
       const cat1_d3 = tIn.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
       const cat1_tot = cat1_d1 + cat1_d2 + cat1_d3;
 
       const cat2_items = tOut.filter(i => i.commandExportCode || i.commandCode);
-      const cat2_d1 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
-      const cat2_d2 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+      const cat2_d1 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) <= 6).length;
+      const cat2_d2 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) > 6 && (parseInt(i.daysDiff) || 0) < 30).length;
       const cat2_d3 = cat2_items.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
       const cat2_tot = cat2_d1 + cat2_d2 + cat2_d3;
 
       const cat3_items = tOut.filter(i => !i.commandExportCode && !i.commandCode);
-      const cat3_d1 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) <= 7).length;
-      const cat3_d2 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) > 7 && (parseInt(i.daysDiff) || 0) < 30).length;
+      const cat3_d1 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) <= 6).length;
+      const cat3_d2 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) > 6 && (parseInt(i.daysDiff) || 0) < 30).length;
       const cat3_d3 = cat3_items.filter(i => (parseInt(i.daysDiff) || 0) >= 30).length;
       const cat3_tot = cat3_d1 + cat3_d2 + cat3_d3;
 
@@ -2174,26 +2201,31 @@ const generateStockoutKpiSheetXml = (m1Items, m2Items, m3Items, unit) => {
   const totalS3Under = rows.reduce((sum, r) => sum + r.s3Under, 0);
   const totalS3Over = rows.reduce((sum, r) => sum + r.s3Over, 0);
   const totalS3Total = totalS3Under + totalS3Over;
+
+  const totalS4Under = rows.reduce((sum, r) => sum + r.s4Under, 0);
+  const totalS4Over = rows.reduce((sum, r) => sum + r.s4Over, 0);
+  const totalS4Total = totalS4Under + totalS4Over;
   
-  const totalUnder = totalS1Under + totalS2Under + totalS3Under;
-  const totalOver = totalS1Over + totalS2Over + totalS3Over;
+  const totalUnder = rows.reduce((sum, r) => sum + r.underKpi, 0);
+  const totalOver = rows.reduce((sum, r) => sum + r.overKpi, 0);
   const totalAll = totalUnder + totalOver;
 
-  let xml = `<Worksheet ss:Name="Stockout_Detail"><Table>`;
+  let xml = `<Worksheet ss:Name="DETAIL OF REPORT"><Table>`;
   xml += `<Column ss:Width="40"/><Column ss:Width="60"/><Column ss:Width="160"/>`;
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 15; i++) {
     xml += `<Column ss:Width="65"/>`;
   }
-  xml += `<Row ss:Height="26"><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">No</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Code</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Units name</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">TEAM STEP 1 (Stock out not Confirm goods)</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">ASSET STEP :2 (Stock out not create hand over)</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">TEAM STEP 3 (Hand over not Confirmed)</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Total Summary</Data></Cell></Row>`;
-  xml += `<Row ss:Height="20"><Cell ss:Index="4" ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 4 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 3 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 3 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI TARGETS</Data></Cell></Row>`;
-  xml += `<Row ss:Height="22"><Cell ss:Index="4" ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Under KPI</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Over KPI</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Overall Total</Data></Cell></Row>`;
-  xml += `<Row ss:Height="20"><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String">-</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String"></Data></Cell><Cell ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Under > 0 ? 'Number' : 'String'}">${totalS1Under > 0 ? totalS1Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Over > 0 ? 'Number' : 'String'}">${totalS1Over > 0 ? totalS1Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Total > 0 ? 'Number' : 'String'}">${totalS1Total > 0 ? totalS1Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Under > 0 ? 'Number' : 'String'}">${totalS2Under > 0 ? totalS2Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Over > 0 ? 'Number' : 'String'}">${totalS2Over > 0 ? totalS2Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Total > 0 ? 'Number' : 'String'}">${totalS2Total > 0 ? totalS2Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Under > 0 ? 'Number' : 'String'}">${totalS3Under > 0 ? totalS3Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Over > 0 ? 'Number' : 'String'}">${totalS3Over > 0 ? totalS3Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Total > 0 ? 'Number' : 'String'}">${totalS3Total > 0 ? totalS3Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalUnder > 0 ? 'Number' : 'String'}">${totalUnder > 0 ? totalUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOver > 0 ? 'Number' : 'String'}">${totalOver > 0 ? totalOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalAll > 0 ? 'Number' : 'String'}">${totalAll > 0 ? totalAll : '-'}</Data></Cell></Row>`;
+  xml += `<Row ss:Height="26"><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">No</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Code</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Units name</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">STep 1: STOCK OUT NOT CONFIRM GOODS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">STep 2: NOT CREATE HAND OVER</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">STep 3: HAND OVER_YET CONFIRM Using</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">04 NEW CONSTRUCTION</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">Total Summary</Data></Cell></Row>`;
+  xml += `<Row ss:Height="20"><Cell ss:Index="4" ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 4 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 3 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 3 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI = 3 DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderStockout"><Data ss:Type="String">KPI TARGETS</Data></Cell></Row>`;
+  xml += `<Row ss:Height="22"><Cell ss:Index="4" ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 3</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &lt;= 10</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Day &gt; 10</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Under KPI</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Over KPI</Data></Cell><Cell ss:StyleID="HeaderStockoutSub"><Data ss:Type="String">Overall Total</Data></Cell></Row>`;
+  xml += `<Row ss:Height="22"><Cell ss:MergeAcross="2" ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total Summary</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Under > 0 ? 'Number' : 'String'}">${totalS1Under > 0 ? totalS1Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Over > 0 ? 'Number' : 'String'}">${totalS1Over > 0 ? totalS1Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS1Total > 0 ? 'Number' : 'String'}">${totalS1Total > 0 ? totalS1Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Under > 0 ? 'Number' : 'String'}">${totalS2Under > 0 ? totalS2Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Over > 0 ? 'Number' : 'String'}">${totalS2Over > 0 ? totalS2Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS2Total > 0 ? 'Number' : 'String'}">${totalS2Total > 0 ? totalS2Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Under > 0 ? 'Number' : 'String'}">${totalS3Under > 0 ? totalS3Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Over > 0 ? 'Number' : 'String'}">${totalS3Over > 0 ? totalS3Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS3Total > 0 ? 'Number' : 'String'}">${totalS3Total > 0 ? totalS3Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS4Under > 0 ? 'Number' : 'String'}">${totalS4Under > 0 ? totalS4Under : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS4Over > 0 ? 'Number' : 'String'}">${totalS4Over > 0 ? totalS4Over : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalS4Total > 0 ? 'Number' : 'String'}">${totalS4Total > 0 ? totalS4Total : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalUnder > 0 ? 'Number' : 'String'}">${totalUnder > 0 ? totalUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOver > 0 ? 'Number' : 'String'}">${totalOver > 0 ? totalOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalAll > 0 ? 'Number' : 'String'}">${totalAll > 0 ? totalAll : '-'}</Data></Cell></Row>`;
   rows.forEach((r, idx) => {
     xml += `<Row ss:Height="20">`;
     xml += `<Cell ss:StyleID="CellCenter"><Data ss:Type="Number">${idx + 1}</Data></Cell><Cell ss:StyleID="CellCenter"><Data ss:Type="String">${escapeXml(r.unit)}</Data></Cell><Cell ss:StyleID="CellLeft"><Data ss:Type="String">${escapeXml(r.team)}</Data></Cell>`;
     xml += `<Cell ss:StyleID="${r.s1Under > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.s1Under > 0 ? 'Number' : 'String'}">${r.s1Under > 0 ? r.s1Under : '-'}</Data></Cell><Cell ss:StyleID="${r.s1Over > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.s1Over > 0 ? 'Number' : 'String'}">${r.s1Over > 0 ? r.s1Over : '-'}</Data></Cell><Cell ss:StyleID="${r.s1Total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.s1Total > 0 ? 'Number' : 'String'}">${r.s1Total > 0 ? r.s1Total : '-'}</Data></Cell>`;
     xml += `<Cell ss:StyleID="${r.s2Under > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.s2Under > 0 ? 'Number' : 'String'}">${r.s2Under > 0 ? r.s2Under : '-'}</Data></Cell><Cell ss:StyleID="${r.s2Over > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.s2Over > 0 ? 'Number' : 'String'}">${r.s2Over > 0 ? r.s2Over : '-'}</Data></Cell><Cell ss:StyleID="${r.s2Total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.s2Total > 0 ? 'Number' : 'String'}">${r.s2Total > 0 ? r.s2Total : '-'}</Data></Cell>`;
     xml += `<Cell ss:StyleID="${r.s3Under > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.s3Under > 0 ? 'Number' : 'String'}">${r.s3Under > 0 ? r.s3Under : '-'}</Data></Cell><Cell ss:StyleID="${r.s3Over > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.s3Over > 0 ? 'Number' : 'String'}">${r.s3Over > 0 ? r.s3Over : '-'}</Data></Cell><Cell ss:StyleID="${r.s3Total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.s3Total > 0 ? 'Number' : 'String'}">${r.s3Total > 0 ? r.s3Total : '-'}</Data></Cell>`;
+    xml += `<Cell ss:StyleID="${r.s4Under > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.s4Under > 0 ? 'Number' : 'String'}">${r.s4Under > 0 ? r.s4Under : '-'}</Data></Cell><Cell ss:StyleID="${r.s4Over > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.s4Over > 0 ? 'Number' : 'String'}">${r.s4Over > 0 ? r.s4Over : '-'}</Data></Cell><Cell ss:StyleID="${r.s4Total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.s4Total > 0 ? 'Number' : 'String'}">${r.s4Total > 0 ? r.s4Total : '-'}</Data></Cell>`;
     xml += `<Cell ss:StyleID="${r.underKpi > 0 ? 'CellGreen' : 'CellCenter'}"><Data ss:Type="${r.underKpi > 0 ? 'Number' : 'String'}">${r.underKpi > 0 ? r.underKpi : '-'}</Data></Cell><Cell ss:StyleID="${r.overKpi > 0 ? 'CellRed' : 'CellCenter'}"><Data ss:Type="${r.overKpi > 0 ? 'Number' : 'String'}">${r.overKpi > 0 ? r.overKpi : '-'}</Data></Cell><Cell ss:StyleID="${r.total > 0 ? 'CellTotal' : 'CellCenter'}"><Data ss:Type="${r.total > 0 ? 'Number' : 'String'}">${r.total > 0 ? r.total : '-'}</Data></Cell>`;
     xml += `</Row>`;
   });
@@ -2236,7 +2268,7 @@ const generateSignedCaKpiSheetXml = (exportItems, importItems, unit) => {
   xml += `<Row ss:Height="20"><Cell ss:Index="4" ss:MergeAcross="1" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Unsigned</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Is signing</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Cancel</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Total</Data></Cell><Cell ss:MergeAcross="1" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Unsigned</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Is signing</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Cancel</Data></Cell><Cell ss:MergeDown="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">Total</Data></Cell></Row>`;
   xml += `<Row ss:Height="20"><Cell ss:Index="4" ss:MergeAcross="1" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 1DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 7DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 7DAYS</Data></Cell><Cell ss:Index="13" ss:MergeAcross="1" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 1DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 7DAYS</Data></Cell><Cell ss:MergeAcross="2" ss:StyleID="HeaderSignedCA"><Data ss:Type="String">KPI = 7DAYS</Data></Cell></Row>`;
   xml += `<Row ss:Height="22"><Cell ss:Index="4" ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 1</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:Index="13" ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 1</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &lt;= 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Day &gt; 4</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell><Cell ss:Index="22" ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Under KPI</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Over KPI</Data></Cell><Cell ss:StyleID="HeaderSignedCASub"><Data ss:Type="String">Total</Data></Cell></Row>`;
-  xml += `<Row ss:Height="20"><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String">-</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String"></Data></Cell><Cell ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutUnsignedOver > 0 ? 'Number' : 'String'}">${totalOutUnsignedOver > 0 ? totalOutUnsignedOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutUnsignedTotal > 0 ? 'Number' : 'String'}">${totalOutUnsignedTotal > 0 ? totalOutUnsignedTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningUnder > 0 ? 'Number' : 'String'}">${totalOutSigningUnder > 0 ? totalOutSigningUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningOver > 0 ? 'Number' : 'String'}">${totalOutSigningOver > 0 ? totalOutSigningOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningTotal > 0 ? 'Number' : 'String'}">${totalOutSigningTotal > 0 ? totalOutSigningTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelUnder > 0 ? 'Number' : 'String'}">${totalOutCancelUnder > 0 ? totalOutCancelUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelOver > 0 ? 'Number' : 'String'}">${totalOutCancelOver > 0 ? totalOutCancelOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelTotal > 0 ? 'Number' : 'String'}">${totalOutCancelTotal > 0 ? totalOutCancelTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutTotal > 0 ? 'Number' : 'String'}">${totalOutTotal > 0 ? totalOutTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInUnsignedOver > 0 ? 'Number' : 'String'}">${totalInUnsignedOver > 0 ? totalInUnsignedOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInUnsignedTotal > 0 ? 'Number' : 'String'}">${totalInUnsignedTotal > 0 ? totalInUnsignedTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningUnder > 0 ? 'Number' : 'String'}">${totalInSigningUnder > 0 ? totalInSigningUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningOver > 0 ? 'Number' : 'String'}">${totalInSigningOver > 0 ? totalInSigningOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningTotal > 0 ? 'Number' : 'String'}">${totalInSigningTotal > 0 ? totalInSigningTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelUnder > 0 ? 'Number' : 'String'}">${totalInCancelUnder > 0 ? totalInCancelUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelOver > 0 ? 'Number' : 'String'}">${totalInCancelOver > 0 ? totalInCancelOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelTotal > 0 ? 'Number' : 'String'}">${totalInCancelTotal > 0 ? totalInCancelTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInTotal > 0 ? 'Number' : 'String'}">${totalInTotal > 0 ? totalInTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalUnder > 0 ? 'Number' : 'String'}">${totalUnder > 0 ? totalUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOver > 0 ? 'Number' : 'String'}">${totalOver > 0 ? totalOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalAll > 0 ? 'Number' : 'String'}">${totalAll > 0 ? totalAll : '-'}</Data></Cell></Row>`;
+  xml += `<Row ss:Height="22"><Cell ss:MergeAcross="2" ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total Summary</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutUnsignedOver > 0 ? 'Number' : 'String'}">${totalOutUnsignedOver > 0 ? totalOutUnsignedOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutUnsignedTotal > 0 ? 'Number' : 'String'}">${totalOutUnsignedTotal > 0 ? totalOutUnsignedTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningUnder > 0 ? 'Number' : 'String'}">${totalOutSigningUnder > 0 ? totalOutSigningUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningOver > 0 ? 'Number' : 'String'}">${totalOutSigningOver > 0 ? totalOutSigningOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutSigningTotal > 0 ? 'Number' : 'String'}">${totalOutSigningTotal > 0 ? totalOutSigningTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelUnder > 0 ? 'Number' : 'String'}">${totalOutCancelUnder > 0 ? totalOutCancelUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelOver > 0 ? 'Number' : 'String'}">${totalOutCancelOver > 0 ? totalOutCancelOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutCancelTotal > 0 ? 'Number' : 'String'}">${totalOutCancelTotal > 0 ? totalOutCancelTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOutTotal > 0 ? 'Number' : 'String'}">${totalOutTotal > 0 ? totalOutTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInUnsignedOver > 0 ? 'Number' : 'String'}">${totalInUnsignedOver > 0 ? totalInUnsignedOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInUnsignedTotal > 0 ? 'Number' : 'String'}">${totalInUnsignedTotal > 0 ? totalInUnsignedTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningUnder > 0 ? 'Number' : 'String'}">${totalInSigningUnder > 0 ? totalInSigningUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningOver > 0 ? 'Number' : 'String'}">${totalInSigningOver > 0 ? totalInSigningOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInSigningTotal > 0 ? 'Number' : 'String'}">${totalInSigningTotal > 0 ? totalInSigningTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelUnder > 0 ? 'Number' : 'String'}">${totalInCancelUnder > 0 ? totalInCancelUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelOver > 0 ? 'Number' : 'String'}">${totalInCancelOver > 0 ? totalInCancelOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInCancelTotal > 0 ? 'Number' : 'String'}">${totalInCancelTotal > 0 ? totalInCancelTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalInTotal > 0 ? 'Number' : 'String'}">${totalInTotal > 0 ? totalInTotal : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalUnder > 0 ? 'Number' : 'String'}">${totalUnder > 0 ? totalUnder : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalOver > 0 ? 'Number' : 'String'}">${totalOver > 0 ? totalOver : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${totalAll > 0 ? 'Number' : 'String'}">${totalAll > 0 ? totalAll : '-'}</Data></Cell></Row>`;
   rows.forEach((r, idx) => {
     xml += `<Row ss:Height="20">`;
     xml += `<Cell ss:StyleID="CellCenter"><Data ss:Type="Number">${idx + 1}</Data></Cell><Cell ss:StyleID="CellCenter"><Data ss:Type="String">${escapeXml(r.unit)}</Data></Cell><Cell ss:StyleID="CellLeft"><Data ss:Type="String">${escapeXml(r.team)}</Data></Cell>`;
@@ -2282,8 +2314,8 @@ const generateRequestInEKpiSheetXml = (unsignedOutItems, unsignedInItems, unit) 
     xml += `<Column ss:Width="65"/>`;
   }
   xml += `<Row ss:Height="26"><Cell ss:MergeDown="1" ss:StyleID="HeaderRequest"><Data ss:Type="String">No</Data></Cell><Cell ss:MergeDown="1" ss:StyleID="HeaderRequest"><Data ss:Type="String">Unit</Data></Cell><Cell ss:MergeDown="1" ss:StyleID="HeaderRequest"><Data ss:Type="String">TEAM</Data></Cell><Cell ss:MergeAcross="3" ss:StyleID="HeaderRequest"><Data ss:Type="String">TOTAL</Data></Cell><Cell ss:MergeAcross="3" ss:StyleID="HeaderRequest"><Data ss:Type="String">Request import but NOT CREATED COMMAND YET</Data></Cell><Cell ss:MergeAcross="3" ss:StyleID="HeaderRequest"><Data ss:Type="String">Request export command but REJECTED</Data></Cell><Cell ss:MergeAcross="3" ss:StyleID="HeaderRequest"><Data ss:Type="String">Request export but NOT CREATED COMMAND YET</Data></Cell></Row>`;
-  xml += `<Row ss:Height="22"><Cell ss:Index="4" ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 7</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">7 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 7</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">7 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 7</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">7 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 7</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">7 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell></Row>`;
-  xml += `<Row ss:Height="20"><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String">-</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="String"></Data></Cell><Cell ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d1 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d1 > 0 ? grandTotals.tot_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d2 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d2 > 0 ? grandTotals.tot_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d3 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d3 > 0 ? grandTotals.tot_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_all > 0 ? 'Number' : 'String'}">${grandTotals.tot_all > 0 ? grandTotals.tot_all : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d1 > 0 ? grandTotals.cat1_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d2 > 0 ? grandTotals.cat1_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d3 > 0 ? grandTotals.cat1_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat1_tot > 0 ? grandTotals.cat1_tot : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d1 > 0 ? grandTotals.cat2_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d2 > 0 ? grandTotals.cat2_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d3 > 0 ? grandTotals.cat2_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat2_tot > 0 ? grandTotals.cat2_tot : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d1 > 0 ? grandTotals.cat3_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d2 > 0 ? grandTotals.cat3_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d3 > 0 ? grandTotals.cat3_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat3_tot > 0 ? grandTotals.cat3_tot : '-'}</Data></Cell></Row>`;
+  xml += `<Row ss:Height="22"><Cell ss:Index="4" ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 6</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">6 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 6</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">6 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 6</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">6 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &lt;= 6</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">6 &lt; Day &lt; 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Day &gt;= 30</Data></Cell><Cell ss:StyleID="HeaderRequestSub"><Data ss:Type="String">Total</Data></Cell></Row>`;
+  xml += `<Row ss:Height="22"><Cell ss:MergeAcross="2" ss:StyleID="RowYellowTotalLeft"><Data ss:Type="String">Total Summary</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d1 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d1 > 0 ? grandTotals.tot_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d2 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d2 > 0 ? grandTotals.tot_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_d3 > 0 ? 'Number' : 'String'}">${grandTotals.tot_d3 > 0 ? grandTotals.tot_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.tot_all > 0 ? 'Number' : 'String'}">${grandTotals.tot_all > 0 ? grandTotals.tot_all : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d1 > 0 ? grandTotals.cat1_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d2 > 0 ? grandTotals.cat1_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat1_d3 > 0 ? grandTotals.cat1_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat1_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat1_tot > 0 ? grandTotals.cat1_tot : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d1 > 0 ? grandTotals.cat2_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d2 > 0 ? grandTotals.cat2_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat2_d3 > 0 ? grandTotals.cat2_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat2_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat2_tot > 0 ? grandTotals.cat2_tot : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d1 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d1 > 0 ? grandTotals.cat3_d1 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d2 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d2 > 0 ? grandTotals.cat3_d2 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_d3 > 0 ? 'Number' : 'String'}">${grandTotals.cat3_d3 > 0 ? grandTotals.cat3_d3 : '-'}</Data></Cell><Cell ss:StyleID="RowYellowTotal"><Data ss:Type="${grandTotals.cat3_tot > 0 ? 'Number' : 'String'}">${grandTotals.cat3_tot > 0 ? grandTotals.cat3_tot : '-'}</Data></Cell></Row>`;
   rows.forEach((r, idx) => {
     xml += `<Row ss:Height="20">`;
     xml += `<Cell ss:StyleID="CellCenter"><Data ss:Type="Number">${idx + 1}</Data></Cell><Cell ss:StyleID="CellCenter"><Data ss:Type="String">${escapeXml(r.unit)}</Data></Cell><Cell ss:StyleID="CellLeft"><Data ss:Type="String">${escapeXml(r.team)}</Data></Cell>`;
@@ -2301,8 +2333,12 @@ export const generateRestockExcelBlob = (unsignedOutItems = [], unsignedInItems 
   const isUnitUser = unit !== 'ALL';
   const userUnit = unit;
 
-  let filteredIn = (unsignedInItems || []).filter(Boolean);
-  let filteredOut = (unsignedOutItems || []).filter(Boolean);
+  let filteredOut = (Array.isArray(unsignedOutItems) && unsignedOutItems.length > 0) ? unsignedOutItems : (getStorageData('restock_out_data') || []);
+  let filteredIn = (Array.isArray(unsignedInItems) && unsignedInItems.length > 0) ? unsignedInItems : (getStorageData('restock_in_data') || []);
+
+  filteredOut = filteredOut.filter(Boolean);
+  filteredIn = filteredIn.filter(Boolean);
+
   if (isUnitUser) {
     const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
     filteredIn = filteredIn.filter(filterFn);
@@ -2370,9 +2406,13 @@ export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = 
   const isUnitUser = unit !== 'ALL';
   const userUnit = unit;
 
-  let filteredM1 = (m1Items || []).filter(Boolean);
-  let filteredM2 = (m2Items || []).filter(Boolean);
-  let filteredM3 = (m3Items || []).filter(Boolean);
+  let filteredM1 = (Array.isArray(m1Items) && m1Items.length > 0) ? m1Items : (getStorageData('kpi_stockout_data') || []);
+  let filteredM2 = (Array.isArray(m2Items) && m2Items.length > 0) ? m2Items : (getStorageData('kpi_notconfirmed_data') || []);
+  let filteredM3 = (Array.isArray(m3Items) && m3Items.length > 0) ? m3Items : (getStorageData('kpi_nocreate_data') || []);
+
+  filteredM1 = filteredM1.filter(Boolean);
+  filteredM2 = filteredM2.filter(Boolean);
+  filteredM3 = filteredM3.filter(Boolean);
 
   if (isUnitUser) {
     const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
@@ -2421,30 +2461,63 @@ export const generateStockoutExcelBlob = (m1Items = [], m2Items = [], m3Items = 
     "Status": item.daysDiff >= 5 ? 'ALARM' : 'Normal'
   }));
 
+  let constructionItems = getStorageData('construction_data');
+  if (!Array.isArray(constructionItems)) constructionItems = [];
+  const constructionConfirmed = getStorageData('construction_confirmedStatus') || {};
+  constructionItems = constructionItems.filter(item => item && !constructionConfirmed[item.id]?.confirmed);
+  if (isUnitUser) {
+    constructionItems = constructionItems.filter(item => item && (item.unit === userUnit));
+  }
+
+  const constructionRows = constructionItems.map((item, idx) => ({
+    "No": idx + 1,
+    "Unit": item.unit || '-',
+    "Code Units / Agency": item.codeUnits || '-',
+    "Name of Team": item.teamName || '-',
+    "Station Code": item.stationCode || '-',
+    "Building Code": item.buildingCode || '-',
+    "Type of Construction": item.constructionType || '-',
+    "Item Code": item.codeList || '-',
+    "Item Name": item.nameLists || '-',
+    "Process Involved": item.processInvolved || '-',
+    "Business Process Closed (PXK)": item.businessProcessClosed || '-',
+    "Time Closed": item.timeClosed || '-',
+    "Days Difference": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "Explain": item.explain || '-',
+    "Note": item.note || '-'
+  }));
+
   const sheets = [
     {
       customXml: generateStockoutKpiSheetXml(filteredM1, filteredM2, filteredM3, unit)
     },
     {
-      name: "NO_CREATE_HAND_OVER Detail",
+      name: "STep 2 NOT CREATE HAND OVER",
       headerStyle: "HeaderStockout",
       tabColorIndex: 45,
       headers: ["No", "Code of handover minutes", "Type of handover", "Handover unit", "Unit confirm handover", "Handover date", "Status", "TEAM", "Days", "UNIT"],
       rows: sheet1Rows.length > 0 ? sheet1Rows : [{ "No": "-", "Code of handover minutes": "No pending items" }]
     },
     {
-      name: "stock_out_note_confirmed Detail",
+      name: "STep 3 HAND OVER_YET CONFIRM Using",
       headerStyle: "HeaderStockout",
       tabColorIndex: 45,
       headers: ["No", "Code of stock-out note", "Warehouse", "Recipient", "Creator", "Creating date", "TEAM", "Unit", "Days", "Status"],
       rows: sheet2Rows.length > 0 ? sheet2Rows : [{ "No": "-", "Code of stock-out note": "No pending items" }]
     },
     {
-      name: "STOCKOUT_YET_CONFIRM Detail",
+      name: "STep 1STOCKOUT_YET CONFIRM",
       headerStyle: "HeaderStockout",
       tabColorIndex: 45,
       headers: ["No", "Warehouse Stock out", "Export No", "Date", "Stock Receiver", "Group Receiver", "Construction", "Unit", "Days", "TEAM", "Status"],
       rows: sheet3Rows.length > 0 ? sheet3Rows : [{ "No": "-", "Export No": "No pending items" }]
+    },
+    {
+      name: "New_construction Detail",
+      headerStyle: "HeaderStockout",
+      tabColorIndex: 45,
+      headers: ["No", "Unit", "Code Units / Agency", "Name of Team", "Station Code", "Building Code", "Type of Construction", "Item Code", "Item Name", "Process Involved", "Business Process Closed (PXK)", "Time Closed", "Days Difference", "Explain", "Note"],
+      rows: constructionRows.length > 0 ? constructionRows : [{ "No": "-", "Station Code": "No pending items" }]
     }
   ];
 
@@ -2455,8 +2528,11 @@ export const generateSignedCAExcelBlob = (exportItems = [], importItems = [], un
   const isUnitUser = unit !== 'ALL';
   const userUnit = unit;
 
-  let filteredExport = (exportItems || []).filter(Boolean);
-  let filteredImport = (importItems || []).filter(Boolean);
+  let filteredExport = (Array.isArray(exportItems) && exportItems.length > 0) ? exportItems : (getStorageData('export_ca_data') || []);
+  let filteredImport = (Array.isArray(importItems) && importItems.length > 0) ? importItems : (getStorageData('import_ca_data') || []);
+
+  filteredExport = filteredExport.filter(Boolean);
+  filteredImport = filteredImport.filter(Boolean);
 
   if (isUnitUser) {
     const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
@@ -2529,23 +2605,28 @@ export const generateAllModulesExcelBlob = (unit = 'ALL') => {
   const isUnitUser = unit !== 'ALL';
   const userUnit = unit;
 
-  // Module 1: Stockout
+  // Module 1: Stockout & New Construction
   let m1Items = getStorageData('kpi_stockout_data');
   if (!Array.isArray(m1Items)) m1Items = [];
   let m2Items = getStorageData('kpi_notconfirmed_data');
   if (!Array.isArray(m2Items)) m2Items = [];
   let m3Items = getStorageData('kpi_nocreate_data');
   if (!Array.isArray(m3Items)) m3Items = [];
+  let constructionItems = getStorageData('construction_data');
+  if (!Array.isArray(constructionItems)) constructionItems = [];
+  const constructionConfirmed = getStorageData('construction_confirmedStatus') || {};
 
   m1Items = m1Items.filter(Boolean);
   m2Items = m2Items.filter(Boolean);
   m3Items = m3Items.filter(Boolean);
+  constructionItems = constructionItems.filter(item => item && !constructionConfirmed[item.id]?.confirmed);
   
   if (isUnitUser) {
     const filterFn = item => item && (item.unit === userUnit || extractUnit(item) === userUnit);
     m1Items = m1Items.filter(filterFn);
     m2Items = m2Items.filter(filterFn);
     m3Items = m3Items.filter(filterFn);
+    constructionItems = constructionItems.filter(item => item && (item.unit === userUnit));
   }
 
   const sheet1Rows = m3Items.map((item, idx) => ({
@@ -2690,31 +2771,56 @@ export const generateAllModulesExcelBlob = (unit = 'ALL') => {
     "Year": item.year || (item.dateCreate ? item.dateCreate.split('/')[2] : (item.createDate ? item.createDate.split('/')[2] : '-'))
   }));
 
+  const constructionRows = constructionItems.map((item, idx) => ({
+    "No": idx + 1,
+    "Unit": item.unit || '-',
+    "Code Units / Agency": item.codeUnits || '-',
+    "Name of Team": item.teamName || '-',
+    "Station Code": item.stationCode || '-',
+    "Building Code": item.buildingCode || '-',
+    "Type of Construction": item.constructionType || '-',
+    "Item Code": item.codeList || '-',
+    "Item Name": item.nameLists || '-',
+    "Process Involved": item.processInvolved || '-',
+    "Business Process Closed (PXK)": item.businessProcessClosed || '-',
+    "Time Closed": item.timeClosed || '-',
+    "Days Difference": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "Explain": item.explain || '-',
+    "Note": item.note || '-'
+  }));
+
   const sheets = [
     // 🍊 STOCKOUT
     {
       customXml: generateStockoutKpiSheetXml(m1Items, m2Items, m3Items, unit)
     },
     {
-      name: "NO_CREATE_HAND_OVER Detail",
+      name: "STep 2 NOT CREATE HAND OVER",
       headerStyle: "HeaderStockout",
       tabColorIndex: 45,
       headers: ["No", "Code of handover minutes", "Type of handover", "Handover unit", "Unit confirm handover", "Handover date", "Status", "TEAM", "Days", "UNIT"],
       rows: sheet1Rows.length > 0 ? sheet1Rows : [{ "No": "-", "Code of handover minutes": "No pending items" }]
     },
     {
-      name: "stock_out_note_confirmed Detail",
+      name: "STep 3 HAND OVER_YET CONFIRM Using",
       headerStyle: "HeaderStockout",
       tabColorIndex: 45,
       headers: ["No", "Code of stock-out note", "Warehouse", "Recipient", "Creator", "Creating date", "TEAM", "Unit", "Days", "Status"],
       rows: sheet2Rows.length > 0 ? sheet2Rows : [{ "No": "-", "Code of stock-out note": "No pending items" }]
     },
     {
-      name: "STOCKOUT_YET_CONFIRM Detail",
+      name: "STep 1STOCKOUT_YET CONFIRM",
       headerStyle: "HeaderStockout",
       tabColorIndex: 45,
       headers: ["No", "Warehouse Stock out", "Export No", "Date", "Stock Receiver", "Group Receiver", "Construction", "Unit", "Days", "TEAM", "Status"],
       rows: sheet3Rows.length > 0 ? sheet3Rows : [{ "No": "-", "Export No": "No pending items" }]
+    },
+    {
+      name: "New_construction Detail",
+      headerStyle: "HeaderStockout",
+      tabColorIndex: 45,
+      headers: ["No", "Unit", "Code Units / Agency", "Name of Team", "Station Code", "Building Code", "Type of Construction", "Item Code", "Item Name", "Process Involved", "Business Process Closed (PXK)", "Time Closed", "Days Difference", "Explain", "Note"],
+      rows: constructionRows.length > 0 ? constructionRows : [{ "No": "-", "Station Code": "No pending items" }]
     },
 
     // 💎 SIGNED CA

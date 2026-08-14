@@ -303,7 +303,7 @@ export const Restock_in = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(50);
 
   // Load data from DB on mount
   useEffect(() => {

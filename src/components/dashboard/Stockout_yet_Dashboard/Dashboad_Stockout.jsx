@@ -94,6 +94,7 @@ const Dashboad_Stockout = (props = {}) => {
   const [activeM1Items, setActiveM1Items] = useState([]);
   const [activeM2Items, setActiveM2Items] = useState([]);
   const [activeM3Items, setActiveM3Items] = useState([]);
+  const [activeConstItems, setActiveConstItems] = useState([]);
   // eslint-disable-next-line no-unused-vars
   const [screenshotPartText, setScreenshotPartText] = useState("");
   // eslint-disable-next-line no-unused-vars
@@ -616,16 +617,39 @@ const Dashboad_Stockout = (props = {}) => {
     return data.units[unit]?.m3Items || [];
   };
 
+  const getUnitConstItems = (unit) => {
+    let construction = [];
+    try {
+      const stored = localStorage.getItem('construction_data');
+      if (stored) construction = JSON.parse(stored);
+    } catch (e) {
+      console.error(e);
+    }
+    if (!Array.isArray(construction)) construction = [];
+    
+    let confirmed = {};
+    try {
+      const storedConf = localStorage.getItem('construction_confirmedStatus');
+      if (storedConf) confirmed = JSON.parse(storedConf);
+    } catch (e) {
+      console.error(e);
+    }
+
+    return construction.filter(item => item && !confirmed[item.id]?.confirmed && item.unit === unit);
+  };
+
   const renderScreenshotReport = () => {
     if (!screenshotUnit) return null;
     
     const m1Items = activeM1Items;
     const m2Items = activeM2Items;
     const m3Items = activeM3Items;
+    const constItems = activeConstItems;
     
     const sortedM1 = m1Items;
     const sortedM2 = m2Items;
     const sortedM3 = m3Items;
+    const sortedConst = constItems;
     
     // Color-coded delay badges (High-impact professional design)
     const getDelayBadge = (days, maxKpiDays = 3) => {
@@ -744,7 +768,7 @@ const Dashboad_Stockout = (props = {}) => {
                 </thead>
                 <tbody className="text-[9.5px] font-medium divide-y divide-slate-100">
                   {sortedM2.map((item, index) => {
-                    const isOverdue = (parseInt(item.daysDiff) || 0) > 3;
+                    const isOverdue = (parseInt(item.daysDiff) || 0) > 4;
                     return (
                       <tr key={index} className={`transition-colors whitespace-nowrap ${isOverdue ? 'bg-red-50/90 text-red-950 font-semibold border-l-4 border-l-red-600' : 'hover:bg-slate-50/80 odd:bg-white even:bg-slate-50/40 text-slate-800'}`}>
                         <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold text-slate-500">{index + 1}</td>
@@ -757,7 +781,7 @@ const Dashboad_Stockout = (props = {}) => {
                         <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">
                           <span className="bg-indigo-50 text-indigo-800 px-1 rounded border border-indigo-100 text-[8.5px] inline-block font-black">{item.unit || '-'}</span>
                         </td>
-                        <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff, 3)}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff, 4)}</td>
                         <td className="px-2 py-1.5 text-center whitespace-nowrap">
                           <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-extrabold ${item.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>{item.status || 'Pending'}</span>
                         </td>
@@ -799,7 +823,7 @@ const Dashboad_Stockout = (props = {}) => {
                 </thead>
                 <tbody className="text-[9.5px] font-medium divide-y divide-slate-100">
                   {sortedM3.map((item, index) => {
-                    const isOverdue = (parseInt(item.daysDiff) || 0) > 3;
+                    const isOverdue = (parseInt(item.daysDiff) || 0) > 4;
                     return (
                       <tr key={index} className={`transition-colors whitespace-nowrap ${isOverdue ? 'bg-red-50/90 text-red-950 font-semibold border-l-4 border-l-red-600' : 'hover:bg-slate-50/80 odd:bg-white even:bg-slate-50/40 text-slate-800'}`}>
                         <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold text-slate-500">{index + 1}</td>
@@ -812,7 +836,7 @@ const Dashboad_Stockout = (props = {}) => {
                           <span className={`px-1.5 py-0.5 rounded text-[8.5px] font-extrabold ${item.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}`}>{item.status || 'Pending'}</span>
                         </td>
                         <td className="border-r border-slate-100 px-2 py-1.5 font-black text-indigo-950 font-mono text-[9.5px] whitespace-nowrap">{item.team || getTeamFromRecipient(item.unitConfirm || item.handoverUnit || '-')}</td>
-                        <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff, 3)}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff, 4)}</td>
                         <td className="px-2 py-1.5 text-center font-extrabold whitespace-nowrap">
                           <span className="bg-indigo-50 text-indigo-800 px-1 rounded border border-indigo-100 text-[8.5px] inline-block font-black">{item.unit || '-'}</span>
                         </td>
@@ -825,8 +849,65 @@ const Dashboad_Stockout = (props = {}) => {
           </div>
         )}
 
+        {/* Module 4: New Construction Table */}
+        {constItems.length > 0 && (
+          <div className="bg-white border border-gray-200/60 rounded-3xl p-5 shadow-sm mb-5">
+            <h3 className="text-sm font-black text-gray-800 flex items-center justify-between pb-3 border-b border-gray-100 mb-3.5">
+              <span className="flex items-center gap-2 text-emerald-900 uppercase font-black tracking-tight text-base">
+                🏗️ 04 NEW CONSTRUCTION <span className="text-xs text-slate-500 font-bold capitalize">(BTS Construction Tracker)</span>
+              </span>
+              <span className="text-emerald-800 font-extrabold text-xs bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                📋 {constItems.length} Items
+              </span>
+            </h3>
+            <div className="border border-slate-200/80 rounded-xl shadow-xs bg-white">
+              <table className="min-w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                  <tr className="bg-gradient-to-r from-emerald-700 via-teal-700 to-slate-800 text-white text-[10px] font-black border-b-2 border-emerald-900">
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 text-center font-extrabold uppercase">#</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 font-black uppercase">Unit</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 font-black uppercase">Code Units / Agency</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 font-black uppercase">Name of Team</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 font-black uppercase">Station Code</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 font-black uppercase">Building Code</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 font-black uppercase">Type of Construction</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 font-black uppercase">Item Name</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 font-black uppercase">Business Process Closed (PXK)</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 text-center font-black uppercase">Closed Date</th>
+                    <th className="border-r border-emerald-600/50 px-2.5 py-2 text-center font-black uppercase">Days</th>
+                    <th className="px-2.5 py-2 font-black uppercase">Explain</th>
+                  </tr>
+                </thead>
+                <tbody className="text-[9.5px] font-medium divide-y divide-slate-100">
+                  {sortedConst.map((item, index) => {
+                    const isOverdue = (parseInt(item.daysDiff) || 0) > 3; // KPI is 3 days
+                    return (
+                      <tr key={index} className={`transition-colors whitespace-nowrap ${isOverdue ? 'bg-red-50/90 text-red-950 font-semibold border-l-4 border-l-red-600' : 'hover:bg-slate-50/80 odd:bg-white even:bg-slate-50/40 text-slate-800'}`}>
+                        <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold text-slate-500">{index + 1}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-800 whitespace-nowrap">{item.unit || '-'}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-800 whitespace-nowrap">{item.codeUnits || '-'}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 font-black text-slate-900 tracking-tight whitespace-nowrap font-mono">{item.teamName || '-'}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-800 whitespace-nowrap">{item.stationCode || '-'}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-800 whitespace-nowrap">{item.buildingCode || '-'}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 text-slate-700 whitespace-nowrap font-mono text-[9px]">{item.constructionType || '-'}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 text-slate-700 font-bold whitespace-nowrap">{item.nameLists || '-'}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold whitespace-nowrap">
+                          <span className="bg-indigo-50 text-indigo-800 px-1 rounded border border-indigo-100 text-[8.5px] inline-block font-black">{item.businessProcessClosed || '-'}</span>
+                        </td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 font-bold text-slate-700 font-mono text-center whitespace-nowrap">{item.timeClosed || '-'}</td>
+                        <td className="border-r border-slate-100 px-2 py-1.5 text-center font-extrabold">{getDelayBadge(item.daysDiff, 3)}</td>
+                        <td className="px-2 py-1.5 text-slate-700 font-semibold whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis">{item.explain || '-'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Empty State / All Cleared */}
-        {m1Items.length === 0 && m2Items.length === 0 && m3Items.length === 0 && (
+        {m1Items.length === 0 && m2Items.length === 0 && m3Items.length === 0 && constItems.length === 0 && (
           <div className="bg-emerald-50/40 border border-emerald-100 rounded-3xl p-6 text-center text-emerald-600 font-bold text-sm flex flex-col items-center gap-2">
             <span>🎉 ALL MODULES COMPLETED</span>
             <span className="text-xs text-emerald-500 font-medium">គ្មានទិន្នន័យចាល់ឡើយ (All Items Cleared)</span>
@@ -840,11 +921,13 @@ const Dashboad_Stockout = (props = {}) => {
     const m1Items = getUnitM1Items(unit);
     const m2Items = getUnitM2Items(unit);
     const m3Items = getUnitM3Items(unit);
+    const constItems = getUnitConstItems(unit);
     
     // Sort items for readability
     const sortedM1 = [...m1Items].sort((a, b) => (a.groupReceiver || '').localeCompare(b.groupReceiver || ''));
     const sortedM2 = [...m2Items].sort((a, b) => (a.recipient || '').localeCompare(b.recipient || ''));
     const sortedM3 = [...m3Items].sort((a, b) => (a.unitConfirm || '').localeCompare(b.unitConfirm || ''));
+    const sortedConst = [...constItems].sort((a, b) => (a.teamName || '').localeCompare(b.teamName || ''));
 
     const tasks = [];
     const chunkSize = 25;
@@ -865,6 +948,7 @@ const Dashboad_Stockout = (props = {}) => {
           m1: chunk,
           m2: [],
           m3: [],
+          constData: [],
           label: `Part ${idx + 1}/${chunks.length}`,
           title: "TEAM STEP 1"
         });
@@ -878,6 +962,7 @@ const Dashboad_Stockout = (props = {}) => {
           m1: [],
           m2: chunk,
           m3: [],
+          constData: [],
           label: `Part ${idx + 1}/${chunks.length}`,
           title: "ASSET STEP :2"
         });
@@ -891,8 +976,23 @@ const Dashboad_Stockout = (props = {}) => {
           m1: [],
           m2: [],
           m3: chunk,
+          constData: [],
           label: `Part ${idx + 1}/${chunks.length}`,
           title: "TEAM STEP 3"
+        });
+      });
+    }
+
+    if (sortedConst.length > 0) {
+      const chunks = chunkArray(sortedConst, chunkSize);
+      chunks.forEach((chunk, idx) => {
+        tasks.push({
+          m1: [],
+          m2: [],
+          m3: [],
+          constData: chunk,
+          label: `Part ${idx + 1}/${chunks.length}`,
+          title: "04 NEW CONSTRUCTION"
         });
       });
     }
@@ -902,6 +1002,7 @@ const Dashboad_Stockout = (props = {}) => {
         m1: [],
         m2: [],
         m3: [],
+        constData: [],
         label: "Cleared",
         title: "CONFIRMED HAND OVER REPORT"
       });
@@ -918,12 +1019,12 @@ const Dashboad_Stockout = (props = {}) => {
       const m1Items = getUnitM1Items(unit);
       const m2Items = getUnitM2Items(unit);
       const m3Items = getUnitM3Items(unit);
+      const constItems = getUnitConstItems(unit);
       
       const teamsSet = new Set();
       m1Items.forEach(item => {
         const teamName = getTeamFromRecipient(item.team || item.groupReceiver || item.warehouse || '-');
         if (teamName && teamName !== '-') {
-          // Only add team if it belongs to this unit according to the explicit lookup
           const resolvedUnit = getUnitFromTeam(teamName);
           if (!resolvedUnit || resolvedUnit === unit) teamsSet.add(teamName);
         }
@@ -942,6 +1043,13 @@ const Dashboad_Stockout = (props = {}) => {
           if (!resolvedUnit || resolvedUnit === unit) teamsSet.add(teamName);
         }
       });
+      constItems.forEach(item => {
+        const teamName = getTeamFromRecipient(item.teamName || item.team || '-');
+        if (teamName && teamName !== '-') {
+          const resolvedUnit = getUnitFromTeam(teamName);
+          if (!resolvedUnit || resolvedUnit === unit) teamsSet.add(teamName);
+        }
+      });
       
       const teams = Array.from(teamsSet).sort((a, b) => a.localeCompare(b));
       
@@ -950,14 +1058,21 @@ const Dashboad_Stockout = (props = {}) => {
         const s1Under = m1Items.filter(item => matchesTeam(item, item.team || item.groupReceiver || item.warehouse) && (parseInt(item.daysDiff) || 0) <= 4).length;
         const s1Over = m1Items.filter(item => matchesTeam(item, item.team || item.groupReceiver || item.warehouse) && (parseInt(item.daysDiff) || 0) > 4).length;
         
-        const s2Under = m2Items.filter(item => matchesTeam(item, item.team || item.recipient) && (parseInt(item.daysDiff) || 0) <= 3).length;
-        const s2Over = m2Items.filter(item => matchesTeam(item, item.team || item.recipient) && (parseInt(item.daysDiff) || 0) > 3).length;
+        const s2Under = m2Items.filter(item => matchesTeam(item, item.team || item.recipient) && (parseInt(item.daysDiff) || 0) <= 4).length;
+        const s2Over = m2Items.filter(item => matchesTeam(item, item.team || item.recipient) && (parseInt(item.daysDiff) || 0) > 4).length;
         
-        const s3Under = m3Items.filter(item => matchesTeam(item, item.team || item.unitConfirm) && (parseInt(item.daysDiff) || 0) <= 3).length;
-        const s3Over = m3Items.filter(item => matchesTeam(item, item.team || item.unitConfirm) && (parseInt(item.daysDiff) || 0) > 3).length;
+        const s3Under = m3Items.filter(item => matchesTeam(item, item.team || item.unitConfirm) && (parseInt(item.daysDiff) || 0) <= 4).length;
+        const s3Over = m3Items.filter(item => matchesTeam(item, item.team || item.unitConfirm) && (parseInt(item.daysDiff) || 0) > 4).length;
         
-        const underKpi = s1Under + s2Under + s3Under;
-        const overKpi = s1Over + s2Over + s3Over;
+        const s4Under = constItems.filter(item => matchesTeam(item, item.teamName || item.team || item.codeUnits) && (parseInt(item.daysDiff) || 0) <= 10).length;
+        const s4Over = constItems.filter(item => matchesTeam(item, item.teamName || item.team || item.codeUnits) && (parseInt(item.daysDiff) || 0) > 10).length;
+
+        // KPI is 3 days
+        const s4UnderKpi = constItems.filter(item => matchesTeam(item, item.teamName || item.team || item.codeUnits) && (parseInt(item.daysDiff) || 0) <= 3).length;
+        const s4OverKpi = constItems.filter(item => matchesTeam(item, item.teamName || item.team || item.codeUnits) && (parseInt(item.daysDiff) || 0) > 3).length;
+
+        const underKpi = s1Under + s2Under + s3Under + s4UnderKpi;
+        const overKpi = s1Over + s2Over + s3Over + s4OverKpi;
         const total = underKpi + overKpi;
         
         rows.push({
@@ -972,6 +1087,9 @@ const Dashboad_Stockout = (props = {}) => {
           s3Under,
           s3Over,
           s3Total: s3Under + s3Over,
+          s4Under,
+          s4Over,
+          s4Total: s4Under + s4Over,
           underKpi,
           overKpi,
           total
@@ -996,9 +1114,13 @@ const Dashboad_Stockout = (props = {}) => {
     const totalS3Under = rows.reduce((sum, r) => sum + r.s3Under, 0);
     const totalS3Over = rows.reduce((sum, r) => sum + r.s3Over, 0);
     const totalS3Total = totalS3Under + totalS3Over;
+
+    const totalS4Under = rows.reduce((sum, r) => sum + r.s4Under, 0);
+    const totalS4Over = rows.reduce((sum, r) => sum + r.s4Over, 0);
+    const totalS4Total = totalS4Under + totalS4Over;
     
-    const totalUnder = totalS1Under + totalS2Under + totalS3Under;
-    const totalOver = totalS1Over + totalS2Over + totalS3Over;
+    const totalUnder = rows.reduce((sum, r) => sum + r.underKpi, 0);
+    const totalOver = rows.reduce((sum, r) => sum + r.overKpi, 0);
     const totalAll = totalUnder + totalOver;
     
     const formatVal = (val) => val === 0 ? '-' : val;
@@ -1012,7 +1134,7 @@ const Dashboad_Stockout = (props = {}) => {
           top: '0',
           zIndex: -9999,
           pointerEvents: 'none',
-          width: '1200px',
+          width: '1450px',
           background: '#f8fafc',
           padding: '24px',
           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif'
@@ -1086,6 +1208,10 @@ const Dashboad_Stockout = (props = {}) => {
                   TEAM STEP 3<br/>
                   <span className="text-[9px] font-normal text-white/80">Hand over not Confirmed</span>
                 </th>
+                <th colSpan="3" className="bg-emerald-600 border-r border-emerald-700 py-2 font-bold uppercase tracking-wider">
+                  04 NEW CONSTRUCTION<br/>
+                  <span className="text-[9px] font-normal text-white/80">BTS Construction Tracker</span>
+                </th>
                 <th colSpan="3" className="bg-indigo-900 py-2 font-bold uppercase tracking-wider">
                   Total Summary
                 </th>
@@ -1094,6 +1220,7 @@ const Dashboad_Stockout = (props = {}) => {
                 <th colSpan="3" className="bg-blue-700 border-r border-blue-800 py-1.5 font-black text-blue-200">KPI = 4 DAYS</th>
                 <th colSpan="3" className="bg-amber-700 border-r border-amber-800 py-1.5 font-black text-amber-200">KPI = 3 DAYS</th>
                 <th colSpan="3" className="bg-purple-700 border-r border-purple-800 py-1.5 font-black text-purple-200">KPI = 3 DAYS</th>
+                <th colSpan="3" className="bg-emerald-700 border-r border-emerald-800 py-1.5 font-black text-emerald-200">KPI = 3 DAYS</th>
                 <th colSpan="3" className="bg-indigo-950 py-1.5 font-black text-indigo-200">KPI TARGETS</th>
               </tr>
               <tr className="bg-slate-100 text-slate-600 text-[9px] border-b border-slate-200 font-bold">
@@ -1109,6 +1236,10 @@ const Dashboad_Stockout = (props = {}) => {
                 <th className="border-r border-purple-100 py-2 text-purple-700 bg-purple-50/30">Day &lt;= 3</th>
                 <th className="border-r border-purple-100 py-2 text-red-600 bg-purple-50/30">Day &gt; 3</th>
                 <th className="border-r border-purple-200 py-2 bg-purple-100/50 text-purple-900">Total</th>
+                
+                <th className="border-r border-emerald-100 py-2 text-emerald-700 bg-emerald-50/30">Day &lt;= 10</th>
+                <th className="border-r border-emerald-100 py-2 text-red-600 bg-emerald-50/30">Day &gt; 10</th>
+                <th className="border-r border-emerald-200 py-2 bg-emerald-100/50 text-emerald-900">Total</th>
                 
                 <th className="border-r border-indigo-100 py-2 text-indigo-700 bg-indigo-50/30">Under KPI</th>
                 <th className="border-r border-indigo-100 py-2 text-red-600 bg-indigo-50/30">Over KPI</th>
@@ -1128,6 +1259,10 @@ const Dashboad_Stockout = (props = {}) => {
                 <td className="border-r border-purple-100 py-2.5 text-purple-800 bg-purple-50/20">{formatVal(totalS3Under)}</td>
                 <td className={`border-r border-purple-200 py-2.5 bg-purple-50/20 ${totalS3Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalS3Over)}</td>
                 <td className="border-r border-slate-200 py-2.5 bg-purple-100/30 text-purple-900 font-black">{formatVal(totalS3Total)}</td>
+
+                <td className="border-r border-emerald-100 py-2.5 text-emerald-850 bg-emerald-50/20">{formatVal(totalS4Under)}</td>
+                <td className={`border-r border-emerald-200 py-2.5 bg-emerald-50/20 ${totalS4Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalS4Over)}</td>
+                <td className="border-r border-slate-200 py-2.5 bg-emerald-100/30 text-emerald-900 font-black">{formatVal(totalS4Total)}</td>
                 
                 <td className="border-r border-indigo-100 py-2.5 bg-indigo-50/20 text-indigo-800 font-bold">{formatVal(totalUnder)}</td>
                 <td className={`border-r border-indigo-200 py-2.5 bg-indigo-50/20 ${totalOver > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>{formatVal(totalOver)}</td>
@@ -1161,6 +1296,13 @@ const Dashboad_Stockout = (props = {}) => {
                     {formatVal(row.s3Over)}
                   </td>
                   <td className="border-r border-slate-150 py-2 bg-purple-100/10 text-purple-900 font-bold">{formatVal(row.s3Total)}</td>
+
+                  {/* New Construction */}
+                  <td className="border-r border-slate-150 py-2 text-slate-600 bg-emerald-50/5 font-medium">{formatVal(row.s4Under)}</td>
+                  <td className={`border-r border-slate-150 py-2 bg-emerald-50/5 ${row.s4Over > 0 ? 'bg-red-100 text-red-700 font-black' : ''}`}>
+                    {formatVal(row.s4Over)}
+                  </td>
+                  <td className="border-r border-slate-150 py-2 bg-emerald-100/10 text-emerald-900 font-bold">{formatVal(row.s4Total)}</td>
                   
                   {/* Total summary */}
                   <td className="border-r border-slate-200 py-2 bg-indigo-50/5 text-slate-600 font-medium">{formatVal(row.underKpi)}</td>
@@ -1172,8 +1314,8 @@ const Dashboad_Stockout = (props = {}) => {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan="15" className="py-12 text-center text-slate-400 font-medium bg-slate-50/50 text-xs">
-                    🎉 Outstanding completion! No pending stockout items found under this branch.
+                  <td colSpan="18" className="py-12 text-center text-slate-400 font-medium bg-slate-50/50 text-xs">
+                    🎉 Outstanding completion! No pending items found under this branch.
                   </td>
                 </tr>
               )}
@@ -1308,7 +1450,8 @@ const Dashboad_Stockout = (props = {}) => {
 
     const reportData = getReportData();
     const unitData = reportData && reportData.units ? reportData.units[unit] : null;
-    const totalPending = (unitData?.m1Items?.length || 0) + (unitData?.m2Items?.length || 0) + (unitData?.m3Items?.length || 0);
+    const constItems = getUnitConstItems(unit);
+    const totalPending = (unitData?.m1Items?.length || 0) + (unitData?.m2Items?.length || 0) + (unitData?.m3Items?.length || 0) + constItems.length;
     if (totalPending === 0) {
       alert(`ℹ️ No pending items to send for ${unit}. (គ្មានទិន្នន័យត្រូវផ្ញើទេ)`);
       return;
@@ -1334,16 +1477,17 @@ const Dashboad_Stockout = (props = {}) => {
         unit: unit,
         status: 'sending'
       });
-
+      
       setScreenshotUnit(unit);
-
+      
       for (let i = 0; i < tasks.length; i++) {
         if (abortControllerRef.current.signal.aborted) break;
-
+        
         const task = tasks[i];
-        setActiveM1Items(task.m1);
-        setActiveM2Items(task.m2);
-        setActiveM3Items(task.m3);
+        setActiveM1Items(task.m1 || []);
+        setActiveM2Items(task.m2 || []);
+        setActiveM3Items(task.m3 || []);
+        setActiveConstItems(task.constData || []);
         setScreenshotPartText(tasks.length > 1 ? `(${task.label})` : "");
         setScreenshotTitle(task.title);
 
@@ -1463,6 +1607,7 @@ const Dashboad_Stockout = (props = {}) => {
       setActiveM1Items([]);
       setActiveM2Items([]);
       setActiveM3Items([]);
+      setActiveConstItems([]);
       setScreenshotPartText("");
       setScreenshotTitle("CONFIRMED HAND OVER REPORT");
       if (!abortControllerRef.current?.signal.aborted) {
@@ -1521,9 +1666,10 @@ const Dashboad_Stockout = (props = {}) => {
             if (abortControllerRef.current.signal.aborted) break;
 
             const task = tasks[i];
-            setActiveM1Items(task.m1);
-            setActiveM2Items(task.m2);
-            setActiveM3Items(task.m3);
+            setActiveM1Items(task.m1 || []);
+            setActiveM2Items(task.m2 || []);
+            setActiveM3Items(task.m3 || []);
+            setActiveConstItems(task.constData || []);
             setScreenshotPartText(tasks.length > 1 ? `(${task.label})` : "");
             setScreenshotTitle(task.title);
 
@@ -1637,6 +1783,7 @@ const Dashboad_Stockout = (props = {}) => {
       setActiveM1Items([]);
       setActiveM2Items([]);
       setActiveM3Items([]);
+      setActiveConstItems([]);
       setScreenshotPartText("");
       setScreenshotTitle("CONFIRMED HAND OVER REPORT");
       if (!abortControllerRef.current?.signal.aborted) {

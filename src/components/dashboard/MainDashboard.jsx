@@ -20,18 +20,21 @@ const MainDashboard = ({ onNavigate }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Load data for Module 1: Confirmed Hand Over
+  // Load data for Module 1: Confirmed Hand Over (including New Construction)
   const confirmedStats = useMemo(() => {
     const stockout = getStorageData('kpi_stockout_data') || [];
     const nocreate = getStorageData('kpi_nocreate_data') || [];
     const notconfirmed = getStorageData('kpi_notconfirmed_data') || [];
+    const construction = getStorageData('construction_data') || [];
 
     const stockoutHistory = getStorageData('kpi_stockout_completionHistory') || [];
     const nocreateHistory = getStorageData('kpi_nocreate_completionHistory') || [];
     const notconfirmedHistory = getStorageData('kpi_notconfirmed_completionHistory') || [];
+    const constructionConfirmed = getStorageData('construction_confirmedStatus') || {};
+    const constructionCompleted = Object.keys(constructionConfirmed).filter(id => constructionConfirmed[id]?.confirmed).length;
 
-    const total = stockout.length + nocreate.length + notconfirmed.length;
-    const completed = stockoutHistory.length + nocreateHistory.length + notconfirmedHistory.length;
+    const total = stockout.length + nocreate.length + notconfirmed.length + construction.length;
+    const completed = stockoutHistory.length + nocreateHistory.length + notconfirmedHistory.length + constructionCompleted;
     const pending = Math.max(0, total - completed);
     const rate = total > 0 ? (completed / total) * 100 : 0;
 
@@ -103,6 +106,30 @@ const MainDashboard = ({ onNavigate }) => {
       }
     });
 
+    // Get last 3 completions from construction
+    const constructionConfirmed = getStorageData('construction_confirmedStatus') || {};
+    const constructionData = getStorageData('construction_data') || [];
+    const constructionHistory = [];
+    Object.keys(constructionConfirmed).forEach(id => {
+      if (constructionConfirmed[id]?.confirmed) {
+        const item = constructionData.find(d => d.id === id);
+        constructionHistory.push({
+          code: item?.stationCode || 'Station',
+          completedAt: constructionConfirmed[id]?.date,
+          unit: item?.unit || 'N/A'
+        });
+      }
+    });
+    constructionHistory.slice(0, 3).forEach(item => {
+      activities.push({
+        id: `construction-${item.code}`,
+        type: '✅ Completed',
+        description: `Construction: ${item.code}`,
+        time: item.completedAt ? new Date(item.completedAt).toLocaleString() : 'Just now',
+        unit: item.unit || 'N/A'
+      });
+    });
+
     // Sort by time (most recent first)
     activities.sort((a, b) => {
       if (a.time === 'Just now') return -1;
@@ -133,7 +160,8 @@ const MainDashboard = ({ onNavigate }) => {
       subtasks: [
         { id: 'STOCKOUT_YET_CONFIRM', label: 'STOCKOUT YET CONFIRM', icon: '📦', desc: 'Pending stockout confirmations' },
         { id: 'NO_CREATE_HAND_OVER', label: 'NOT CREATE HAND OVER', icon: '📝', desc: 'Handover not yet created' },
-        { id: 'STOCK_OUT_NOTE_CONFIRMED', label: 'HAND OVER YET CONFIRM', icon: '⚠️', desc: 'Handover awaiting confirmation' }
+        { id: 'STOCK_OUT_NOTE_CONFIRMED', label: 'HAND OVER YET CONFIRM', icon: '⚠️', desc: 'Handover awaiting confirmation' },
+        { id: 'NEW_CONSTRUCTION', label: 'NEW CONSTRUCTION', icon: '🏗️', desc: 'Construction tracker' }
       ]
     },
     {
