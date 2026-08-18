@@ -77,10 +77,10 @@ const getUnitFromRecipient = (recipient) => {
   // Fallback: known province from GIS prefix
   if (province && allUnits.includes(province)) return province;
 
-  // Last resort
+  // Last resort: check if string has explicit GIS unit prefix or exact unit match
   const sortedUnits = [...allUnits].sort((a, b) => b.length - a.length);
   for (const unit of sortedUnits) {
-    if (normalized.includes(`GIS_${unit}_`) || normalized.startsWith(unit + '_') || normalized === unit) {
+    if (normalized.includes(`GIS_${unit}_`) || normalized.startsWith(`GIS_${unit}`) || normalized === `GIS_${unit}` || normalized === unit) {
       return unit;
     }
   }
@@ -166,9 +166,11 @@ const StockOutNoteConfirmed = () => {
   const [kpiSortOrder, setKpiSortOrder] = useState('asc');
   const [confirmedStatus, setConfirmedStatus] = useState(() => getStorageData(STORAGE_KEYS.CONFIRMED) || {});
 
-  // Pagination State
+  // Pagination & Days Filter State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+  const [daysFilter, setDaysFilter] = useState('ALL');
+  const [daysSortOrder, setDaysSortOrder] = useState('none');
 
   // Load data from DB on mount
   useEffect(() => {
@@ -234,11 +236,11 @@ const StockOutNoteConfirmed = () => {
 
   // Columns
   const columns = [
-    { key: 'no', label: '#', width: 'w-12', align: 'text-center' },
-    { key: 'code', label: 'Code of handover minutes', width: 'w-32', align: 'text-left' },
-    { key: 'type', label: 'Type of handover', width: 'w-32', align: 'text-left' },
-    { key: 'handoverUnit', label: 'Handover unit', width: 'w-36', align: 'text-left' },
-    { key: 'unitConfirm', label: 'Unit confirm handover', width: 'w-36', align: 'text-left' },
+    { key: 'no', label: '#', width: 'w-10', align: 'text-center' },
+    { key: 'code', label: 'Code of handover minutes', width: 'whitespace-nowrap min-w-[170px]', align: 'text-left' },
+    { key: 'type', label: 'Type of handover', width: 'whitespace-nowrap', align: 'text-left' },
+    { key: 'handoverUnit', label: 'Handover unit', width: 'whitespace-nowrap', align: 'text-left' },
+    { key: 'unitConfirm', label: 'Unit confirm handover', width: 'whitespace-nowrap', align: 'text-left' },
     { key: 'date', label: 'Handover date', width: 'w-24', align: 'text-center' },
     { key: 'status', label: 'Status', width: 'w-20', align: 'text-left' },
     { key: 'team', label: 'TEAM', width: 'min-w-[150px]', align: 'text-center' },
@@ -801,6 +803,21 @@ const StockOutNoteConfirmed = () => {
     filtered = filtered.filter(item => 
       item.status && item.status.toLowerCase() === 'not confirmed'
     );
+
+    // 🗓️ Days Filter
+    if (daysFilter !== 'ALL') {
+      if (daysFilter === '0') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) === 0);
+      } else if (daysFilter === '1-3') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) >= 1 && (item.daysDiff || 0) <= 3);
+      } else if (daysFilter === '4-6') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) >= 4 && (item.daysDiff || 0) <= 6);
+      } else if (daysFilter === '>=4') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) >= 4);
+      } else if (daysFilter === '>=7') {
+        filtered = filtered.filter(item => (item.daysDiff || 0) >= 7);
+      }
+    }
     
     if (searchTerm) {
       const term = searchTerm.toLowerCase().trim();
@@ -820,8 +837,18 @@ const StockOutNoteConfirmed = () => {
         );
       });
     }
+
+    // ↕️ Days Sorting
+    if (daysSortOrder !== 'none') {
+      filtered = [...filtered].sort((a, b) => {
+        const aDays = a.daysDiff || 0;
+        const bDays = b.daysDiff || 0;
+        return daysSortOrder === 'desc' ? bDays - aDays : aDays - bDays;
+      });
+    }
+
     return filtered;
-  }, [data, searchTerm]);
+  }, [data, searchTerm, daysFilter, daysSortOrder]);
 
   const totalItems = filteredData.length;
   const effectivePageSize = pageSize === 'ALL' ? (totalItems || 1) : pageSize;
@@ -1321,7 +1348,7 @@ const StockOutNoteConfirmed = () => {
   );
 
   return (
-    <div className="w-full h-screen max-h-screen p-2 sm:p-3 bg-slate-100 flex flex-col overflow-hidden">
+    <div className="w-full h-screen max-h-screen p-1 sm:p-1.5 bg-slate-100 flex flex-col overflow-hidden font-sans">
       
       {/* ─── MODALS ─── */}
       {renderTargetHistoryModal()}
@@ -1331,93 +1358,121 @@ const StockOutNoteConfirmed = () => {
       {renderFloatingButtons()}
 
       {/* ─── MAIN CONTENT CONTAINER (FULL SCREEN FLEX) ─── */}
-      <div className="bg-white rounded-xl shadow-xl border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
+      <div className="bg-white rounded-lg shadow-xl border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
         
         {/* ─── COMPACT EXCEL HEADER RIBBON ─── */}
-        <div className="bg-gradient-to-r from-slate-900 via-rose-900 to-slate-900 px-4 py-2.5 border-b-2 border-slate-900 text-white flex-shrink-0">
-          <div className="flex justify-between items-center gap-3 flex-wrap">
+        <div className="bg-gradient-to-r from-slate-900 via-rose-900 to-slate-900 px-3 py-1 border-b border-slate-900 text-white flex-shrink-0 shadow-sm">
+          <div className="flex justify-between items-center gap-2 flex-wrap">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
                   <span>📊</span> STOCK OUT NOTE - NOT CONFIRMED
                 </h1>
-                <span className="bg-rose-500/30 text-rose-200 text-[9.5px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider border border-rose-400/30 font-bold">
+                <span className="bg-rose-500/30 text-rose-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-rose-400/30 font-bold">
                   🟢 LIVE • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
-              <p className="text-slate-300 text-[10.5px] truncate max-w-4xl mt-0.5">
-                <strong>TEAM STEP 3:</strong> តាមដានសម្ភារៈដែលបានបង្កើតការប្រគល់ (Create Hand Over) រួចហើយ ប៉ុន្តែក្រុមការងារមិនទាន់បានទទួល និងបញ្ជាក់ (Confirm) នៅឡើយ។
-              </p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2.5 py-1 rounded-lg text-xs font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer">📊 KPI Matrix</button>
+            <div className="flex gap-1.5 items-center">
+              <span className="text-slate-300 text-[10px] hidden lg:inline mr-2">
+                <strong>TEAM STEP 3:</strong> តាមដានសម្ភារៈ Create Hand Over
+              </span>
+              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
+              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer">📊 KPI Matrix</button>
             </div>
           </div>
         </div>
 
         {/* ─── TOOLBAR & ACTION BAR ─── */}
-        <div className="px-4 py-2 bg-slate-100 border-b border-slate-300 flex-shrink-0">
+        <div className="px-3 py-1 bg-slate-100 border-b border-slate-300 flex-shrink-0">
           <div className="flex flex-wrap gap-2 justify-between items-center">
-            <div className="flex flex-wrap gap-1.5">
-              <button onClick={() => setShowPasteModal(true)} className="px-3 py-1.5 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-3 py-1.5 bg-slate-800 text-white rounded-lg hover:bg-slate-900 transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer">📎 Export Excel</button>
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">🔄 Smart Import</button>
+              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">📎 Export Excel</button>
               {selectedRows.size > 0 && (
-                <button onClick={deleteSelectedRows} className="px-3 py-1.5 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-all text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer">🗑️ Complete ({selectedRows.size})</button>
+                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">🗑️ Complete ({selectedRows.size})</button>
               )}
+
+              {/* 🗓️ DAYS QUICK FILTER CHIPS */}
+              <div className="flex items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
+                <span className="text-[10px] font-extrabold text-slate-600">🗓️ Days:</span>
+                {[
+                  { id: 'ALL', label: 'All' },
+                  { id: '0', label: '0d' },
+                  { id: '1-3', label: '1-3d' },
+                  { id: '4-6', label: '4-6d' },
+                  { id: '>=4', label: '>=4d 🚨' },
+                  { id: '>=7', label: '>=7d 🔴' },
+                ].map(pill => (
+                  <button
+                    key={pill.id}
+                    onClick={() => { setDaysFilter(pill.id); setCurrentPage(1); }}
+                    className={`px-1.5 py-0.25 rounded text-[9.5px] font-black transition-all cursor-pointer ${
+                      daysFilter === pill.id 
+                        ? 'bg-rose-700 text-white shadow-2xs' 
+                        : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+                    }`}
+                  >
+                    {pill.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex gap-2 items-center flex-wrap">
-              <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg shadow-xs text-[11px]">
+              <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-xs text-[10px]">
                 <span className="font-bold text-amber-900">⚠️ Threshold &ge;</span>
-                <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-12 px-1 py-0.5 text-xs font-bold border border-amber-300 rounded text-center bg-white" min="1"/>
-                <span className="font-bold text-amber-900">days</span>
+                <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-10 px-1 py-0 text-[10px] font-bold border border-amber-300 rounded text-center bg-white" min="1"/>
+                <span className="font-bold text-amber-900">d</span>
               </div>
-              <div className="relative">
-                <input type="text" placeholder="Search code, team, unit..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-48 sm:w-60 px-3 py-1 text-xs font-medium border border-slate-300 rounded-lg bg-white focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all shadow-xs" />
-              </div>
+              <input type="text" placeholder="Search code, team, unit..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-44 sm:w-56 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-rose-500 focus:border-transparent outline-none transition-all shadow-xs" />
             </div>
           </div>
         </div>
 
         {/* ─── STATS SUMMARY BAR (COMPACT INLINE) ─── */}
-        <div className="px-4 py-1.5 bg-slate-200/70 border-b border-slate-300 grid grid-cols-3 sm:grid-cols-6 gap-2 flex-shrink-0 text-[10px]">
-          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-300 shadow-xs flex items-center justify-between">
+        <div className="px-3 py-0.5 bg-slate-200/70 border-b border-slate-300 grid grid-cols-3 sm:grid-cols-6 gap-1.5 flex-shrink-0 text-[9.5px]">
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
             <span className="font-black uppercase tracking-wider text-slate-500">System Records</span>
-            <span className="text-sm font-black text-slate-900">{data.length}</span>
+            <span className="text-xs font-black text-slate-900">{data.length}</span>
           </div>
-          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-300 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
             <span className="font-black uppercase tracking-wider text-rose-600">Not Confirmed</span>
-            <span className="text-sm font-black text-rose-700">{filteredData.length}</span>
+            <span className="text-xs font-black text-rose-700">{filteredData.length}</span>
           </div>
-          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-300 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
             <span className="font-black uppercase tracking-wider text-indigo-600">Selected</span>
-            <span className="text-sm font-black text-indigo-700">{selectedRows.size}</span>
+            <span className="text-xs font-black text-indigo-700">{selectedRows.size}</span>
           </div>
-          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-300 shadow-xs flex items-center justify-between">
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
             <span className="font-black uppercase tracking-wider text-amber-600">Threshold</span>
-            <span className="text-sm font-black text-amber-700">&ge;{alarmThreshold}d</span>
+            <span className="text-xs font-black text-amber-700">&ge;{alarmThreshold}d</span>
           </div>
-          <div className={`bg-white rounded-lg px-2.5 py-1 border shadow-xs cursor-pointer flex items-center justify-between hover:bg-rose-50 transition-all ${alarmCount > 0 ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300'}`} onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}>
+          <div className={`bg-white rounded px-2 py-0.5 border shadow-xs cursor-pointer flex items-center justify-between hover:bg-rose-50 transition-all ${alarmCount > 0 ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300'}`} onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}>
             <span className="font-black uppercase tracking-wider text-rose-700">Delay Alarms</span>
-            <span className={`text-sm font-black ${alarmCount > 0 ? 'text-rose-600 animate-pulse' : 'text-emerald-600'}`}>{alarmCount}</span>
+            <span className={`text-xs font-black ${alarmCount > 0 ? 'text-rose-600 animate-pulse' : 'text-emerald-600'}`}>{alarmCount}</span>
           </div>
-          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-300 shadow-xs flex items-center justify-between cursor-pointer hover:bg-purple-50 transition-all" onClick={() => setShowKPIModal(true)}>
+          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between cursor-pointer hover:bg-purple-50 transition-all" onClick={() => setShowKPIModal(true)}>
             <span className="font-black uppercase tracking-wider text-purple-600">Total Confirmed</span>
-            <span className="text-sm font-black text-purple-700">{calculateKPIData.summary.result}</span>
+            <span className="text-xs font-black text-purple-700">{calculateKPIData.summary.result}</span>
           </div>
         </div>
 
         {/* ─── EXCEL MATRIX TABLE (DYNAMIC FILL SCREEN) ─── */}
-        <div className="flex-1 min-h-0 overflow-auto bg-white">
-          <table className="min-w-full border-collapse border border-slate-300 text-[10.5px] table-auto">
-            <thead className="bg-slate-800 text-white sticky top-0 z-20 shadow-xs">
-              <tr className="bg-slate-800 text-white font-black uppercase tracking-wider text-[10px]">
-                <th className="border border-slate-700 px-1.5 py-1.5 w-7 text-center sticky top-0 z-20 bg-slate-800">
+        <div className="flex-1 min-h-0 overflow-auto bg-white border-t border-b border-slate-300">
+          <table className="min-w-full border-collapse border border-slate-300 text-[9.5px] leading-tight table-auto bg-white">
+            <thead>
+              <tr className="bg-slate-800 text-white font-black uppercase tracking-wider text-[9px]">
+                <th className="border border-slate-700 px-1 py-0.5 w-6 text-center sticky top-0 z-20 bg-slate-800">
                   <input type="checkbox" checked={selectedRows.size === filteredData.length && filteredData.length > 0} onChange={toggleSelectAll} className="rounded" />
                 </th>
                 {columns.map(col => (
-                  <th key={col.key} className={`border border-slate-700 px-2 py-1.5 font-extrabold whitespace-nowrap sticky top-0 z-20 bg-slate-800 ${col.width} ${col.align || 'text-left'}`}>
-                    {col.label}
+                  <th 
+                    key={col.key} 
+                    onClick={col.key === 'daysDiff' ? () => setDaysSortOrder(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none') : undefined}
+                    className={`border border-slate-700 px-1.5 py-0.5 font-extrabold whitespace-nowrap sticky top-0 z-20 bg-slate-800 ${col.width} ${col.align || 'text-left'} ${col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-700 select-none text-amber-300' : ''}`}
+                    title={col.key === 'daysDiff' ? 'Click to sort by Days' : undefined}
+                  >
+                    {col.key === 'daysDiff' ? `Days ${daysSortOrder === 'desc' ? '⬇️' : daysSortOrder === 'asc' ? '⬆️' : '↕️'}` : col.label}
                   </th>
                 ))}
               </tr>
@@ -1427,63 +1482,63 @@ const StockOutNoteConfirmed = () => {
                 const isAlarm = item.daysDiff >= alarmThreshold && !dismissedItems.has(item.id);
                 return (
                   <tr key={item.id} className={`transition-colors ${isAlarm ? 'bg-rose-50/90 font-semibold' : selectedRows.has(item.id) ? 'bg-blue-50/90' : 'even:bg-slate-50/70 odd:bg-white hover:bg-amber-50/80'}`}>
-                    <td className="border border-slate-300 px-1.5 py-1 text-center bg-white/50">
+                    <td className="border border-slate-300 px-1 py-0.25 text-center bg-white/50">
                       <input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" />
                     </td>
-                    <td className="border border-slate-300 px-1.5 py-1 text-slate-500 font-bold text-center bg-slate-100/70">{item.no}</td>
-                    <td className="border border-slate-300 px-2 py-1 font-mono font-bold text-slate-900">
+                    <td className="border border-slate-300 px-1 py-0.25 text-slate-500 font-bold text-center bg-slate-100/70">{item.no}</td>
+                    <td className="border border-slate-300 px-1.5 py-0.25 font-mono font-bold text-slate-900 whitespace-nowrap min-w-[170px]">
                       {editingCell?.id === item.id && editingCell?.field === 'code' ? (
-                        <input type="text" defaultValue={item.code} autoFocus onBlur={(e) => saveEdit(item.id, 'code', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'code')} className="w-full px-1 py-0.5 border border-blue-500 rounded font-mono text-[10.5px] bg-white" />
+                        <input type="text" defaultValue={item.code} autoFocus onBlur={(e) => saveEdit(item.id, 'code', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'code')} className="w-full px-1 py-0 border border-blue-500 rounded font-mono text-[9.5px] bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'code', item.code)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded font-mono">{item.code || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'code', item.code)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0 rounded font-mono">{item.code || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-slate-800">
+                    <td className="border border-slate-300 px-1.5 py-0.25 text-slate-800 whitespace-nowrap">
                       {editingCell?.id === item.id && editingCell?.field === 'type' ? (
-                        <input type="text" defaultValue={item.type} autoFocus onBlur={(e) => saveEdit(item.id, 'type', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'type')} className="w-full px-1 py-0.5 border border-blue-500 rounded bg-white" />
+                        <input type="text" defaultValue={item.type} autoFocus onBlur={(e) => saveEdit(item.id, 'type', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'type')} className="w-full px-1 py-0 border border-blue-500 rounded bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'type', item.type)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded">{item.type || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'type', item.type)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0 rounded">{item.type || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-slate-800 font-medium">
+                    <td className="border border-slate-300 px-1.5 py-0.25 text-slate-800 font-medium whitespace-nowrap">
                       {editingCell?.id === item.id && editingCell?.field === 'handoverUnit' ? (
-                        <input type="text" defaultValue={item.handoverUnit} autoFocus onBlur={(e) => saveEdit(item.id, 'handoverUnit', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'handoverUnit')} className="w-full px-1 py-0.5 border border-blue-500 rounded bg-white" />
+                        <input type="text" defaultValue={item.handoverUnit} autoFocus onBlur={(e) => saveEdit(item.id, 'handoverUnit', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'handoverUnit')} className="w-full px-1 py-0 border border-blue-500 rounded bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'handoverUnit', item.handoverUnit)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded">{item.handoverUnit || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'handoverUnit', item.handoverUnit)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0 rounded">{item.handoverUnit || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-slate-800 font-bold">
+                    <td className="border border-slate-300 px-1.5 py-0.25 text-slate-800 font-bold whitespace-nowrap">
                       {editingCell?.id === item.id && editingCell?.field === 'unitConfirm' ? (
-                        <input type="text" defaultValue={item.unitConfirm} autoFocus onBlur={(e) => saveEdit(item.id, 'unitConfirm', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'unitConfirm')} className="w-full px-1 py-0.5 border border-blue-500 rounded bg-white" />
+                        <input type="text" defaultValue={item.unitConfirm} autoFocus onBlur={(e) => saveEdit(item.id, 'unitConfirm', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'unitConfirm')} className="w-full px-1 py-0 border border-blue-500 rounded bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'unitConfirm', item.unitConfirm)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded">{getUnitConfirmBadge(item.unitConfirm)}</div>
+                        <div onClick={() => startEdit(item.id, 'unitConfirm', item.unitConfirm)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0 rounded">{getUnitConfirmBadge(item.unitConfirm)}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-mono text-slate-700 whitespace-nowrap">
+                    <td className="border border-slate-300 px-1.5 py-0.25 text-center font-mono text-slate-700 whitespace-nowrap">
                       {editingCell?.id === item.id && editingCell?.field === 'date' ? (
-                        <input type="text" defaultValue={item.date} autoFocus onBlur={(e) => saveEdit(item.id, 'date', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'date')} className="w-full px-1 py-0.5 border border-blue-500 rounded font-mono text-[10.5px] text-center bg-white" />
+                        <input type="text" defaultValue={item.date} autoFocus onBlur={(e) => saveEdit(item.id, 'date', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'date')} className="w-full px-1 py-0 border border-blue-500 rounded font-mono text-[9.5px] text-center bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'date', item.date)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded font-mono text-center">{item.date || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'date', item.date)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0 rounded font-mono text-center">{item.date || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-bold text-rose-700 whitespace-nowrap bg-rose-50/40">
+                    <td className="border border-slate-300 px-1.5 py-0.25 text-center font-bold text-rose-700 whitespace-nowrap bg-rose-50/40">
                       {item.status || '-'}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center whitespace-nowrap">
-                      <span className="inline-flex px-1.5 py-0.5 rounded font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200">
+                    <td className="border border-slate-300 px-1.5 py-0.25 text-center whitespace-nowrap">
+                      <span className="inline-flex px-1 py-0 rounded font-mono font-bold text-purple-700 bg-purple-50 border border-purple-200">
                         {item.team || '-'}
                       </span>
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-bold whitespace-nowrap">
-                      <span className={`inline-flex px-1.5 py-0.5 rounded font-mono text-[10px] font-black ${
+                    <td className="border border-slate-300 px-1 py-0.25 text-center font-bold whitespace-nowrap">
+                      <span className={`inline-flex px-1 py-0 rounded font-mono text-[9px] font-black ${
                         item.daysDiff >= alarmThreshold ? 'bg-rose-100 text-rose-800 border border-rose-300 animate-pulse' :
                         item.daysDiff > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                       }`}>
                         {item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} d
                       </span>
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center whitespace-nowrap">
-                      <span className="inline-flex px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold bg-slate-200 text-slate-800 border border-slate-300">
+                    <td className="border border-slate-300 px-1 py-0.25 text-center whitespace-nowrap">
+                      <span className="inline-flex px-1.5 py-0 rounded-full text-[9px] font-extrabold bg-slate-200 text-slate-800 border border-slate-300">
                         {item.unit || 'OTHER'}
                       </span>
                     </td>
@@ -1506,8 +1561,8 @@ const StockOutNoteConfirmed = () => {
         </div>
 
         {/* ─── PAGINATION BAR ─── */}
-        <div className="bg-slate-100 px-6 py-3 border-t border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-700">
-          <div className="flex items-center gap-2">
+        <div className="bg-slate-100 px-3 py-1 border-t border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-2 text-[11px] text-slate-700 flex-shrink-0">
+          <div className="flex items-center gap-1.5">
             <span className="font-semibold text-slate-600">Show</span>
             <select 
               value={pageSize} 
@@ -1516,7 +1571,7 @@ const StockOutNoteConfirmed = () => {
                 setPageSize(val === 'ALL' ? 'ALL' : parseInt(val)); 
                 setCurrentPage(1); 
               }} 
-              className="border border-slate-300 rounded-lg px-2 py-1 bg-white font-bold text-slate-800 shadow-xs"
+              className="border border-slate-300 rounded px-1.5 py-0.5 bg-white font-bold text-slate-800 shadow-xs text-[11px]"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
@@ -1534,11 +1589,11 @@ const StockOutNoteConfirmed = () => {
             </span>
           </div>
           
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-lg border font-bold text-xs cursor-pointer transition-colors ${currentPage === 1 ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
+              className={`px-2 py-0.5 rounded border font-bold text-[11px] cursor-pointer transition-colors ${currentPage === 1 ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
             >
               Prev
             </button>
@@ -1557,7 +1612,7 @@ const StockOutNoteConfirmed = () => {
                 <button 
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-1 rounded-lg border text-xs font-black cursor-pointer transition-colors ${currentPage === pageNum ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50'}`}
+                  className={`px-2 py-0.5 rounded border text-[11px] font-black cursor-pointer transition-colors ${currentPage === pageNum ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50'}`}
                 >
                   {pageNum}
                 </button>
@@ -1567,7 +1622,7 @@ const StockOutNoteConfirmed = () => {
             <button 
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-lg border font-bold text-xs cursor-pointer transition-colors ${currentPage === totalPages ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
+              className={`px-2 py-0.5 rounded border font-bold text-[11px] cursor-pointer transition-colors ${currentPage === totalPages ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
             >
               Next
             </button>
@@ -1575,7 +1630,7 @@ const StockOutNoteConfirmed = () => {
         </div>
 
         {/* ─── FOOTER ─── */}
-        <div className="bg-slate-100 px-6 py-3 border-t border-slate-300 text-xs font-semibold text-slate-600 flex justify-between flex-wrap gap-2">
+        <div className="bg-slate-100 px-4 py-1.5 border-t border-slate-300 text-[10px] font-semibold text-slate-600 flex justify-between flex-wrap gap-2 flex-shrink-0">
           <span>📋 Total GIS Not Confirmed: <strong>{filteredData.length}</strong> rows | Delay Alarms: <strong>{alarmCount}</strong></span>
         </div>
       </div>
