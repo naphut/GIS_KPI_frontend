@@ -1390,20 +1390,18 @@ const Import_CA = () => {
     );
   };
 
-  const renderFloatingButtons = () => (
-    <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-40">
-      {alarmCount > 0 && !showAlarmModal && (
-        <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 animate-bounce flex items-center gap-2 transform hover:scale-105">
-          <span className="text-xl animate-pulse">🚨</span>
-          <span className="font-bold">{alarmCount}</span>
+  // ─── FLOATING BUTTONS (KPI is accessible via top ribbon and stats summary bar) ───
+  const renderFloatingButtons = () => {
+    if (alarmCount === 0 || showAlarmModal) return null;
+    return (
+      <div className="fixed bottom-20 right-6 flex flex-col gap-3 z-40">
+        <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-full shadow-lg animate-bounce flex items-center gap-2 border-2 border-white transition-colors">
+          <span className="text-lg">🚨</span>
+          <span className="font-bold text-sm">{alarmCount}</span>
         </button>
-      )}
-      <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-2 transform hover:scale-105">
-        <span className="text-xl">📊</span>
-        <span className="font-bold">KPI</span>
-      </button>
-    </div>
-  );
+      </div>
+    );
+  };
 
   return (
     <div className="w-full px-4 py-6 bg-gray-50 min-h-screen">

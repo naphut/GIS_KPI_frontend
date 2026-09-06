@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
   generateAllModulesExcelBlob,
+  generateMetfoneExcelBlob,
   getConfiguredUnits 
 } from '../../services/telegramBot';
 
@@ -43,9 +44,11 @@ const Sidebar = ({
   const [isStockoutOpen, setIsStockoutOpen] = useState(false);
   const [isSignedCAOpen, setIsSignedCAOpen] = useState(false);
   const [isRestockOpen, setIsRestockOpen] = useState(false);
+  const [isMetfoneNetOpen, setIsMetfoneNetOpen] = useState(false);
   const [isSendAllOpen, setIsSendAllOpen] = useState(false);
   const [isSendSingleOpen, setIsSendSingleOpen] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState('BAT');
+  const [selectedUnit, setSelectedUnit] = useState('CHA');
+  const [selectedSystem, setSelectedSystem] = useState('metfone');
 
   const [localIsSending, localSetIsSending] = useState(false);
   const isSending = parentIsSending !== undefined ? parentIsSending : localIsSending;
@@ -56,14 +59,26 @@ const Sidebar = ({
       setIsStockoutOpen(true);
       setIsSignedCAOpen(false);
       setIsRestockOpen(false);
+      setIsMetfoneNetOpen(false);
+      setSelectedSystem('gis');
     } else if (['STOCK_OUT_IS_SIGNING', 'STOCK_IN_IS_SIGNING', 'signed_ca_group'].includes(selected)) {
       setIsSignedCAOpen(true);
       setIsStockoutOpen(false);
       setIsRestockOpen(false);
+      setIsMetfoneNetOpen(false);
+      setSelectedSystem('gis');
     } else if (['RESTOCK_IN', 'RESTOCK_OUT', 'restock_group'].includes(selected)) {
       setIsRestockOpen(true);
       setIsStockoutOpen(false);
       setIsSignedCAOpen(false);
+      setIsMetfoneNetOpen(false);
+      setSelectedSystem('gis');
+    } else if (['METFONE_STOCKOUT_YET_CONFIRM', 'METFONE_NOT_CREATE_HAND_OVER', 'METFONE_HAND_OVER_YET_CONFIRM', 'metfone_net_group'].includes(selected)) {
+      setIsMetfoneNetOpen(true);
+      setIsStockoutOpen(false);
+      setIsSignedCAOpen(false);
+      setIsRestockOpen(false);
+      setSelectedSystem('metfone');
     }
   }, [selected]);
 
@@ -157,6 +172,36 @@ const Sidebar = ({
         },
       ]
     },
+    { 
+      id: 'metfone_net_group', 
+      label: 'SYSTEM METFONE NET', 
+      icon: '🌐',
+      number: '04',
+      isGroup: true,
+      children: [
+        { 
+          id: 'METFONE_STOCKOUT_YET_CONFIRM', 
+          label: '01_STOCKOUT_YET CONFIRM', 
+          icon: '📦',
+          number: '01',
+          desc: 'Stockout yet confirm'
+        },
+        { 
+          id: 'METFONE_NOT_CREATE_HAND_OVER', 
+          label: '02_NOT CREATE HAND OVER', 
+          icon: '📝',
+          number: '02',
+          desc: 'Not create hand over'
+        },
+        { 
+          id: 'METFONE_HAND_OVER_YET_CONFIRM', 
+          label: '03_HAND OVER_YET CONFIRM', 
+          icon: '⚠️',
+          number: '03',
+          desc: 'Hand over yet confirm'
+        },
+      ]
+    },
   ];
 
   const isGroupActive = (groupItem) => {
@@ -170,24 +215,35 @@ const Sidebar = ({
     setIsStockoutOpen(!isStockoutOpen);
     setIsSignedCAOpen(false);
     setIsRestockOpen(false);
+    setIsMetfoneNetOpen(false);
   };
 
   const toggleSignedCA = () => {
     setIsSignedCAOpen(!isSignedCAOpen);
     setIsStockoutOpen(false);
     setIsRestockOpen(false);
+    setIsMetfoneNetOpen(false);
   };
 
   const toggleRestock = () => {
     setIsRestockOpen(!isRestockOpen);
     setIsStockoutOpen(false);
     setIsSignedCAOpen(false);
+    setIsMetfoneNetOpen(false);
+  };
+
+  const toggleMetfoneNet = () => {
+    setIsMetfoneNetOpen(!isMetfoneNetOpen);
+    setIsStockoutOpen(false);
+    setIsSignedCAOpen(false);
+    setIsRestockOpen(false);
   };
 
   const getToggleFunction = (itemId) => {
     if (itemId === 'stockout_group') return toggleStockout;
     if (itemId === 'signed_ca_group') return toggleSignedCA;
     if (itemId === 'restock_group') return toggleRestock;
+    if (itemId === 'metfone_net_group') return toggleMetfoneNet;
     return () => {};
   };
 
@@ -195,24 +251,37 @@ const Sidebar = ({
     if (itemId === 'stockout_group') return isStockoutOpen;
     if (itemId === 'signed_ca_group') return isSignedCAOpen;
     if (itemId === 'restock_group') return isRestockOpen;
+    if (itemId === 'metfone_net_group') return isMetfoneNetOpen;
     return false;
   };
 
   const handleExportAll = async () => {
     try {
-      const unit = 'ALL';
-      const blob = generateAllModulesExcelBlob(unit);
-      
-      // Download file locally
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      const filename = `GIS_DASHBOARD_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      if (selectedSystem === 'metfone') {
+        const unit = 'ALL';
+        const blob = generateMetfoneExcelBlob([], [], [], unit);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const filename = `METFONE_NET_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } else {
+        const unit = 'ALL';
+        const blob = generateAllModulesExcelBlob(unit);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const filename = `GIS_DASHBOARD_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
     } catch (error) {
       console.error('Failed to export dashboard data:', error);
     }
@@ -229,7 +298,8 @@ const Sidebar = ({
   const handleSendByProvince = async () => {
     if (isSending) return;
     try {
-      const confirmSend = window.confirm("តើអ្នកពិតជាចង់ផ្ញើរបាយការណ៍បំបែកតាមខេត្តនីមួយៗ (UNIT) ទៅកាន់ Telegram មែនទេ?");
+      const systemName = selectedSystem === 'metfone' ? 'Metfone NET' : 'GIS System';
+      const confirmSend = window.confirm(`តើអ្នកពិតជាចង់ផ្ញើរបាយការណ៍ ${systemName} បំបែកតាមខេត្តនីមួយៗ (UNIT) ទៅកាន់ Telegram មែនទេ?`);
       if (!confirmSend) return;
 
       const units = getConfiguredUnits();
@@ -247,13 +317,13 @@ const Sidebar = ({
           throw new Error('CANCELLED');
         }
         if (onSendTelegram) {
-          await onSendTelegram(u);
+          await onSendTelegram(u, selectedSystem);
         }
       }
       if (cancelRef && cancelRef.current) {
         throw new Error('CANCELLED');
       }
-      alert('✅ ផ្ញើទិន្នន័យតាម UNIT នីមួយៗបានជោគជ័យ!');
+      alert(`✅ ផ្ញើទិន្នន័យ ${systemName} តាម UNIT នីមួយៗបានជោគជ័យ!`);
     } catch (error) {
       if (error.message === 'CANCELLED') {
         console.log('Sending by province cancelled by user.');
@@ -266,11 +336,11 @@ const Sidebar = ({
     }
   };
 
-
   const handleSendSingle = async () => {
     if (isSending) return;
     try {
-      const confirmSend = window.confirm(`តើអ្នកពិតជាចង់ផ្ញើរបាយការណ៍របស់ UNIT ${selectedUnit} ទៅកាន់ Telegram មែនទេ?`);
+      const systemName = selectedSystem === 'metfone' ? 'Metfone NET' : 'GIS System';
+      const confirmSend = window.confirm(`តើអ្នកពិតជាចង់ផ្ញើរបាយការណ៍ ${systemName} របស់ UNIT ${selectedUnit} ទៅកាន់ Telegram មែនទេ?`);
       if (!confirmSend) return;
 
       if (cancelRef) {
@@ -278,12 +348,12 @@ const Sidebar = ({
       }
       setIsSending(true);
       if (onSendTelegram) {
-        await onSendTelegram(selectedUnit);
+        await onSendTelegram(selectedUnit, selectedSystem);
       }
       if (cancelRef && cancelRef.current) {
         throw new Error('CANCELLED');
       }
-      alert(`✅ ផ្ញើទិន្នន័យរបស់ UNIT ${selectedUnit} បានជោគជ័យ!`);
+      alert(`✅ ផ្ញើទិន្នន័យ ${systemName} របស់ UNIT ${selectedUnit} បានជោគជ័យ!`);
     } catch (error) {
       if (error.message === 'CANCELLED') {
         console.log('Sending single unit cancelled by user.');
@@ -369,6 +439,8 @@ const Sidebar = ({
                             setIsSignedCAOpen(true);
                           } else if (item.id === 'restock_group') {
                             setIsRestockOpen(true);
+                          } else if (item.id === 'metfone_net_group') {
+                            setIsMetfoneNetOpen(true);
                           }
                         }}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 group ${
@@ -433,10 +505,15 @@ const Sidebar = ({
 
       {/* ─── EXPORT & TELEGRAM ACTIONS PANEL ─── */}
       <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
-        <div className="flex items-center gap-2 px-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            របាយការណ៍ & ផ្ញើ TELEGRAM
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              របាយការណ៍ & ផ្ញើ TELEGRAM
+            </span>
+          </div>
+          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
+            {selectedSystem === 'metfone' ? '📡 Metfone' : '🗺️ GIS'}
           </span>
         </div>
 
@@ -466,6 +543,26 @@ const Sidebar = ({
           
           {isSendAllOpen && (
             <div className="p-3 space-y-2.5 border-t border-slate-100 bg-white/50">
+              {/* Select System for Send All */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>⚙️ Select System</span>
+                  <span className="text-indigo-600 font-black">{selectedSystem === 'metfone' ? 'Metfone NET' : 'GIS System'}</span>
+                </div>
+                <div className="relative">
+                  <select
+                    value={selectedSystem}
+                    onChange={(e) => setSelectedSystem(e.target.value)}
+                    disabled={isSending}
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50/40 text-indigo-950 text-xs font-black focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                    style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'none\'%3E%3Cpath d=\'M7 9l3 3 3-3\' stroke=\'%236366F1\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")', backgroundPosition: 'right 10px center', backgroundSize: '16px', backgroundRepeat: 'no-repeat' }}
+                  >
+                    <option value="metfone">📡 Metfone NET</option>
+                    <option value="gis">🗺️ GIS System</option>
+                  </select>
+                </div>
+              </div>
+
               <button
                 onClick={isSending ? handleCancel : handleSendByProvince}
                 className={`w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-white text-xs font-bold shadow-xs active:scale-[0.98] transition-all duration-200 cursor-pointer ${
@@ -499,20 +596,47 @@ const Sidebar = ({
           
           {isSendSingleOpen && (
             <div className="p-3 space-y-2.5 border-t border-slate-100 bg-white/50">
-              <div className="relative">
-                <select
-                  value={selectedUnit}
-                  onChange={(e) => setSelectedUnit(e.target.value)}
-                  disabled={isSending}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/40 text-slate-700 text-xs font-extrabold focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'none\'%3E%3Cpath d=\'M7 9l3 3 3-3\' stroke=\'%2364748B\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")', backgroundPosition: 'right 10px center', backgroundSize: '16px', backgroundRepeat: 'no-repeat' }}
-                >
-                  {unitOptions.map((opt) => (
-                    <option key={opt.code} value={opt.code}>
-                      {opt.name}
-                    </option>
-                  ))}
-                </select>
+              {/* Select Branch */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>🏢 Select Branch</span>
+                  <span className="text-slate-700 font-bold">{selectedUnit}</span>
+                </div>
+                <div className="relative">
+                  <select
+                    value={selectedUnit}
+                    onChange={(e) => setSelectedUnit(e.target.value)}
+                    disabled={isSending}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/40 text-slate-700 text-xs font-extrabold focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'none\'%3E%3Cpath d=\'M7 9l3 3 3-3\' stroke=\'%2364748B\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")', backgroundPosition: 'right 10px center', backgroundSize: '16px', backgroundRepeat: 'no-repeat' }}
+                  >
+                    {unitOptions.map((opt) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Select System (Metfone NET vs GIS System) */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>⚙️ Select System</span>
+                  <span className="text-indigo-600 font-black">{selectedSystem === 'metfone' ? 'Metfone NET' : 'GIS System'}</span>
+                </div>
+                <div className="relative">
+                  <select
+                    value={selectedSystem}
+                    onChange={(e) => setSelectedSystem(e.target.value)}
+                    disabled={isSending}
+                    className="w-full px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50/40 text-indigo-950 text-xs font-black focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                    style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'none\'%3E%3Cpath d=\'M7 9l3 3 3-3\' stroke=\'%236366F1\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")', backgroundPosition: 'right 10px center', backgroundSize: '16px', backgroundRepeat: 'no-repeat' }}
+                  >
+                    <option value="metfone">📡 Metfone NET</option>
+                    <option value="gis">🗺️ GIS System</option>
+                  </select>
+                </div>
               </div>
               
               <button

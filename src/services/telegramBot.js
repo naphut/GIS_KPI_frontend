@@ -17,31 +17,31 @@ const DEFAULT_TOKEN = '8571996109:AAHiDszOTGk4uEnb0iPKcnNXlGoTSE7K740';
 
 
 const GROUP_IDS = {
-  'BAN': '-4064404599',
-  'BAT': '-4040029628',
-  'CHA': '-4049172108',
-  'CHH': '-4051031281',
-  'KAM': '-4095493891',
-  'KAN': '-972214275',
-  'KANZ1': '-4660884501',
-  'KOH': '-4040314167',
-  'KRA': '-4043528749',
-  'MON': '-4098682856',
-  'ODD': '-916660446',
-  PNP: "-5359041682",
-  'PNPZ1': '-1002524347910',
-  'PNPZ2': '-1002766967718',
-'PRE': '-4041390598',
-  'PRH': '-4012609247',
-  'PUR': '-4056509295',
-  'ROT': '-4085028170',
-  'SIE': '-4033369254',
-  'SIH': '-4011071980',
-  'SPE': '-4022650547',
-  'STU': '-4037945549',
-  'SVA': '-4076297232',
-  'TAK': '-4099541459',
-  'THO': '-4075992457',
+  'BAN': '-5586791976',
+  'BAT': '-1004433153728',
+  'CHA': '-5504508662',
+  'CHH': 'NEW_ID',
+  'KAM': 'NEW_ID',
+  'KAN': '-5236231454',
+  'KANZ1': '-5274252058',
+  'KOH': 'NEW_ID',
+  'KRA': 'NEW_ID',
+  'MON': 'NEW_ID',
+  'ODD': 'NEW_ID',
+  'PNP': '-5359041682',
+  'PNPZ1': 'NEW_ID',
+  'PNPZ2': 'NEW_ID',
+  'PRE': 'NEW_ID',
+  'PRH': 'NEW_ID',
+  'PUR': 'NEW_ID',
+  'ROT': 'NEW_ID',
+  'SIE': 'NEW_ID',
+  'SIH': 'NEW_ID',
+  'SPE': 'NEW_ID',
+  'STU': 'NEW_ID',
+  'SVA': 'NEW_ID',
+  'TAK': 'NEW_ID',
+  'THO': 'NEW_ID',
 };
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
@@ -2863,4 +2863,344 @@ export const generateAllModulesExcelBlob = (unit = 'ALL') => {
   ];
 
   return createExcelXmlBlob(sheets);
+};
+
+// ============================================================
+// 📌 METFONE NET FUNCTIONS (04 SYSTEM METFONE NET)
+// ============================================================
+
+export const formatMetfoneMessage = (unit, data, customNote = '') => {
+  let unitData = data;
+  if (data && data.units && data.units[unit]) {
+    unitData = data.units[unit];
+  }
+
+  const m1Items = unitData?.m1Items || [];
+  const m2Items = unitData?.m2Items || [];
+  const m3Items = unitData?.m3Items || [];
+  const totalPending = m1Items.length + m2Items.length + m3Items.length;
+
+  if (totalPending === 0) {
+    return `✅ <b>No pending items for all teams!</b>`;
+  }
+
+  // Helper to group items by team for a given module
+  const groupByTeam = (items, getTeamFn) => {
+    const map = {};
+    items.forEach(item => {
+      const rawTeam = getTeamFn(item);
+      const team = getTeamFromRecipient(rawTeam) || rawTeam || '-';
+      if (!map[team]) map[team] = [];
+      map[team].push(item);
+    });
+    return map;
+  };
+
+  const parts = [];
+
+  // STEP 1 Section (Stockout Yet Confirm)
+  if (m1Items.length > 0) {
+    const m1Groups = groupByTeam(m1Items, item => item.team && item.team !== '-' ? item.team : (item.groupReceiver || item.stockReceiver || '-'));
+    const m1Teams = Object.keys(m1Groups).sort((a, b) => a.localeCompare(b));
+    let stepMsg = `🔹 <b>STEP 1</b>\n`;
+    m1Teams.forEach(team => {
+      stepMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
+      m1Groups[team].forEach(item => {
+        const days = parseInt(item.daysDiff) || 0;
+        const code = item.exportNo || item.code || '-';
+        stepMsg += ` • <code>${escapeHtml(code)}(${days}d)</code>\n`;
+      });
+    });
+    parts.push(stepMsg);
+  }
+
+  // STEP 2 Section (No Create Handover)
+  if (m2Items.length > 0) {
+    const m2Groups = groupByTeam(m2Items, item => item.team || item.recipient || '-');
+    const m2Teams = Object.keys(m2Groups).sort((a, b) => a.localeCompare(b));
+    let stepMsg = `🔸 <b>STEP 2</b>\n`;
+    m2Teams.forEach(team => {
+      stepMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
+      m2Groups[team].forEach(item => {
+        const days = parseInt(item.daysDiff) || 0;
+        const code = item.codeStockOut || item.code || '-';
+        stepMsg += ` • <code>${escapeHtml(code)}(${days}d)</code>\n`;
+      });
+    });
+    parts.push(stepMsg);
+  }
+
+  // STEP 3 Section (Handover Not Confirmed)
+  if (m3Items.length > 0) {
+    const m3Groups = groupByTeam(m3Items, item => item.team || item.unitConfirm || '-');
+    const m3Teams = Object.keys(m3Groups).sort((a, b) => a.localeCompare(b));
+    let stepMsg = `🔺 <b>STEP 3</b>\n`;
+    m3Teams.forEach(team => {
+      stepMsg += `👥 <b>TEAM:</b> <code>${escapeHtml(team)}</code>\n`;
+      m3Groups[team].forEach(item => {
+        const days = parseInt(item.daysDiff) || 0;
+        const code = item.codeHandover || item.code || '-';
+        stepMsg += ` • <code>${escapeHtml(code)}(${days}d)</code>\n`;
+      });
+    });
+    parts.push(stepMsg);
+  }
+
+  let message = parts.join('[SPLIT]\n');
+  message += `\n📊 <b>ចំនួនសរុប៖</b> ${totalPending} Items\n`;
+
+  if (customNote && customNote.trim()) {
+    message += `━━━━━━━━━━━━━━━━━━━━━━━\n📝 <b>NOTE:</b>\n${escapeHtml(customNote.trim())}\n`;
+  }
+
+  return message.trim();
+};
+
+export const generateMetfoneExcelBlob = (m1Items = [], m2Items = [], m3Items = [], unit = 'ALL') => {
+  const isUnitUser = unit !== 'ALL';
+  const userUnit = unit;
+
+  let filteredM1 = (Array.isArray(m1Items) && m1Items.length > 0) ? m1Items : (getStorageData('metfone_stockout_data') || []);
+  let filteredM2 = (Array.isArray(m2Items) && m2Items.length > 0) ? m2Items : (getStorageData('metfone_nocreate_data') || []);
+  let filteredM3 = (Array.isArray(m3Items) && m3Items.length > 0) ? m3Items : (getStorageData('metfone_handover_data') || []);
+
+  filteredM1 = filteredM1.filter(item => item && (
+    (item.groupReceiver && item.groupReceiver.toUpperCase().includes('GIS')) ||
+    (item.stockReceiver && item.stockReceiver.toUpperCase().includes('GIS'))
+  ));
+  filteredM2 = filteredM2.filter(item => item && item.recipient && item.recipient.toUpperCase().includes('GIS'));
+  filteredM3 = filteredM3.filter(item => item && item.unitConfirm && item.unitConfirm.toUpperCase().includes('GIS'));
+
+  const resolveUnit = (item, type = 'm1') => {
+    if (item.unit && item.unit !== 'OTHER') return item.unit;
+    const str = ((type === 'm1' ? (item.groupReceiver || item.stockReceiver) : (type === 'm2' ? item.recipient : item.unitConfirm)) || '').toUpperCase();
+    if (str.includes('PNPZ1')) return 'PNPZ1';
+    if (str.includes('PNPZ2')) return 'PNPZ2';
+    if (str.includes('KANZ1')) return 'KANZ1';
+    const allU = ['BAN', 'BAT', 'CHA', 'CHH', 'KAM', 'KAN', 'KOH', 'KRA', 'MON', 'ODD', 'PNP', 'PRE', 'PRH', 'PUR', 'ROT', 'SIE', 'SIH', 'SPE', 'STU', 'SVA', 'TAK', 'THO'];
+    for (const u of allU) {
+      if (str.includes(`_${u}_`) || str.includes(`_${u}`) || str.includes(`${u}_`)) return u;
+    }
+    const code = ((item.exportNo || item.codeStockOut || item.codeHandover || item.code) || '').toUpperCase();
+    for (const u of ['PNPZ1', 'PNPZ2', 'KANZ1', ...allU]) {
+      if (code.includes(`_${u}/`) || code.includes(`_${u}_`) || code.includes(`/${u}/`)) return u;
+    }
+    return item.unit || unit || 'OTHER';
+  };
+
+  if (isUnitUser) {
+    filteredM1 = filteredM1.filter(item => resolveUnit(item, 'm1') === userUnit);
+    filteredM2 = filteredM2.filter(item => resolveUnit(item, 'm2') === userUnit);
+    filteredM3 = filteredM3.filter(item => resolveUnit(item, 'm3') === userUnit);
+  }
+
+  const sheet1Rows = filteredM1.map((item, idx) => ({
+    "No": idx + 1,
+    "Warehouse Stock out": cleanWarehouseName(item.exportCode || '-'),
+    "Export No": item.exportNo || item.code || '-',
+    "Date": item.realExport || item.date || '-',
+    "Stock Receiver": cleanWarehouseName(item.stockReceiver || '-'),
+    "Group Receiver": cleanWarehouseName(item.groupReceiver || '-'),
+    "Construction": item.constructionReceiver || item.construction || '-',
+    "Unit": resolveUnit(item, 'm1'),
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "TEAM": cleanWarehouseName(item.team || item.groupReceiver || item.stockReceiver || '-'),
+    "Status": (item.daysDiff >= 5) ? 'ALARM' : 'Normal'
+  }));
+
+  const sheet2Rows = filteredM2.map((item, idx) => ({
+    "No": idx + 1,
+    "Code of stock-out note": item.codeStockOut || item.code || '-',
+    "Warehouse": cleanWarehouseName(item.warehouse || '-'),
+    "Recipient": cleanWarehouseName(item.recipient || '-'),
+    "Creator": item.creator || '-',
+    "Creating date": item.creatingDate || item.date || '-',
+    "TEAM": cleanWarehouseName(item.team || item.recipient || '-'),
+    "Unit": resolveUnit(item, 'm2'),
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "Status": (item.daysDiff >= 5) ? 'ALARM' : 'Normal'
+  }));
+
+  const sheet3Rows = filteredM3.map((item, idx) => ({
+    "No": idx + 1,
+    "Code of handover minutes": item.codeHandover || item.code || '-',
+    "Type of handover": item.typeHandover || item.type || '-',
+    "Handover unit": cleanWarehouseName(item.handoverUnit || '-'),
+    "Unit confirm handover": cleanWarehouseName(item.unitConfirm || '-'),
+    "Handover date": item.handoverDate || item.date || '-',
+    "Status": item.status || 'Not confirmed',
+    "TEAM": cleanWarehouseName(item.team || item.unitConfirm || item.handoverUnit || '-'),
+    "Days": item.daysDiff !== undefined ? `${item.daysDiff}d` : '-',
+    "UNIT": resolveUnit(item, 'm3')
+  }));
+
+  const sheets = [
+    {
+      name: "01_Stockout_Yet_Confirm",
+      headerStyle: "HeaderSignedCA",
+      tabColorIndex: 41,
+      headers: ["No", "Warehouse Stock out", "Export No", "Date", "Stock Receiver", "Group Receiver", "Construction", "Unit", "Days", "TEAM", "Status"],
+      rows: sheet1Rows.length > 0 ? sheet1Rows : [{ "No": "-", "Export No": "No pending items" }]
+    },
+    {
+      name: "02_Not_Create_Handover",
+      headerStyle: "HeaderSignedCA",
+      tabColorIndex: 41,
+      headers: ["No", "Code of stock-out note", "Warehouse", "Recipient", "Creator", "Creating date", "TEAM", "Unit", "Days", "Status"],
+      rows: sheet2Rows.length > 0 ? sheet2Rows : [{ "No": "-", "Code of stock-out note": "No pending items" }]
+    },
+    {
+      name: "03_Handover_Yet_Confirm",
+      headerStyle: "HeaderSignedCA",
+      tabColorIndex: 41,
+      headers: ["No", "Code of handover minutes", "Type of handover", "Handover unit", "Unit confirm handover", "Handover date", "Status", "TEAM", "Days", "UNIT"],
+      rows: sheet3Rows.length > 0 ? sheet3Rows : [{ "No": "-", "Code of handover minutes": "No pending items" }]
+    }
+  ];
+
+  return createExcelXmlBlob(sheets);
+};
+
+export const sendMetfoneToTelegram = async (unit, data, customNote = '', signal = null) => {
+  let unitData = data;
+  if (data && data.units && data.units[unit]) {
+    unitData = data.units[unit];
+  }
+  const m1Items = unitData?.m1Items || [];
+  const m2Items = unitData?.m2Items || [];
+  const m3Items = unitData?.m3Items || [];
+  const totalPending = m1Items.length + m2Items.length + m3Items.length;
+
+  if (totalPending === 0) {
+    return {
+      success: true,
+      skipped: true,
+      error: `No pending items for ${unit}`
+    };
+  }
+
+  const message = formatMetfoneMessage(unit, data, customNote);
+  const result = await sendMessageToTelegram(unit, message, signal);
+
+  try {
+    const excelBlob = generateMetfoneExcelBlob(m1Items, m2Items, m3Items, unit);
+    const filename = `METFONE_NET_${unit}_${new Date().toISOString().slice(0, 10)}.xls`;
+    await sendDocumentToTelegram(unit, excelBlob, filename, '', signal);
+  } catch (excelErr) {
+    console.error('Error attaching Metfone Excel document to Telegram:', excelErr);
+  }
+
+  return result;
+};
+
+export const sendToAllMetfoneTelegram = async (data, onProgress, customNote = '', signal = null) => {
+  const units = getConfiguredUnits();
+
+  if (units.length === 0) {
+    if (onProgress) {
+      onProgress({
+        current: 0,
+        total: 0,
+        unit: 'NONE',
+        status: 'error',
+        error: 'No group IDs configured. Please add group IDs first.'
+      });
+    }
+    return {
+      results: [],
+      summary: { total: 0, success: 0, failed: 0, message: 'No group IDs configured.' }
+    };
+  }
+
+  const results = [];
+  let successCount = 0;
+  let failCount = 0;
+  let completedCount = 0;
+
+  for (const unit of units) {
+    if (signal && signal.aborted) {
+      results.push({ unit, success: false, error: 'Cancelled', aborted: true });
+      failCount++;
+      completedCount++;
+      continue;
+    }
+
+    try {
+      if (onProgress) {
+        onProgress({
+          current: completedCount + 1,
+          total: units.length,
+          unit: unit,
+          status: 'sending'
+        });
+      }
+
+      const result = await sendMetfoneToTelegram(unit, data, customNote, signal);
+
+      completedCount++;
+      results.push({ unit, ...result });
+
+      if (result.skipped) {
+        if (onProgress) {
+          onProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'skipped',
+            message: `Skipped ${unit} (No data)`
+          });
+        }
+      } else if (result.success) {
+        successCount++;
+        if (onProgress) {
+          onProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: 'success',
+            duration: result.duration
+          });
+        }
+      } else {
+        failCount++;
+        if (onProgress) {
+          onProgress({
+            current: completedCount,
+            total: units.length,
+            unit: unit,
+            status: result.aborted ? 'error' : 'failed',
+            error: result.error
+          });
+        }
+      }
+    } catch (error) {
+      completedCount++;
+      failCount++;
+      results.push({ unit, success: false, error: error.message });
+      if (onProgress) {
+        onProgress({
+          current: completedCount,
+          total: units.length,
+          unit: unit,
+          status: 'failed',
+          error: error.message
+        });
+      }
+    }
+
+    if (completedCount < units.length) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+
+  return {
+    results,
+    summary: {
+      total: units.length,
+      success: successCount,
+      failed: failCount,
+      duration: results.reduce((sum, r) => sum + (r.duration || 0), 0),
+      details: results.map(r => `${r.unit}: ${r.skipped ? '⏭️ Skipped (0 items)' : (r.success ? '✅' : '❌')} ${r.error || ''}`)
+    }
+  };
 };

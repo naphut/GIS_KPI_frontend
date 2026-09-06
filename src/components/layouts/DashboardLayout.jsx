@@ -13,12 +13,17 @@ import STOCK_OUT_NOTE_CONFIRMED from '../../Page/Stockout_yet/stock_out_note_con
 import { Restock_in as RestockIn } from '../../Page/Request_IN_E/Restock_in';
 import { Restock_out as RestockOut } from '../../Page/Request_IN_E/Restock_out';
 import { New_construction as NewConstruction } from '../../Page/Stockout_yet/New_construction';
+import StockoutYetConfirmMetfone from '../../Page/Metfonenet/01_STOCKOUT_YET CONFIRM';
+import NotCreateHandOverMetfone from '../../Page/Metfonenet/02_NOT CREATE HAND OVER';
+import HandOverYetConfirmMetfone from '../../Page/Metfonenet/03_HAND OVER_YET CONFIRM';
+import DashboardMetfone from '../dashboard/Metfone_Net_Dashboard/Dashboard_Metfone';
 import { 
   sendPhotoToTelegram, 
   sendDocumentToTelegram, 
   generateStockoutExcelBlob,
   generateSignedCAExcelBlob,
-  generateRestockExcelBlob
+  generateRestockExcelBlob,
+  generateMetfoneExcelBlob
 } from '../../services/telegramBot';
 
 const DashboardLayout = () => {
@@ -27,7 +32,7 @@ const DashboardLayout = () => {
   const [isSending, setIsSending] = useState(false);
   const cancelRef = useRef(false);
 
-  const handleSendTelegram = async (unit) => {
+  const handleSendTelegram = async (unit, system = 'metfone') => {
     const checkCancelled = () => {
       if (cancelRef.current) {
         throw new Error('CANCELLED');
@@ -36,11 +41,15 @@ const DashboardLayout = () => {
 
     try {
       checkCancelled();
-      // 1. Capture and send Stockout / Hand Over Summary Image & Excel
-      setScreenshotState({ component: 'stockout', unit });
-      await new Promise(resolve => setTimeout(resolve, 800));
-      checkCancelled();
-      let reportEl = document.getElementById('telegram-summary-report');
+      let reportEl = null;
+
+      // ─── 1 to 3: GIS System (Stockout, CA Signing, Restock) ───
+      if (system === 'gis' || system === 'all') {
+        // 1. Capture and send Stockout / Hand Over Summary Image & Excel
+        setScreenshotState({ component: 'stockout', unit });
+        await new Promise(resolve => setTimeout(resolve, 800));
+        checkCancelled();
+        reportEl = document.getElementById('telegram-summary-report');
       if (reportEl) {
         const canvas = await html2canvas(reportEl, { 
           scale: 3.5, 
@@ -175,6 +184,57 @@ const DashboardLayout = () => {
           await sendDocumentToTelegram(unit, excelBlob, filename, '');
         }
       }
+      }
+
+      // ─── 4: Metfone NET System ───
+      if (system === 'metfone' || system === 'all') {
+        checkCancelled();
+        // 4. Capture and send Metfone Summary Image & Excel
+        setScreenshotState({ component: 'metfone', unit });
+        await new Promise(resolve => setTimeout(resolve, 800));
+        checkCancelled();
+        reportEl = document.getElementById('telegram-summary-report');
+        if (reportEl) {
+          const canvas = await html2canvas(reportEl, { 
+            scale: 3.5, 
+            useCORS: true, 
+            logging: false,
+            backgroundColor: '#ffffff',
+            onclone: (clonedDoc) => {
+              const el = clonedDoc.getElementById('telegram-summary-report');
+              if (el) {
+                el.style.position = 'static';
+                el.style.zIndex = '999999';
+                el.style.opacity = '1';
+                el.style.visibility = 'visible';
+                el.style.display = 'block';
+                el.style.background = '#ffffff';
+                
+                const style = clonedDoc.createElement('style');
+                style.innerHTML = `
+                  #telegram-summary-report * {
+                    -webkit-font-smoothing: antialiased !important;
+                    -moz-osx-font-smoothing: grayscale !important;
+                    text-rendering: optimizeLegibility !important;
+                    opacity: 1 !important;
+                  }
+                `;
+                clonedDoc.head.appendChild(style);
+              }
+            }
+          });
+          checkCancelled();
+          const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+          checkCancelled();
+          if (blob) {
+            await sendPhotoToTelegram(unit, blob, `📊 របាយការណ៍ METFONE NET (${unit})`);
+            // Send Group 4 Excel (Metfone Net - 3 sheets)
+            const excelBlob = generateMetfoneExcelBlob([], [], [], unit);
+            const filename = `METFONE_NET_${unit}_${new Date().toISOString().split('T')[0]}.xls`;
+            await sendDocumentToTelegram(unit, excelBlob, filename, '');
+          }
+        }
+      }
     } catch (err) {
       if (err.message === 'CANCELLED') {
         console.log('Sending cancelled by user.');
@@ -230,6 +290,19 @@ const DashboardLayout = () => {
       // NEW CONSTRUCTION GROUP
       case 'NEW_CONSTRUCTION':
         return <NewConstruction />;
+
+      // SYSTEM METFONE NET GROUP
+      case 'metfone_net_group':
+        return <DashboardMetfone onNavigate={setSelectedMenuItem} />;
+
+      case 'METFONE_STOCKOUT_YET_CONFIRM':
+        return <StockoutYetConfirmMetfone />;
+      
+      case 'METFONE_NOT_CREATE_HAND_OVER':
+        return <NotCreateHandOverMetfone />;
+      
+      case 'METFONE_HAND_OVER_YET_CONFIRM':
+        return <HandOverYetConfirmMetfone />;
       
       default:
         return <MainDashboard onNavigate={setSelectedMenuItem} />;
@@ -237,9 +310,9 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 overflow-hidden relative">
       {/* Sidebar */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 relative z-20">
         <Sidebar 
           onSelect={setSelectedMenuItem} 
           selected={selectedMenuItem} 
@@ -257,7 +330,7 @@ const DashboardLayout = () => {
 
       {/* Hidden Screenshot Renderer */}
       {screenshotState && (
-        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '1200px', pointerEvents: 'none', zIndex: -1000 }}>
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '1500px', pointerEvents: 'none', zIndex: -1000 }}>
           {screenshotState.component === 'stockout' && (
             <DashboardStockout isEmbedded={true} screenshotUnit={screenshotState.unit} summaryImageMode={true} />
           )}
@@ -266,6 +339,9 @@ const DashboardLayout = () => {
           )}
           {screenshotState.component === 'request' && (
             <DashboardRequest screenshotUnit={screenshotState.unit} summaryImageMode={true} />
+          )}
+          {screenshotState.component === 'metfone' && (
+            <DashboardMetfone screenshotUnit={screenshotState.unit} summaryImageMode={true} />
           )}
         </div>
       )}

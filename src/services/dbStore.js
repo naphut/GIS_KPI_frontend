@@ -51,6 +51,17 @@ export const loadFromDb = async (key, fallback = null) => {
         } catch (e) {
           console.warn(`LocalStorage quota error caching "${key}":`, e);
         }
+        if (data.updated_at || data.created_at) {
+          try {
+            localStorage.setItem(`${key}_meta`, JSON.stringify({
+              key: data.key,
+              created_at: data.created_at || data.updated_at,
+              updated_at: data.updated_at,
+              status: data.status,
+              version: data.version
+            }));
+          } catch (e) {}
+        }
         try {
           return typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
         } catch (parseErr) {
@@ -79,6 +90,46 @@ export const loadFromDb = async (key, fallback = null) => {
   }
 
   return fallback;
+};
+
+/**
+ * Retrieve metadata (created_at, updated_at, version, status) for a given key.
+ */
+export const loadStoreMeta = async (key) => {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const response = await fetch(`${getBackendBaseUrl()}/${key}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data) {
+        const meta = {
+          key: data.key,
+          created_at: data.created_at || data.updated_at,
+          updated_at: data.updated_at,
+          status: data.status,
+          version: data.version
+        };
+        try {
+          localStorage.setItem(`${key}_meta`, JSON.stringify(meta));
+        } catch (e) {}
+        return meta;
+      }
+    }
+  } catch (err) {
+    // ignore
+  }
+
+  try {
+    const localMeta = localStorage.getItem(`${key}_meta`);
+    if (localMeta) return JSON.parse(localMeta);
+  } catch (e) {}
+
+  return null;
 };
 
 /**
@@ -111,7 +162,18 @@ export const saveToDb = async (key, value) => {
     
     if (response.ok) {
       const data = await response.json();
-      return data; // Return full DB object (key, value, status, result, updated_at, version)
+      if (data && (data.updated_at || data.created_at)) {
+        try {
+          localStorage.setItem(`${key}_meta`, JSON.stringify({
+            key: data.key,
+            created_at: data.created_at || data.updated_at,
+            updated_at: data.updated_at,
+            status: data.status,
+            version: data.version
+          }));
+        } catch (e) {}
+      }
+      return data; // Return full DB object (key, value, status, result, updated_at, created_at, version)
     } else {
       console.error(`Failed to save key "${key}" to DB: ${response.status}`);
       return null;
