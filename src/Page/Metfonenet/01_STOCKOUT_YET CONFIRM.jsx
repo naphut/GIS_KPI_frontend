@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { loadFromDb, saveToDb } from '../../services/dbStore';
+import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
 
 // All standard 25 Units
 const allUnits = [
@@ -524,15 +524,29 @@ export default function StockoutYetConfirmMetfone() {
 
   const clearAllData = async () => {
     if (window.confirm('⚠️ Are you sure you want to delete ALL Metfone Net data?')) {
+      // 1. Immediately reset state in UI
       setData([]);
       setCompletionHistory([]);
       setTargets({});
       setTargetHistory([]);
-      saveToDb(STORAGE_KEYS.DATA, []);
-      saveToDb(STORAGE_KEYS.COMPLETION, []);
-      saveToDb(STORAGE_KEYS.TARGETS, {});
-      saveToDb(STORAGE_KEYS.TARGET_HISTORY, []);
+
+      // 2. Immediately wipe localStorage cache
+      localStorage.removeItem(STORAGE_KEYS.DATA);
+      localStorage.removeItem(STORAGE_KEYS.COMPLETION);
+      localStorage.removeItem(STORAGE_KEYS.TARGETS);
+      localStorage.removeItem(STORAGE_KEYS.TARGET_HISTORY);
+
       showNotification('🧹 Cleared all data!', 'info');
+
+      // 3. Clear database asynchronously in parallel
+      Promise.all([
+        clearStore(STORAGE_KEYS.DATA),
+        clearStore(STORAGE_KEYS.COMPLETION),
+        clearStore(STORAGE_KEYS.TARGETS),
+        clearStore(STORAGE_KEYS.TARGET_HISTORY)
+      ]).catch(err => {
+        console.error("Error clearing DB store:", err);
+      });
     }
   };
 

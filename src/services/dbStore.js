@@ -190,11 +190,16 @@ export const saveToDb = async (key, value) => {
 
         // Dispatch notification popup: "Successfully saved to API Store"
         try {
+          const isClear = jsonString === '[]' || jsonString === '{}';
+          const msg = isClear 
+            ? '🗑️ Cleared successfully from API Store!' 
+            : 'Successfully saved to API Store!';
+
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('api-store-toast', {
               detail: {
                 type: 'success',
-                message: 'Successfully saved to API Store!',
+                message: msg,
                 key: key,
                 version: data.version || 1
               }
@@ -272,10 +277,12 @@ export const completeStore = async (key) => {
   return null;
 };
 
+let clearToastTimer = null;
 export const clearStore = async (key) => {
   lastSyncedMap.delete(key);
   try {
     localStorage.removeItem(key);
+    localStorage.removeItem(`${key}_meta`);
   } catch (e) {
     console.error(`Error clearing localStorage cache for "${key}":`, e);
   }
@@ -283,8 +290,22 @@ export const clearStore = async (key) => {
     const response = await fetch(`${getBackendBaseUrl()}/${key}`, {
       method: 'DELETE'
     });
-    if (response.ok) {
-      return await response.json();
+    if (response.ok || response.status === 404) {
+      try {
+        if (typeof window !== 'undefined') {
+          clearTimeout(clearToastTimer);
+          clearToastTimer = setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('api-store-toast', {
+              detail: {
+                type: 'success',
+                message: `🗑️ Cleared successfully from API Store!`,
+                key: key
+              }
+            }));
+          }, 80);
+        }
+      } catch (e) {}
+      return response.ok ? await response.json().catch(() => ({ status: 'ok' })) : { status: 'ok' };
     }
   } catch (error) {
     console.error(`Error deleting store key "${key}" from DB:`, error);
