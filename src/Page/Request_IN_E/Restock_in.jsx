@@ -734,7 +734,7 @@ export const Restock_in = () => {
       if (!row) continue;
       
       // បំបែកដោយ tab ឬ space ច្រើន
-      const cells = row.split(/\t| {2,}/);
+      const cells = row.includes('\t') ? row.split('\t') : row.split(/ {2,}/);
       
       // ពិនិត្យមើលថាតើជា header row ឬទេ
       if (i === 0) {

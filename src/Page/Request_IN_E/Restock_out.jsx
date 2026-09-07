@@ -73,7 +73,8 @@ const getUnitFromRequestExportCode = (requestExportCode) => {
     else if (upper.startsWith('YCX_')) afterPrefix = upper.substring(4);
     else if (upper.startsWith('YCX')) afterPrefix = upper.substring(3);
     
-    const parts = afterPrefix.split(/[_/]/);
+    // Split by / first so unitPart retains both unit and subteam (e.g. PNP_FBC12)
+    const parts = afterPrefix.split('/');
     if (parts.length > 0) unitPart = parts[0];
   } else {
     const parts = upper.split('_');
@@ -93,11 +94,11 @@ const getUnitFromRequestExportCode = (requestExportCode) => {
   
   // FBC → KANZ1, PNPZ1, PNPZ2
   if (unitPart.includes('FBC')) {
-    if (unitPart.startsWith('KAN_')) return 'KANZ1';
-    if (unitPart.startsWith('PNP_')) {
+    if (unitPart.startsWith('KAN') || unitPart.includes('_KAN')) return 'KANZ1';
+    if (unitPart.startsWith('PNP') || unitPart.includes('_PNP')) {
       const fbcNum = unitPart.match(/FBC(\d+)/);
       if (fbcNum) {
-        const num = parseInt(fbcNum[1]);
+        const num = parseInt(fbcNum[1], 10);
         if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
       }
@@ -107,8 +108,8 @@ const getUnitFromRequestExportCode = (requestExportCode) => {
   
   // SOS → KAN, PNP
   if (unitPart.includes('SOS')) {
-    if (unitPart.startsWith('KAN_')) return 'KAN';
-    if (unitPart.startsWith('PNP_')) return 'PNP';
+    if (unitPart.startsWith('KAN') || unitPart.includes('_KAN')) return 'KAN';
+    if (unitPart.startsWith('PNP') || unitPart.includes('_PNP')) return 'PNP';
   }
   
   // PLA → KAN, PNP
@@ -245,26 +246,17 @@ const getUnitFromNoteExportCode = (noteExportCode) => {
   return null;
 };
 
-// 4. ចាប់យក Unit ពី Group Request (អាទិភាពទី៤)
 const getUnitFromGroupRequest = (groupRequest) => {
   if (!groupRequest) return null;
   
   const upper = groupRequest.toUpperCase().replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
   
-  const match = upper.match(/^GIS_([A-Z0-9]+)_/);
-  if (match && match[1]) {
-    const unit = match[1];
-    if (VALID_UNITS.includes(unit)) return unit;
-    if (unit === 'KANZ') return 'KANZ1';
-    if (unit === 'PNPZ') return 'PNPZ1';
-  }
-  
-  if (upper.includes('FBC')) {
+  if (upper.includes('FBC') || upper.includes('FB_TEAM') || upper.includes('TEAM')) {
     if (upper.includes('KAN')) return 'KANZ1';
     if (upper.includes('PNP')) {
-      const fbcMatch = upper.match(/FBC(\d+)/);
+      const fbcMatch = upper.match(/FBC[^\d]*(\d+)/) || upper.match(/TEAM[^\d]*(\d+)/);
       if (fbcMatch) {
-        const num = parseInt(fbcMatch[1]);
+        const num = parseInt(fbcMatch[1], 10);
         if ([2, 4, 8, 9, 12].includes(num)) return 'PNPZ2';
         if ([1, 3, 5, 6, 7, 10, 11, 13, 14].includes(num)) return 'PNPZ1';
       }
@@ -275,6 +267,14 @@ const getUnitFromGroupRequest = (groupRequest) => {
   if (upper.includes('SOS')) {
     if (upper.includes('KAN')) return 'KAN';
     if (upper.includes('PNP')) return 'PNP';
+  }
+
+  const match = upper.match(/^GIS_([A-Z0-9]+)_/);
+  if (match && match[1]) {
+    const unit = match[1];
+    if (VALID_UNITS.includes(unit)) return unit;
+    if (unit === 'KANZ') return 'KANZ1';
+    if (unit === 'PNPZ') return 'PNPZ1';
   }
   
   return null;
@@ -826,7 +826,7 @@ export const Restock_out = () => {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i].trim();
       if (!row) continue;
-      const cells = row.split(/\t| {2,}/);
+      const cells = row.includes('\t') ? row.split('\t') : row.split(/ {2,}/);
       if (cells.length >= 8) {
         const firstCell = cells[0].trim().replace(/\.$/, '');
         const isSequence = /^\d+$/.test(firstCell);
@@ -834,17 +834,17 @@ export const Restock_out = () => {
         
         if (cells.length - offset >= 8) {
           parsedRows.push({
-            requestExportCode: cells[offset + 0] || '',
-            commandExportCode: cells[offset + 1] || '',
-            noteExportCode: cells[offset + 2] || '',
-            groupRequest: cells[offset + 3] || '',
-            createDate: cells[offset + 4] || '',
-            stockOut: cells[offset + 5] || '',
-            stockReceive: cells[offset + 6] || '',
-            receivingUnit: cells[offset + 7] || '',
-            creator: cells[offset + 8] || '',
-            status: cells[offset + 9] || '',
-            statusCA: cells[offset + 10] || ''
+            requestExportCode: (cells[offset + 0] || '').trim(),
+            commandExportCode: (cells[offset + 1] || '').trim(),
+            noteExportCode: (cells[offset + 2] || '').trim(),
+            groupRequest: (cells[offset + 3] || '').trim(),
+            createDate: (cells[offset + 4] || '').trim(),
+            stockOut: (cells[offset + 5] || '').trim(),
+            stockReceive: (cells[offset + 6] || '').trim(),
+            receivingUnit: (cells[offset + 7] || '').trim(),
+            creator: (cells[offset + 8] || '').trim(),
+            status: (cells[offset + 9] || '').trim(),
+            statusCA: (cells[offset + 10] || '').trim()
           });
         }
       }

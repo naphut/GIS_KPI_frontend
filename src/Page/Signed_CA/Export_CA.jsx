@@ -813,7 +813,7 @@ export const Export_CA = () => {
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i].trim();
       if (!row) continue;
-      const cells = row.split(/\t| {2,}/);
+      const cells = row.includes('\t') ? row.split('\t') : row.split(/ {2,}/);
       if (cells.length >= 8) {
         const firstCell = cells[0].trim().replace(/\.$/, '');
         const isSequence = /^\d+$/.test(firstCell);
