@@ -187,6 +187,21 @@ export const saveToDb = async (key, value) => {
         const data = await response.json();
         lastSyncedMap.set(key, jsonString);
         console.log(`[dbStore] ✅ Successfully saved "${key}" to DB (v${data.version || 1})`);
+
+        // Dispatch notification popup: "Successfully saved to API Store"
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('api-store-toast', {
+              detail: {
+                type: 'success',
+                message: 'Successfully saved to API Store!',
+                key: key,
+                version: data.version || 1
+              }
+            }));
+          }
+        } catch (e) {}
+
         if (data && (data.updated_at || data.created_at)) {
           try {
             localStorage.setItem(`${key}_meta`, JSON.stringify({
@@ -201,14 +216,35 @@ export const saveToDb = async (key, value) => {
         return data;
       } else {
         console.error(`[dbStore] ❌ Failed to save key "${key}" to DB: HTTP ${response.status}`);
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('api-store-toast', {
+              detail: {
+                type: 'error',
+                message: `Failed to save to API Store (HTTP ${response.status})`,
+                key: key
+              }
+            }));
+          }
+        } catch (e) {}
         return null;
       }
     } catch (error) {
-      if (error.name === 'AbortError') {
-        console.error(`[dbStore] ⏳ Timeout (35s) saving key "${key}" to DB.`);
-      } else {
-        console.error(`[dbStore] ❌ Network error saving key "${key}" to DB:`, error.message);
-      }
+      const errMsg = error.name === 'AbortError' 
+        ? `Timeout (35s) saving key "${key}" to DB.` 
+        : `Network error saving key "${key}" to DB: ${error.message}`;
+      console.error(`[dbStore] ❌`, errMsg);
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('api-store-toast', {
+            detail: {
+              type: 'error',
+              message: errMsg,
+              key: key
+            }
+          }));
+        }
+      } catch (e) {}
       return null;
     } finally {
       inFlightSaves.delete(key);
