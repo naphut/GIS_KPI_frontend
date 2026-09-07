@@ -516,6 +516,7 @@ export default function StockoutYetConfirmMetfone() {
     const nonGisCount = enriched.length - gisCount;
 
     setData(enriched);
+    saveToDb(STORAGE_KEYS.DATA, enriched);
     setShowPasteModal(false);
     setPasteData('');
     showNotification(`📊 Import ជោគជ័យ: ${enriched.length} ជួរ (GIS: ${gisCount}, Excluded non-GIS: ${nonGisCount})`, 'success');

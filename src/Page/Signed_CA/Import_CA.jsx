@@ -552,6 +552,7 @@ const Import_CA = () => {
     }
     
     setData(processedNewData);
+    saveToDb(STORAGE_KEYS.DATA, processedNewData);
     showNotification(`📊 Import Summary:\n✅ Completed: ${completedCodesArray.length}\n🆕 New Added: ${gisData.length}\n🎯 New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}\n🚫 Filtered out Signed records`, 'info');
     return { completedCount: completedCodesArray.length, newCount: gisData.length, newUnits: newUnitsFound };
   };

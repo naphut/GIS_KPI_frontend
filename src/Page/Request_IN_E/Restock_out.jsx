@@ -713,6 +713,7 @@ export const Restock_out = () => {
     }
     
     setData(processedNewData);
+    saveToDb(STORAGE_KEYS.DATA, processedNewData);
     showNotification(`📊 Import Summary:\n✅ Completed: ${completedCodesArray.length}\n🆕 New Added: ${filteredData.length}\n🎯 New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}`, 'info');
     return { completedCount: completedCodesArray.length, newCount: filteredData.length, newUnits: newUnitsFound };
   };

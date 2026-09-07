@@ -22,7 +22,7 @@ const getBackendBaseUrl = () => {
 export const loadFromDb = async (key, fallback = null) => {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     const response = await fetch(`${getBackendBaseUrl()}/${key}`, {
       signal: controller.signal
     });
@@ -70,8 +70,10 @@ export const loadFromDb = async (key, fallback = null) => {
       }
     }
   } catch (error) {
-    if (error.name !== 'AbortError') {
-      console.warn(`Backend store fetch failed for "${key}", using local fallback:`, error.message);
+    if (error.name === 'AbortError') {
+      console.warn(`[dbStore] Timeout (25s) fetching "${key}", using local fallback.`);
+    } else {
+      console.warn(`[dbStore] Backend store fetch failed for "${key}", using local fallback:`, error.message);
     }
   }
 
@@ -137,7 +139,7 @@ export const loadStoreMeta = async (key) => {
  * Serializes the value to JSON and caches it locally in localStorage.
  */
 export const saveToDb = async (key, value) => {
-  const jsonString = JSON.stringify(value);
+  const jsonString = typeof value === 'string' ? value : JSON.stringify(value);
   
   // Cache to localStorage immediately
   try {
@@ -148,7 +150,7 @@ export const saveToDb = async (key, value) => {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
     const response = await fetch(getBackendBaseUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -162,6 +164,7 @@ export const saveToDb = async (key, value) => {
     
     if (response.ok) {
       const data = await response.json();
+      console.log(`[dbStore] ✅ Successfully saved "${key}" to DB (v${data.version || 1})`);
       if (data && (data.updated_at || data.created_at)) {
         try {
           localStorage.setItem(`${key}_meta`, JSON.stringify({
@@ -175,12 +178,14 @@ export const saveToDb = async (key, value) => {
       }
       return data; // Return full DB object (key, value, status, result, updated_at, created_at, version)
     } else {
-      console.error(`Failed to save key "${key}" to DB: ${response.status}`);
+      console.error(`[dbStore] ❌ Failed to save key "${key}" to DB: HTTP ${response.status}`);
       return null;
     }
   } catch (error) {
-    if (error.name !== 'AbortError') {
-      console.error(`Network error saving key "${key}" to DB:`, error);
+    if (error.name === 'AbortError') {
+      console.error(`[dbStore] ⏳ Timeout (35s) saving key "${key}" to DB.`);
+    } else {
+      console.error(`[dbStore] ❌ Network error saving key "${key}" to DB:`, error.message);
     }
     return null;
   }

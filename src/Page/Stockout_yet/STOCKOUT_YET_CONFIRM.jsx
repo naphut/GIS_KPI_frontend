@@ -553,6 +553,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     }
     
     setData(processedNewData);
+    saveToDb(STORAGE_KEYS.DATA, processedNewData);
     setTimeout(() => checkTargetChanges(), 500);
     
     const excludedCount = newRawData.length - filteredRawData.length;

@@ -434,6 +434,7 @@ const HandOverYetConfirmMetfone = () => {
     }
 
     setData(processedNewData);
+    saveToDb(STORAGE_KEYS.DATA, processedNewData);
     showNotification(`📊 Imported ${gisData.length} GIS records (${completedCodesArray.length} completed)`, 'success');
   };
 
