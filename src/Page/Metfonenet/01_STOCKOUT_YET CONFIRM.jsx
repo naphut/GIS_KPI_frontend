@@ -164,7 +164,6 @@ export default function StockoutYetConfirmMetfone() {
   const enrichItem = (item, index) => {
     const stockRec = item.stockReceiver || '';
     const groupRec = item.groupReceiver || '';
-    const isGis = (stockRec.toUpperCase().includes('GIS') || groupRec.toUpperCase().includes('GIS'));
     return {
       ...item,
       id: item.id || `mf-${Date.now()}-${index}`,
@@ -172,7 +171,7 @@ export default function StockoutYetConfirmMetfone() {
       unit: getUnitFromMetfoneReceiver(groupRec, stockRec, item.exportCode, item.exportNo),
       team: getTeamFromReceiver(stockRec, groupRec),
       daysDiff: calculateDaysDiff(item.realExport),
-      isGis
+      isGis: true
     };
   };
 
@@ -259,7 +258,7 @@ export default function StockoutYetConfirmMetfone() {
 
     // Fulfill user requirement: Stock receiver / Group receiver: កន្លែង ចាប់ យកតែGIS
     if (filterGIS) {
-      filtered = filtered.filter(item => item.isGis);
+      filtered = filtered.filter(item => item.isGis !== false);
     }
 
     // Days Filter
@@ -512,14 +511,12 @@ export default function StockoutYetConfirmMetfone() {
     }
 
     const enriched = rawList.map((item, idx) => enrichItem(item, idx));
-    const gisCount = enriched.filter(item => item.isGis).length;
-    const nonGisCount = enriched.length - gisCount;
 
     setData(enriched);
     saveToDb(STORAGE_KEYS.DATA, enriched);
     setShowPasteModal(false);
     setPasteData('');
-    showNotification(`📊 Import ជោគជ័យ: ${enriched.length} ជួរ (GIS: ${gisCount}, Excluded non-GIS: ${nonGisCount})`, 'success');
+    showNotification(`📊 Import ជោគជ័យ: ${enriched.length} ជួរ (GIS Records: ${enriched.length})`, 'success');
   };
 
   const clearAllData = async () => {
