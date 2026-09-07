@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { loadFromDb, saveToDb, clearStore, isStoreDraft } from '../../services/dbStore';
+import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
 
 // Storage Keys
 const STORAGE_KEYS = {
@@ -597,11 +597,6 @@ export const Export_CA = () => {
   };
 
   const processImport = async (newRawData) => {
-    const isDraft = await isStoreDraft(STORAGE_KEYS.DATA);
-    if (isDraft) {
-      showNotification('⚠️ Current draft is not completed. New import is ignored.', 'warning');
-      return;
-    }
     const filteredData = newRawData.filter(item => {
       const warehouse = (item.exportWarehouse || '').toUpperCase().replace(/\s+/g, '');
       const isGIS = warehouse.includes('GIS');
