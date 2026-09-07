@@ -369,38 +369,44 @@ export default function DashboardMetfone({ onNavigate, screenshotUnit, summaryIm
   useEffect(() => {
     const fetchDb = async () => {
       try {
-        const meta1 = await loadStoreMeta('metfone_stockout_data');
-        const meta2 = await loadStoreMeta('metfone_nocreate_data');
-        const meta3 = await loadStoreMeta('metfone_handover_data');
+        const [
+          meta1, meta2, meta3,
+          db1, db2, db3,
+          t1, t2, t3,
+          h1, h2, h3,
+          c1, c2, c3
+        ] = await Promise.all([
+          loadStoreMeta('metfone_stockout_data'),
+          loadStoreMeta('metfone_nocreate_data'),
+          loadStoreMeta('metfone_handover_data'),
+          loadFromDb('metfone_stockout_data', []),
+          loadFromDb('metfone_nocreate_data', []),
+          loadFromDb('metfone_handover_data', []),
+          loadFromDb('metfone_stockout_targets', null),
+          loadFromDb('metfone_nocreate_targets', null),
+          loadFromDb('metfone_handover_targets', null),
+          loadFromDb('metfone_stockout_completionHistory', null),
+          loadFromDb('metfone_nocreate_completionHistory', null),
+          loadFromDb('metfone_handover_completionHistory', null),
+          loadFromDb('metfone_stockout_confirmedStatus', null),
+          loadFromDb('metfone_nocreate_confirmedStatus', null),
+          loadFromDb('metfone_handover_confirmedStatus', null)
+        ]);
 
-        const db1 = await loadFromDb('metfone_stockout_data', []);
         setM1Data(Array.isArray(db1) ? db1 : []);
-
-        const db2 = await loadFromDb('metfone_nocreate_data', []);
         setM2Data(Array.isArray(db2) ? db2 : []);
-
-        const db3 = await loadFromDb('metfone_handover_data', []);
         setM3Data(Array.isArray(db3) ? db3 : []);
 
-        const t1 = await loadFromDb('metfone_stockout_targets', null);
         if (t1) setM1Targets(t1);
-        const t2 = await loadFromDb('metfone_nocreate_targets', null);
         if (t2) setM2Targets(t2);
-        const t3 = await loadFromDb('metfone_handover_targets', null);
         if (t3) setM3Targets(t3);
 
-        const h1 = await loadFromDb('metfone_stockout_completionHistory', null);
         if (h1) setM1History(h1);
-        const h2 = await loadFromDb('metfone_nocreate_completionHistory', null);
         if (h2) setM2History(h2);
-        const h3 = await loadFromDb('metfone_handover_completionHistory', null);
         if (h3) setM3History(h3);
 
-        const c1 = await loadFromDb('metfone_stockout_confirmedStatus', null);
         if (c1) setM1Confirmed(c1);
-        const c2 = await loadFromDb('metfone_nocreate_confirmedStatus', null);
         if (c2) setM2Confirmed(c2);
-        const c3 = await loadFromDb('metfone_handover_confirmedStatus', null);
         if (c3) setM3Confirmed(c3);
 
         const latestTime = [meta1?.created_at, meta1?.updated_at, meta2?.created_at, meta2?.updated_at, meta3?.created_at, meta3?.updated_at]

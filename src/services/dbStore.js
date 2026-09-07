@@ -14,6 +14,10 @@ const getBackendBaseUrl = () => {
   return 'https://gis-kpi-backend.onrender.com/api/store';
 };
 
+// In-memory synchronization tracker to eliminate redundant network traffic and prevent race conditions
+const lastSyncedMap = new Map();
+const inFlightSaves = new Map();
+
 /**
  * Retrieve a JSON value from the database store.
  * If not found in the DB, it checks localStorage (automatic migration) and saves it to the DB.
@@ -30,6 +34,7 @@ export const loadFromDb = async (key, fallback = null) => {
 
     // If key is not found (404), it has been deleted on the server. Clear local cache.
     if (response.status === 404) {
+      lastSyncedMap.delete(key);
       try {
         localStorage.removeItem(key);
       } catch (e) {}
@@ -39,6 +44,7 @@ export const loadFromDb = async (key, fallback = null) => {
     if (response.ok) {
       const data = await response.json();
       if (data && data.status === 'cleared') {
+        lastSyncedMap.delete(key);
         try {
           localStorage.removeItem(key);
         } catch (e) {}
@@ -46,6 +52,7 @@ export const loadFromDb = async (key, fallback = null) => {
       }
       if (data && data.value !== undefined && data.value !== null) {
         const valStr = typeof data.value === 'string' ? data.value : JSON.stringify(data.value);
+        lastSyncedMap.set(key, valStr);
         try {
           localStorage.setItem(key, valStr);
         } catch (e) {
@@ -148,47 +155,68 @@ export const saveToDb = async (key, value) => {
     console.error(`Error updating localStorage cache for "${key}":`, e);
   }
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 35000);
-    const response = await fetch(getBackendBaseUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        key: key,
-        value: jsonString
-      }),
-      signal: controller.signal
-    });
-    clearTimeout(timeoutId);
-    
-    if (response.ok) {
-      const data = await response.json();
-      console.log(`[dbStore] ✅ Successfully saved "${key}" to DB (v${data.version || 1})`);
-      if (data && (data.updated_at || data.created_at)) {
-        try {
-          localStorage.setItem(`${key}_meta`, JSON.stringify({
-            key: data.key,
-            created_at: data.created_at || data.updated_at,
-            updated_at: data.updated_at,
-            status: data.status,
-            version: data.version
-          }));
-        } catch (e) {}
-      }
-      return data; // Return full DB object (key, value, status, result, updated_at, created_at, version)
-    } else {
-      console.error(`[dbStore] ❌ Failed to save key "${key}" to DB: HTTP ${response.status}`);
-      return null;
-    }
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error(`[dbStore] ⏳ Timeout (35s) saving key "${key}" to DB.`);
-    } else {
-      console.error(`[dbStore] ❌ Network error saving key "${key}" to DB:`, error.message);
-    }
-    return null;
+  // Fast path: skip redundant HTTP POST if the backend already has this exact value
+  if (lastSyncedMap.get(key) === jsonString) {
+    return { key, status: 'unchanged' };
   }
+
+  // Reuse in-flight save promise for the same key & payload
+  if (inFlightSaves.has(key)) {
+    const existing = inFlightSaves.get(key);
+    if (existing.payload === jsonString) {
+      return existing.promise;
+    }
+  }
+
+  const savePromise = (async () => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 35000);
+      const response = await fetch(getBackendBaseUrl(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: key,
+          value: jsonString
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const data = await response.json();
+        lastSyncedMap.set(key, jsonString);
+        console.log(`[dbStore] ✅ Successfully saved "${key}" to DB (v${data.version || 1})`);
+        if (data && (data.updated_at || data.created_at)) {
+          try {
+            localStorage.setItem(`${key}_meta`, JSON.stringify({
+              key: data.key,
+              created_at: data.created_at || data.updated_at,
+              updated_at: data.updated_at,
+              status: data.status,
+              version: data.version
+            }));
+          } catch (e) {}
+        }
+        return data;
+      } else {
+        console.error(`[dbStore] ❌ Failed to save key "${key}" to DB: HTTP ${response.status}`);
+        return null;
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error(`[dbStore] ⏳ Timeout (35s) saving key "${key}" to DB.`);
+      } else {
+        console.error(`[dbStore] ❌ Network error saving key "${key}" to DB:`, error.message);
+      }
+      return null;
+    } finally {
+      inFlightSaves.delete(key);
+    }
+  })();
+
+  inFlightSaves.set(key, { payload: jsonString, promise: savePromise });
+  return savePromise;
 };
 
 /**
@@ -209,6 +237,7 @@ export const completeStore = async (key) => {
 };
 
 export const clearStore = async (key) => {
+  lastSyncedMap.delete(key);
   try {
     localStorage.removeItem(key);
   } catch (e) {
