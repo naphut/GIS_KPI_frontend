@@ -160,18 +160,47 @@ export default function StockoutYetConfirmMetfone() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  // 🚫 FILTER FUNCTION: Check if item should be excluded (Matching Stockout_yet)
+  const shouldExcludeItem = (item) => {
+    const stockRec = (item.stockReceiver || '').toUpperCase();
+    const groupRec = (item.groupReceiver || '').toUpperCase();
+    const constRec = (item.constructionReceiver || '').toUpperCase();
+    const unit = item.unit || getUnitFromMetfoneReceiver(groupRec, stockRec, item.exportCode, item.exportNo);
+
+    // 1. Exclude GPON for SPE, TAK, KAM, CHH (Matching Stockout_yet)
+    if (constRec.includes('GPON') && ['SPE', 'TAK', 'KAM', 'CHH'].includes(unit)) {
+      return true;
+    }
+
+    // 2. Exclude GIS_MOD (Matching Stockout_yet)
+    if (groupRec.includes('GIS_MOD')) {
+      return true;
+    }
+
+    // 3. Exclude non-GIS (neither stockReceiver nor groupReceiver has GIS)
+    const isStockGis = stockRec.includes('GIS');
+    const isGroupGis = groupRec.includes('GIS');
+    if (!isStockGis && !isGroupGis) {
+      return true;
+    }
+
+    return false;
+  };
+
   // Enrich item with computed fields
   const enrichItem = (item, index) => {
     const stockRec = item.stockReceiver || '';
     const groupRec = item.groupReceiver || '';
+    const unit = getUnitFromMetfoneReceiver(groupRec, stockRec, item.exportCode, item.exportNo);
+    const isGis = !shouldExcludeItem({ ...item, unit });
     return {
       ...item,
       id: item.id || `mf-${Date.now()}-${index}`,
       no: index + 1,
-      unit: getUnitFromMetfoneReceiver(groupRec, stockRec, item.exportCode, item.exportNo),
+      unit,
       team: getTeamFromReceiver(stockRec, groupRec),
       daysDiff: calculateDaysDiff(item.realExport),
-      isGis: true
+      isGis
     };
   };
 
@@ -201,7 +230,10 @@ export default function StockoutYetConfirmMetfone() {
       setTargetHistory(dbTargetHistory || []);
 
       if (dbData && Array.isArray(dbData) && dbData.length > 0) {
-        const enriched = dbData.map((item, idx) => enrichItem(item, idx));
+        const enriched = dbData
+          .map((item, idx) => enrichItem(item, idx))
+          .filter(item => item.isGis)
+          .map((item, idx) => ({ ...item, no: idx + 1 }));
         setData(enriched);
       } else {
         setData([]);
@@ -258,7 +290,7 @@ export default function StockoutYetConfirmMetfone() {
 
     // Fulfill user requirement: Stock receiver / Group receiver: កន្លែង ចាប់ យកតែGIS
     if (filterGIS) {
-      filtered = filtered.filter(item => item.isGis !== false);
+      filtered = filtered.filter(item => item.isGis);
     }
 
     // Days Filter
@@ -510,13 +542,26 @@ export default function StockoutYetConfirmMetfone() {
       return;
     }
 
-    const enriched = rawList.map((item, idx) => enrichItem(item, idx));
+    const allEnriched = rawList.map((item, idx) => enrichItem(item, idx));
+    const gisOnly = allEnriched.filter(item => item.isGis);
+    const nonGisCount = allEnriched.length - gisOnly.length;
 
-    setData(enriched);
-    saveToDb(STORAGE_KEYS.DATA, enriched);
+    if (gisOnly.length === 0) {
+      showNotification('⚠️ មិនមានទិន្នន័យ GIS ទេ (ទិន្នន័យទាំងអស់ជា Non-GIS ឬត្រូវបាន Exclude)!', 'warning');
+      return;
+    }
+
+    // Re-index row numbers for GIS-only dataset
+    const finalData = gisOnly.map((item, idx) => ({
+      ...item,
+      no: idx + 1
+    }));
+
+    setData(finalData);
+    saveToDb(STORAGE_KEYS.DATA, finalData);
     setShowPasteModal(false);
     setPasteData('');
-    showNotification(`📊 Import ជោគជ័យ: ${enriched.length} ជួរ (GIS Records: ${enriched.length})`, 'success');
+    showNotification(`📊 Import ជោគជ័យ: ${finalData.length} ជួរ GIS (បានច្រោះចេញ non-GIS: ${nonGisCount})`, 'success');
   };
 
   const clearAllData = async () => {
