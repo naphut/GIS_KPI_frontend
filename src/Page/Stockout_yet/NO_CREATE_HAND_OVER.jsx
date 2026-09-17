@@ -35,7 +35,6 @@ const STORAGE_KEYS = {
   DATA: 'kpi_nocreate_data',
   COMPLETION: 'kpi_nocreate_completionHistory',
   TARGETS: 'kpi_nocreate_targets',
-  TARGET_HISTORY: 'kpi_nocreate_targetHistory',
   CONFIRMED: 'kpi_nocreate_confirmedStatus',
 };
 
@@ -200,9 +199,7 @@ const NO_CREATE_HAND_OVER = () => {
   const [pasteData, setPasteData] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showKPIModal, setShowKPIModal] = useState(false);
-  const [showTargetHistoryModal, setShowTargetHistoryModal] = useState(false);
   const [targets, setTargets] = useState(() => getStorageData(STORAGE_KEYS.TARGETS) || {});
-  const [targetHistory, setTargetHistory] = useState(() => getStorageData(STORAGE_KEYS.TARGET_HISTORY) || []);
   const [editingTarget, setEditingTarget] = useState(null);
   const [kpiViewMode, setKpiViewMode] = useState('all');
   const [kpiSortBy, setKpiSortBy] = useState('unit');
@@ -241,9 +238,6 @@ const NO_CREATE_HAND_OVER = () => {
       const dbTargets = await loadFromDb(STORAGE_KEYS.TARGETS, {});
       setTargets(dbTargets);
 
-      const dbTargetHistory = await loadFromDb(STORAGE_KEYS.TARGET_HISTORY, []);
-      setTargetHistory(dbTargetHistory);
-
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
       
@@ -270,12 +264,6 @@ const NO_CREATE_HAND_OVER = () => {
       saveToDb(STORAGE_KEYS.TARGETS, targets);
     }
   }, [targets]);
-
-  useEffect(() => {
-    if (isLoaded.current) {
-      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
-    }
-  }, [targetHistory]);
 
   useEffect(() => {
     if (isLoaded.current) {
@@ -408,16 +396,6 @@ const NO_CREATE_HAND_OVER = () => {
       }
     }));
 
-    setTargetHistory(prev => [{
-      id: Date.now(),
-      unit: unit,
-      period: period,
-      oldTarget: null,
-      newTarget: newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'System (Auto)',
-      reason: `Auto-created target based on ${dataCount} record(s)`
-    }, ...prev]);
     return newTarget;
   };
 
@@ -433,16 +411,6 @@ const NO_CREATE_HAND_OVER = () => {
         lastUpdated: new Date().toISOString()
       }
     }));
-    setTargetHistory(prev => [{
-      id: Date.now(),
-      unit: unit,
-      period: period,
-      oldTarget: oldTarget,
-      newTarget: newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'User',
-      reason: `Manual target adjustment for ${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}`
-    }, ...prev]);
     showNotification(`Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
   };
 
@@ -1019,55 +987,6 @@ const NO_CREATE_HAND_OVER = () => {
   const alarmCount = alarmItems.length;
 
   // ─── MODALS ───
-  const renderTargetHistoryModal = () => {
-    if (!showTargetHistoryModal) return null;
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2 text-white">
-                <History className="w-5 h-5" />
-                <h2 className="text-xl font-bold text-white">Target Change History</h2>
-              </div>
-              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl cursor-pointer">✕</button>
-            </div>
-          </div>
-          <div className="p-6 overflow-y-auto flex-1">
-            {targetHistory.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <Inbox className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                <p>No target changes recorded yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {targetHistory.map(history => (
-                  <div key={history.id} className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-500">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-lg text-gray-800">{history.unit}</div>
-                        <div className="text-sm text-gray-600">
-                          {history.oldTarget !== null ? (
-                            <>Changed from <span className="line-through text-rose-500">{history.oldTarget}</span> → <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
-                          ) : (<>Auto-created target: <span className="text-emerald-600 font-bold">{history.newTarget}</span></>)}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">{history.reason} | By: {history.changedBy}</div>
-                      </div>
-                      <div className="text-xs text-gray-400">{new Date(history.changedAt).toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="p-4 border-t bg-gray-50 flex justify-end">
-            <button onClick={() => setShowTargetHistoryModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors cursor-pointer font-bold text-sm">Close</button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderKPIModal = () => {
     if (!showKPIModal) return null;
     return (
@@ -1082,7 +1001,6 @@ const NO_CREATE_HAND_OVER = () => {
                 </div>
               </div>
               <div className="flex gap-2 items-center">
-                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-xl text-sm transition-colors flex items-center gap-1 cursor-pointer"><History className="w-4 h-4" /> History</button>
                 <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl cursor-pointer">✕</button>
               </div>
             </div>
@@ -1369,7 +1287,6 @@ const NO_CREATE_HAND_OVER = () => {
     <div className="w-full h-screen max-h-screen p-0 sm:p-0.5 bg-slate-100 flex flex-col overflow-hidden">
       
       {/* ─── MODALS ─── */}
-      {renderTargetHistoryModal()}
       {renderKPIModal()}
       {renderPasteModal()}
       {renderAlarmModal()}

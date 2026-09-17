@@ -1,13 +1,23 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
+import {
+  Inbox,
+  Trash2,
+  BarChart3,
+  Upload,
+  FileSpreadsheet,
+  CheckSquare,
+  Calendar,
+  AlertTriangle,
+  X
+} from 'lucide-react';
 
 // Storage Keys
 const STORAGE_KEYS = {
   DATA: 'restock_in_data',
   COMPLETION: 'restock_in_completionHistory',
   TARGETS: 'restock_in_targets',
-  TARGET_HISTORY: 'restock_in_targetHistory',
   CONFIRMED: 'restock_in_confirmedStatus',
 };
 
@@ -292,9 +302,7 @@ export const Restock_in = () => {
   const [pasteData, setPasteData] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showKPIModal, setShowKPIModal] = useState(false);
-  const [showTargetHistoryModal, setShowTargetHistoryModal] = useState(false);
   const [targets, setTargets] = useState(() => getStorageData(STORAGE_KEYS.TARGETS) || {});
-  const [targetHistory, setTargetHistory] = useState(() => getStorageData(STORAGE_KEYS.TARGET_HISTORY) || []);
   const [editingTarget, setEditingTarget] = useState(null);
   const [kpiViewMode, setKpiViewMode] = useState('all');
   const [kpiSortBy, setKpiSortBy] = useState('unit');
@@ -323,9 +331,6 @@ export const Restock_in = () => {
       const dbTargets = await loadFromDb(STORAGE_KEYS.TARGETS, {});
       setTargets(dbTargets);
 
-      const dbTargetHistory = await loadFromDb(STORAGE_KEYS.TARGET_HISTORY, []);
-      setTargetHistory(dbTargetHistory);
-
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
       
@@ -352,12 +357,6 @@ export const Restock_in = () => {
       saveToDb(STORAGE_KEYS.TARGETS, targets);
     }
   }, [targets]);
-
-  useEffect(() => {
-    if (isLoaded.current) {
-      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
-    }
-  }, [targetHistory]);
 
   useEffect(() => {
     if (isLoaded.current) {
@@ -480,16 +479,6 @@ export const Restock_in = () => {
       }
     }));
 
-    setTargetHistory(prev => [{
-      id: Date.now(),
-      unit: unit,
-      period: period,
-      oldTarget: null,
-      newTarget: newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'System (Auto)',
-      reason: `Auto-created target based on ${dataCount} record(s)`
-    }, ...prev]);
     return newTarget;
   };
 
@@ -505,16 +494,6 @@ export const Restock_in = () => {
         lastUpdated: new Date().toISOString()
       }
     }));
-    setTargetHistory(prev => [{
-      id: Date.now(),
-      unit: unit,
-      period: period,
-      oldTarget: oldTarget,
-      newTarget: newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'User',
-      reason: `Manual target adjustment for ${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}`
-    }, ...prev]);
     showNotification(`📊 Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
   };
 
@@ -1137,55 +1116,6 @@ export const Restock_in = () => {
   const alarmCount = alarmItems.length;
 
   // ─── MODALS ───
-  const renderTargetHistoryModal = () => {
-    if (!showTargetHistoryModal) return null;
-    return (
-      <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col border border-gray-100 animate-scaleIn">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-            <div className="flex justify-between items-center text-white">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📜</span>
-                <h2 className="text-xl font-bold">Target Change History</h2>
-              </div>
-              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl transition-colors">✕</button>
-            </div>
-          </div>
-          <div className="p-6 overflow-y-auto flex-1 bg-white">
-            {targetHistory.length === 0 ? (
-              <div className="text-center text-gray-400 py-12">
-                <div className="text-5xl mb-3">📭</div>
-                <p className="text-base font-medium">No target changes recorded yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {targetHistory.map(history => (
-                  <div key={history.id} className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-500 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-lg text-gray-800">{history.unit}</div>
-                        <div className="text-sm text-gray-600 mt-1">
-                          {history.oldTarget !== null ? (
-                            <>Changed from <span className="line-through text-rose-500 font-medium">{history.oldTarget}</span> → <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
-                          ) : (<>Auto-created target: <span className="text-emerald-600 font-bold">{history.newTarget}</span></>)}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1">{history.reason} | By: {history.changedBy}</div>
-                      </div>
-                      <div className="text-xs text-gray-400 font-medium">{new Date(history.changedAt).toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
-            <button onClick={() => setShowTargetHistoryModal(false)} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm">Close</button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderKPIModal = () => {
     if (!showKPIModal) return null;
     return (
@@ -1194,14 +1124,15 @@ export const Restock_in = () => {
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
             <div className="flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">📊</span>
+                <BarChart3 className="w-6 h-6 text-white" />
                 <div>
                   <h2 className="text-xl font-bold text-white">KPI Dashboard - Restock In Performance</h2>
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-xl text-sm transition-colors">📜 History</button>
-                <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl transition-colors">✕</button>
+                <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
           </div>
@@ -1357,11 +1288,18 @@ export const Restock_in = () => {
         <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full mx-4 border border-gray-100 animate-scaleIn">
           <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 rounded-t-2xl">
             <div className="flex justify-between items-center text-white">
-              <div>
-                <h2 className="text-xl font-bold">🔄 Smart Import</h2>
-                <p className="text-blue-100 text-sm">Auto-filters GIS + Unsigned + Valid Units</p>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-white/15">
+                  <Upload className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">Smart Import</h2>
+                  <p className="text-blue-100 text-sm">Auto-filters GIS + Unsigned + Valid Units</p>
+                </div>
               </div>
-              <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl transition-colors">✕</button>
+              <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
           <div className="p-6 bg-white">
@@ -1380,7 +1318,9 @@ export const Restock_in = () => {
           </div>
           <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
             <button onClick={() => { setShowPasteModal(false); setPasteData(''); }} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm">Cancel</button>
-            <button onClick={handleSmartImport} disabled={!pasteData.trim()} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed">🔄 Smart Import</button>
+            <button onClick={handleSmartImport} disabled={!pasteData.trim()} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5">
+              <Upload className="w-4 h-4" /> Smart Import
+            </button>
           </div>
         </div>
       </div>
@@ -1395,13 +1335,17 @@ export const Restock_in = () => {
           <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-4">
             <div className="flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
-                <span className="animate-bounce text-2xl">🚨</span>
+                <div className="p-2 rounded-xl bg-white/15 animate-bounce">
+                  <AlertTriangle className="w-6 h-6 text-white" />
+                </div>
                 <div>
                   <h2 className="text-xl font-bold">ALARM DETECTED!</h2>
                   <p className="text-rose-100 text-xs">{alarmItems.length} record(s) exceed {alarmThreshold}-day threshold</p>
                 </div>
               </div>
-              <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white text-2xl transition-colors">✕</button>
+              <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
           
@@ -1485,7 +1429,7 @@ export const Restock_in = () => {
     return (
       <div className="fixed bottom-20 right-6 flex flex-col gap-3 z-40">
         <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-full shadow-lg animate-bounce flex items-center gap-2 border-2 border-white transition-colors">
-          <span className="text-lg">🚨</span>
+          <AlertTriangle className="w-5 h-5 text-white" />
           <span className="font-bold text-sm">{alarmCount}</span>
         </button>
       </div>
@@ -1496,7 +1440,6 @@ export const Restock_in = () => {
     <div className="w-full h-screen max-h-screen p-1 sm:p-1.5 bg-slate-100 flex flex-col overflow-hidden font-sans">
       
       {/* ─── MODALS ─── */}
-      {renderTargetHistoryModal()}
       {renderKPIModal()}
       {renderPasteModal()}
       {renderAlarmModal()}
@@ -1510,11 +1453,11 @@ export const Restock_in = () => {
           <div className="flex justify-between items-center gap-2 flex-wrap">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
-                  <span>📥</span> RESTOCK IN
+                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1.5">
+                  <Inbox className="w-4 h-4 text-blue-400" /> RESTOCK IN
                 </h1>
-                <span className="bg-blue-500/30 text-blue-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-blue-400/30 font-bold">
-                  🟢 LIVE • {currentTime.toLocaleTimeString()}
+                <span className="bg-blue-500/30 text-blue-200 text-[9px] font-mono px-2 py-0.5 rounded-full uppercase tracking-wider border border-blue-400/30 font-bold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>LIVE • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
             </div>
@@ -1522,8 +1465,12 @@ export const Restock_in = () => {
               <span className="text-slate-300 text-[10px] hidden lg:inline mr-2">
                 <strong>RESTOCK IN:</strong> ដំណើរការដកសម្ភារៈត្រឡប់ចូលស្តុក METFONE
               </span>
-              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer">📊 KPI Matrix</button>
+              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer flex items-center gap-1">
+                <Trash2 className="w-3 h-3" /> Clear All
+              </button>
+              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1">
+                <BarChart3 className="w-3 h-3" /> KPI Matrix
+              </button>
             </div>
           </div>
         </div>
@@ -1532,22 +1479,30 @@ export const Restock_in = () => {
         <div className="px-3 py-1 bg-slate-100 border-b border-slate-300 flex-shrink-0">
           <div className="flex flex-wrap gap-2 justify-between items-center">
             <div className="flex flex-wrap gap-1.5 items-center">
-              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">📎 Export Excel</button>
+              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-extrabold flex items-center gap-1.5 shadow-xs cursor-pointer">
+                <Upload className="w-3.5 h-3.5" /> Smart Import
+              </button>
+              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-extrabold flex items-center gap-1.5 shadow-xs cursor-pointer">
+                <FileSpreadsheet className="w-3.5 h-3.5" /> Export Excel
+              </button>
               {selectedRows.size > 0 && (
-                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">🗑️ Complete ({selectedRows.size})</button>
+                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-extrabold flex items-center gap-1.5 shadow-xs cursor-pointer">
+                  <CheckSquare className="w-3.5 h-3.5" /> Complete ({selectedRows.size})
+                </button>
               )}
 
-              {/* 🗓️ DAYS QUICK FILTER CHIPS */}
+              {/* DAYS QUICK FILTER CHIPS */}
               <div className="flex items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
-                <span className="text-[10px] font-extrabold text-slate-600">🗓️ Days:</span>
+                <span className="text-[10px] font-extrabold text-slate-600 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-slate-500" /> Days:
+                </span>
                 {[
                   { id: 'ALL', label: 'All' },
                   { id: '0', label: '0d' },
                   { id: '1-3', label: '1-3d' },
                   { id: '4-6', label: '4-6d' },
-                  { id: '>=4', label: '>=4d 🚨' },
-                  { id: '>=7', label: '>=7d 🔴' },
+                  { id: '>=4', label: '>=4d' },
+                  { id: '>=7', label: '>=7d' },
                 ].map(pill => (
                   <button
                     key={pill.id}
@@ -1565,7 +1520,9 @@ export const Restock_in = () => {
             </div>
             <div className="flex gap-2 items-center flex-wrap">
               <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-xs text-[10px]">
-                <span className="font-bold text-amber-900">⚠️ Threshold &ge;</span>
+                <span className="font-bold text-amber-900 flex items-center gap-0.5">
+                  <AlertTriangle className="w-3 h-3 text-amber-600" /> Threshold &ge;
+                </span>
                 <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-10 px-1 py-0 text-[10px] font-bold border border-amber-300 rounded text-center bg-white" min="1"/>
                 <span className="font-bold text-amber-900">d</span>
               </div>

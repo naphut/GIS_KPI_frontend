@@ -14,7 +14,6 @@ const STORAGE_KEYS = {
   DATA: 'metfone_nocreate_data',
   COMPLETION: 'metfone_nocreate_completionHistory',
   TARGETS: 'metfone_nocreate_targets',
-  TARGET_HISTORY: 'metfone_nocreate_targetHistory',
   CONFIRMED: 'metfone_nocreate_confirmedStatus'
 };
 
@@ -184,9 +183,7 @@ const NotCreateHandOverMetfone = () => {
   const [pasteData, setPasteData] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showKPIModal, setShowKPIModal] = useState(false);
-  const [showTargetHistoryModal, setShowTargetHistoryModal] = useState(false);
   const [targets, setTargets] = useState(() => getStorageData(STORAGE_KEYS.TARGETS) || {});
-  const [targetHistory, setTargetHistory] = useState(() => getStorageData(STORAGE_KEYS.TARGET_HISTORY) || []);
   const [editingTarget, setEditingTarget] = useState(null);
   const [kpiViewMode, setKpiViewMode] = useState('all');
   const [kpiSortBy, setKpiSortBy] = useState('unit');
@@ -227,9 +224,6 @@ const NotCreateHandOverMetfone = () => {
       const dbTargets = await loadFromDb(STORAGE_KEYS.TARGETS, {});
       setTargets(dbTargets);
 
-      const dbTargetHistory = await loadFromDb(STORAGE_KEYS.TARGET_HISTORY, []);
-      setTargetHistory(dbTargetHistory);
-
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
 
@@ -256,12 +250,6 @@ const NotCreateHandOverMetfone = () => {
       saveToDb(STORAGE_KEYS.TARGETS, targets);
     }
   }, [targets]);
-
-  useEffect(() => {
-    if (isLoaded.current) {
-      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
-    }
-  }, [targetHistory]);
 
   useEffect(() => {
     if (isLoaded.current) {
@@ -338,16 +326,6 @@ const NotCreateHandOverMetfone = () => {
       }
     }));
 
-    setTargetHistory(prev => [{
-      id: Date.now(),
-      unit,
-      period,
-      oldTarget: null,
-      newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'System (Auto)',
-      reason: `Auto-created target based on ${dataCount} record(s)`
-    }, ...prev]);
     return newTarget;
   };
 
@@ -364,17 +342,6 @@ const NotCreateHandOverMetfone = () => {
         lastUpdated: new Date().toISOString()
       }
     }));
-
-    setTargetHistory(prev => [{
-      id: Date.now(),
-      unit,
-      period,
-      oldTarget,
-      newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'User',
-      reason: `Manual target adjustment for ${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}`
-    }, ...prev]);
 
     showNotification(`📊 Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} updated from ${oldTarget} to ${newTarget}`, 'info');
   };
@@ -826,46 +793,6 @@ const NotCreateHandOverMetfone = () => {
   };
 
   // ─── MODALS ───
-  const renderTargetHistoryModal = () => {
-    if (!showTargetHistoryModal) return null;
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📜</span>
-                <h2 className="text-xl font-bold text-white">Target Change History</h2>
-              </div>
-              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl font-bold">✕</button>
-            </div>
-          </div>
-          <div className="p-4 flex-1 overflow-y-auto">
-            {targetHistory.length === 0 ? (
-              <p className="text-center py-8 text-gray-500 text-sm">No target change history found.</p>
-            ) : (
-              <div className="divide-y divide-gray-200">
-                {targetHistory.map((item) => (
-                  <div key={item.id} className="py-3 flex justify-between items-center text-xs">
-                    <div>
-                      <span className="font-bold text-indigo-600 mr-2">{item.unit}</span>
-                      <span className="text-gray-500 mr-2">({item.period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'})</span>
-                      <span className="text-gray-700">{item.reason}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="font-mono text-gray-500 mr-2">{item.oldTarget !== null ? `${item.oldTarget} → ` : ''}{item.newTarget}</span>
-                      <span className="text-gray-400">{new Date(item.changedAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderKPIModal = () => {
     if (!showKPIModal) return null;
     const { data: kpiList, summary } = calculateKPIData;
@@ -882,7 +809,6 @@ const NotCreateHandOverMetfone = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setShowTargetHistoryModal(true)} className="bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded text-xs font-bold transition-all">📜 History</button>
               <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl font-bold ml-2">✕</button>
             </div>
           </div>
@@ -1167,7 +1093,6 @@ const NotCreateHandOverMetfone = () => {
       )}
 
       {/* Modals & Floating Buttons */}
-      {renderTargetHistoryModal()}
       {renderKPIModal()}
       {renderPasteModal()}
       {renderAlarmModal()}

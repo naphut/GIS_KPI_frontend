@@ -42,7 +42,6 @@ const STORAGE_KEYS = {
   DATA: 'kpi_stockout_data',
   COMPLETION: 'kpi_stockout_completionHistory',
   TARGETS: 'kpi_stockout_targets',
-  TARGET_HISTORY: 'kpi_stockout_targetHistory',
 };
 
 // Helper functions
@@ -235,9 +234,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   const [pasteData, setPasteData] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showKPIModal, setShowKPIModal] = useState(false);
-  const [showTargetHistoryModal, setShowTargetHistoryModal] = useState(false);
   const [targets, setTargets] = useState(() => getStorageData(STORAGE_KEYS.TARGETS) || {});
-  const [targetHistory, setTargetHistory] = useState(() => getStorageData(STORAGE_KEYS.TARGET_HISTORY) || []);
   const [editingTarget, setEditingTarget] = useState(null);
   const [kpiViewMode, setKpiViewMode] = useState('all');
   const [kpiSortBy, setKpiSortBy] = useState('unit');
@@ -273,9 +270,6 @@ const STOCKOUT_YET_CONFIRM = () => {
 
       const dbTargets = await loadFromDb(STORAGE_KEYS.TARGETS, {});
       setTargets(dbTargets);
-
-      const dbTargetHistory = await loadFromDb(STORAGE_KEYS.TARGET_HISTORY, []);
-      setTargetHistory(dbTargetHistory);
       
       isLoaded.current = true;
     };
@@ -300,12 +294,6 @@ const STOCKOUT_YET_CONFIRM = () => {
       saveToDb(STORAGE_KEYS.TARGETS, targets);
     }
   }, [targets]);
-
-  useEffect(() => {
-    if (isLoaded.current) {
-      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
-    }
-  }, [targetHistory]);
 
   // Columns
   const columns = [
@@ -440,18 +428,6 @@ const STOCKOUT_YET_CONFIRM = () => {
       }
     }));
     
-    const historyEntry = {
-      id: Date.now(),
-      unit: unit,
-      period: period,
-      oldTarget: null,
-      newTarget: newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: `System (Auto - ${isMorning ? 'ព្រឹក' : 'ល្ងាច'})`,
-      reason: `Auto-created target based on ${dataCount} record(s)`
-    };
-    setTargetHistory(prev => [historyEntry, ...prev]);
-    
     return newTarget;
   };
 
@@ -497,18 +473,6 @@ const STOCKOUT_YET_CONFIRM = () => {
         lastUpdated: new Date().toISOString()
       }
     }));
-    
-    const historyEntry = {
-      id: Date.now(),
-      unit: unit,
-      period: period,
-      oldTarget: oldTarget,
-      newTarget: newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'User',
-      reason: `Manual target adjustment for ${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}`
-    };
-    setTargetHistory(prev => [historyEntry, ...prev]);
     
     showNotification(`Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit}: ${oldTarget} → ${newTarget}`, 'info');
   };
@@ -1200,65 +1164,6 @@ const STOCKOUT_YET_CONFIRM = () => {
     );
   };
 
-  // Target History Modal
-  const renderTargetHistoryModal = () => {
-    if (!showTargetHistoryModal) return null;
-    return (
-      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full border border-slate-200 max-h-[80vh] overflow-hidden flex flex-col">
-          <div className="bg-slate-900 px-6 py-3.5 border-b border-slate-800 text-white flex justify-between items-center">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                <History className="w-4 h-4" />
-              </div>
-              <h2 className="text-sm font-black text-white uppercase tracking-tight">Target Change History</h2>
-            </div>
-            <button 
-              onClick={() => setShowTargetHistoryModal(false)} 
-              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="p-6 overflow-y-auto flex-1">
-            {targetHistory.length === 0 ? (
-              <div className="text-center text-slate-400 py-12 flex flex-col items-center gap-2">
-                <Inbox className="w-8 h-8 text-slate-300" />
-                <p className="font-bold text-slate-600 text-sm">No target changes recorded yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-2.5">
-                {targetHistory.map(history => (
-                  <div key={history.id} className="bg-slate-50 rounded-lg p-3.5 border border-slate-200/80 border-l-4 border-l-blue-600">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-sm text-slate-900">{history.unit} {history.period && `(${history.period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'})`}</div>
-                        <div className="text-xs text-slate-600 mt-0.5">
-                          {history.oldTarget !== null ? (
-                            <>Changed from <span className="line-through text-rose-500">{history.oldTarget}</span> → <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
-                          ) : (
-                            <>Auto-created: <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-1">{history.reason} | By: {history.changedBy}</div>
-                      </div>
-                      <div className="text-[11px] font-mono text-slate-400">{new Date(history.changedAt).toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
-            <button onClick={() => setShowTargetHistoryModal(false)} className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 font-bold text-slate-700 rounded-lg text-xs transition-colors cursor-pointer">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // KPI Modal
   const renderKPIModal = () => {
     if (!showKPIModal) return null;
@@ -1273,13 +1178,6 @@ const STOCKOUT_YET_CONFIRM = () => {
               <h2 className="text-sm font-black text-white uppercase tracking-tight">KPI Performance Matrix - Stockout</h2>
             </div>
             <div className="flex gap-2 items-center">
-              <button 
-                onClick={() => setShowTargetHistoryModal(true)} 
-                className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors border border-slate-700 cursor-pointer"
-              >
-                <History className="w-3.5 h-3.5" />
-                <span>History</span>
-              </button>
               <button 
                 onClick={() => setShowKPIModal(false)} 
                 className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
@@ -1664,7 +1562,6 @@ const STOCKOUT_YET_CONFIRM = () => {
       
       {/* ─── MODALS ─── */}
       {renderComparisonAlert()}
-      {renderTargetHistoryModal()}
       {renderKPIModal()}
       {renderPasteModal()}
       {renderAlarmModal()}

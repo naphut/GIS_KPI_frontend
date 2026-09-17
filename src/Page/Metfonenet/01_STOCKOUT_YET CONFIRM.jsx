@@ -13,8 +13,7 @@ const allUnits = [
 const STORAGE_KEYS = {
   DATA: 'metfone_stockout_data',
   COMPLETION: 'metfone_stockout_completionHistory',
-  TARGETS: 'metfone_stockout_targets',
-  TARGET_HISTORY: 'metfone_stockout_targetHistory'
+  TARGETS: 'metfone_stockout_targets'
 };
 export const INITIAL_METFONE_DATA = [];
 
@@ -126,9 +125,7 @@ export default function StockoutYetConfirmMetfone() {
   const [pasteData, setPasteData] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showKPIModal, setShowKPIModal] = useState(false);
-  const [showTargetHistoryModal, setShowTargetHistoryModal] = useState(false);
   const [targets, setTargets] = useState({});
-  const [targetHistory, setTargetHistory] = useState([]);
   const [editingTarget, setEditingTarget] = useState(null);
   const [notification, setNotification] = useState(null);
 
@@ -226,8 +223,6 @@ export default function StockoutYetConfirmMetfone() {
       setCompletionHistory(dbCompletion || []);
       const dbTargets = await loadFromDb(STORAGE_KEYS.TARGETS, {});
       setTargets(dbTargets || {});
-      const dbTargetHistory = await loadFromDb(STORAGE_KEYS.TARGET_HISTORY, []);
-      setTargetHistory(dbTargetHistory || []);
 
       if (dbData && Array.isArray(dbData) && dbData.length > 0) {
         const enriched = dbData
@@ -261,12 +256,6 @@ export default function StockoutYetConfirmMetfone() {
       saveToDb(STORAGE_KEYS.TARGETS, targets);
     }
   }, [targets]);
-
-  useEffect(() => {
-    if (isLoaded.current) {
-      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
-    }
-  }, [targetHistory]);
 
   // Recalculate days on mount
   useEffect(() => {
@@ -570,13 +559,11 @@ export default function StockoutYetConfirmMetfone() {
       setData([]);
       setCompletionHistory([]);
       setTargets({});
-      setTargetHistory([]);
 
       // 2. Immediately wipe localStorage cache
       localStorage.removeItem(STORAGE_KEYS.DATA);
       localStorage.removeItem(STORAGE_KEYS.COMPLETION);
       localStorage.removeItem(STORAGE_KEYS.TARGETS);
-      localStorage.removeItem(STORAGE_KEYS.TARGET_HISTORY);
 
       showNotification('🧹 Cleared all data!', 'info');
 
@@ -584,8 +571,7 @@ export default function StockoutYetConfirmMetfone() {
       Promise.all([
         clearStore(STORAGE_KEYS.DATA),
         clearStore(STORAGE_KEYS.COMPLETION),
-        clearStore(STORAGE_KEYS.TARGETS),
-        clearStore(STORAGE_KEYS.TARGET_HISTORY)
+        clearStore(STORAGE_KEYS.TARGETS)
       ]).catch(err => {
         console.error("Error clearing DB store:", err);
       });
@@ -730,58 +716,6 @@ export default function StockoutYetConfirmMetfone() {
   };
 
   // ─── MODALS ───
-  // Target History Modal
-  const renderTargetHistoryModal = () => {
-    if (!showTargetHistoryModal) return null;
-    return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📜</span>
-                <h2 className="text-xl font-bold text-white">Target Change History</h2>
-              </div>
-              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl cursor-pointer">✕</button>
-            </div>
-          </div>
-          <div className="p-6 overflow-y-auto flex-1">
-            {targetHistory.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <div className="text-4xl mb-2">📭</div>
-                <p>No target changes recorded yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {targetHistory.map(history => (
-                  <div key={history.id} className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-500">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-lg text-gray-800">{history.unit}</div>
-                        <div className="text-sm text-gray-600">
-                          {history.oldTarget !== null ? (
-                            <>Changed from <span className="line-through text-rose-500">{history.oldTarget}</span> → <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
-                          ) : (
-                            <>Target: <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
-                          )}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">{history.reason}</div>
-                      </div>
-                      <div className="text-xs text-gray-400">{new Date(history.changedAt).toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="p-4 border-t bg-gray-50 flex justify-end">
-            <button onClick={() => setShowTargetHistoryModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors text-xs font-bold cursor-pointer">Close</button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   // KPI Modal
   const renderKPIModal = () => {
     if (!showKPIModal) return null;
@@ -798,7 +732,6 @@ export default function StockoutYetConfirmMetfone() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">📜 History</button>
                 <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
               </div>
             </div>
@@ -1072,7 +1005,6 @@ export default function StockoutYetConfirmMetfone() {
       )}
 
       {/* ─── MODALS ─── */}
-      {renderTargetHistoryModal()}
       {renderKPIModal()}
       {renderPasteModal()}
       {renderAlarmModal()}

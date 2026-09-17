@@ -18,6 +18,24 @@ import {
 import { loadFromDb, saveToDb, completeStore } from '../../../services/dbStore';
 import html2canvas from 'html2canvas';
 import { createPortal } from 'react-dom';
+import {
+  Send,
+  Share2,
+  FileText,
+  BookmarkPlus,
+  X,
+  Building2,
+  ChevronDown,
+  BarChart3,
+  CheckCircle2,
+  Calendar,
+  AlertTriangle,
+  MessageSquare,
+  Layers,
+  Bot,
+  Clock,
+  Bell
+} from 'lucide-react';
 
 // Import the same storage keys from your Restock_in component
 const STORAGE_KEYS = {
@@ -205,6 +223,7 @@ const Dashboard_Request = (props = {}) => {
   const [isSelectingForSummary, setIsSelectingForSummary] = useState(false);
   const [openBatchDropdown, setOpenBatchDropdown] = useState(false);
   const [openSingleDropdown, setOpenSingleDropdown] = useState(false);
+  const [isNoteOpen, setIsNoteOpen] = useState(false);
 
   // Restock KPI Targets State
   const [restockTargets, setRestockTargets] = useState(() => {
@@ -2068,38 +2087,51 @@ const Dashboard_Request = (props = {}) => {
     <div className="w-full px-4 py-6 bg-gray-50 min-h-screen">
       
       {/* ─── HEADER ─── */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-lg shadow-indigo-200 p-6 mb-6">
+      <div className="bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 rounded-2xl shadow-md shadow-indigo-500/10 p-5 sm:p-6 mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                <span>📊</span> **របាយការណ៍ជូនដំណឹងអំពីប្រតិបត្តិការ Recall និង Request Stock Out ដែលមិនទាន់បានបិទដំណើរការក្នុងប្រព័ន្ធ។**
+              <h1 className="text-lg sm:text-xl font-black text-white flex items-center gap-2.5 tracking-tight">
+                <span className="p-2 bg-white/10 rounded-xl"><FileText className="w-5 h-5 text-indigo-200" /></span>
+                របាយការណ៍ជូនដំណឹងអំពីប្រតិបត្តិការ Recall និង Request Stock Out ដែលមិនទាន់បានបិទដំណើរការក្នុងប្រព័ន្ធ
               </h1>
-              <span className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/30">
-                🟢 Live • {currentTime.toLocaleTimeString()}
+              <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-400/30">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Live • {currentTime.toLocaleTimeString()}
               </span>
             </div>
-            <p className="text-indigo-100 mt-1 text-sm">Recall And &amp; Request Stock Out</p>
+            <p className="text-indigo-100/80 mt-1 text-xs sm:text-sm">Recall And &amp; Request Stock Out Operational Tracking</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-sm border border-white/10 transition-colors">
+              <Calendar className="w-4 h-4 text-indigo-200" />
+              {currentTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </span>
           </div>
         </div>
       </div>
 
       {/* ─── TELEGRAM BOT OVERVIEW ─── */}
-      <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 mb-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-              <span>📤</span> PI Dashboard Overview
+            <h2 className="text-lg sm:text-xl font-black text-slate-800 flex items-center gap-2.5">
+              <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><Send className="w-5 h-5" /></span>
+              KPI Dashboard &amp; Telegram Overview
             </h2>
-            <p className="text-sm text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
-              <span>Configured: <strong className="text-blue-600">{configuredCount}</strong>/{totalUnits} provinces</span>
+            <div className="text-xs text-slate-500 mt-1.5 flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                Configured: <strong className="text-indigo-600 font-bold">{configuredCount}</strong>/{totalUnits} provinces
+              </span>
               {configuredCount === 0 && (
-                <span className="text-rose-500 font-medium">⚠️ Please add group IDs in telegramBot.js</span>
+                <span className="inline-flex items-center gap-1 text-rose-500 font-semibold bg-rose-50 px-2 py-0.5 rounded-md">
+                  <AlertTriangle className="w-3 h-3" /> Please add group IDs in telegramBot.js
+                </span>
               )}
-            </p>
+            </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* 1. Batch Actions Dropdown (Send All) */}
             <div className="relative inline-block text-left">
               <button
@@ -2109,17 +2141,17 @@ const Dashboard_Request = (props = {}) => {
                   setOpenSingleDropdown(false);
                 }}
                 disabled={isSending || configuredCount === 0}
-                className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-extrabold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-sm"
+                className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-xs sm:text-sm"
               >
-                <span>🚀</span>
+                <Send className="w-4 h-4" />
                 <span>Send All ({configuredCount})</span>
-                <span className={`transition-transform duration-200 text-[10px] ml-1 ${openBatchDropdown ? 'rotate-180' : ''}`}>▼</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openBatchDropdown ? 'rotate-180' : ''}`} />
               </button>
 
               {openBatchDropdown && (
-                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
-                  <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                    🌐 Batch Operations ({configuredCount} Provinces)
+                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-3 h-3" /> Batch Operations ({configuredCount} Provinces)
                   </div>
                   <div className="py-1 space-y-1">
                     <button
@@ -2131,9 +2163,9 @@ const Dashboard_Request = (props = {}) => {
                       }}
                       className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                     >
-                      <span className="text-base mt-0.5">📤</span>
+                      <Send className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-black text-slate-800">Send Text Receipts All ({configuredCount})</div>
+                        <div className="font-bold text-slate-800">Send Text Receipts All ({configuredCount})</div>
                         <div className="text-[10px] text-slate-400 font-medium">Send text receipts to all 25 units</div>
                       </div>
                     </button>
@@ -2147,9 +2179,9 @@ const Dashboard_Request = (props = {}) => {
                       }}
                       className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                     >
-                      <span className="text-base mt-0.5">📸</span>
+                      <Share2 className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-black text-slate-800">Send Detail ({configuredCount})</div>
+                        <div className="font-bold text-slate-800">Send Detail ({configuredCount})</div>
                         <div className="text-[10px] text-slate-400 font-medium">Send Detail Screenshot + Excel file</div>
                       </div>
                     </button>
@@ -2162,9 +2194,9 @@ const Dashboard_Request = (props = {}) => {
                       }}
                       className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                     >
-                      <span className="text-base mt-0.5">🖼️</span>
+                      <BarChart3 className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-black text-slate-800">Summary Image all Unit ({configuredCount})</div>
+                        <div className="font-bold text-slate-800">Summary Image all Unit ({configuredCount})</div>
                         <div className="text-[10px] text-slate-400 font-medium">Send Excel Matrix Table Screenshot</div>
                       </div>
                     </button>
@@ -2182,17 +2214,17 @@ const Dashboard_Request = (props = {}) => {
                   setOpenBatchDropdown(false);
                 }}
                 disabled={isSending}
-                className="px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-sm"
+                className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-xs sm:text-sm"
               >
-                <span>🎯</span>
+                <Building2 className="w-4 h-4" />
                 <span>Send Single Branch (1)</span>
-                <span className={`transition-transform duration-200 text-[10px] ml-1 ${openSingleDropdown ? 'rotate-180' : ''}`}>▼</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${openSingleDropdown ? 'rotate-180' : ''}`} />
               </button>
 
               {openSingleDropdown && (
-                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
-                  <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                    📍 Single Unit Operations (1 Province)
+                <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
+                  <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Building2 className="w-3 h-3" /> Single Unit Operations (1 Province)
                   </div>
                   <div className="py-1 space-y-1">
                     <button
@@ -2204,9 +2236,9 @@ const Dashboard_Request = (props = {}) => {
                       }}
                       className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                     >
-                      <span className="text-base mt-0.5">📤</span>
+                      <Send className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-black text-slate-800">Send Text Receipts (1)</div>
+                        <div className="font-bold text-slate-800">Send Text Receipts (1)</div>
                         <div className="text-[10px] text-slate-400 font-medium">Select 1 unit to send text receipt</div>
                       </div>
                     </button>
@@ -2218,11 +2250,11 @@ const Dashboard_Request = (props = {}) => {
                         setIsSelectingForSummary(false);
                         setShowUnitSelector(true);
                       }}
-                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-violet-50 hover:text-violet-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                      className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                     >
-                      <span className="text-base mt-0.5">📸</span>
+                      <Share2 className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-black text-slate-800">Send Detail (1)</div>
+                        <div className="font-bold text-slate-800">Send Detail (1)</div>
                         <div className="text-[10px] text-slate-400 font-medium">Select 1 unit to send Detail + Excel</div>
                       </div>
                     </button>
@@ -2236,9 +2268,9 @@ const Dashboard_Request = (props = {}) => {
                       }}
                       className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                     >
-                      <span className="text-base mt-0.5">🖼️</span>
+                      <BarChart3 className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
                       <div>
-                        <div className="font-black text-slate-800">Summary Image (1)</div>
+                        <div className="font-bold text-slate-800">Summary Image (1)</div>
                         <div className="text-[10px] text-slate-400 font-medium">Select 1 unit to send Summary Image</div>
                       </div>
                     </button>
@@ -2249,67 +2281,80 @@ const Dashboard_Request = (props = {}) => {
           </div>
         </div>
 
-        {/* Custom Note */}
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
-          <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-              <span>✍️</span> Note/Comment to append to Telegram reports (Optional)
-            </label>
-            {customNote.trim() && !savedNotes.some(n => n.content === customNote.trim()) && (
+        {/* Collapsible Clean Note Section */}
+        <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-200/80 transition-all">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => setIsNoteOpen(!isNoteOpen)}
+              className="text-xs font-bold text-slate-700 flex items-center gap-2 hover:text-indigo-600 transition-colors cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4 text-indigo-500" />
+              <span>Note / Telegram Comment (Optional)</span>
+              {customNote.trim() && (
+                <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-semibold">Active</span>
+              )}
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isNoteOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isNoteOpen && customNote.trim() && !savedNotes.some(n => n.content === customNote.trim()) && (
               <button
                 onClick={handleSaveNote}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1.5 bg-indigo-50 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
               >
-                <span>💾</span> Save Template
+                <BookmarkPlus className="w-3.5 h-3.5" /> Save Template
               </button>
             )}
           </div>
-          <textarea
-            value={customNote}
-            onChange={(e) => setCustomNote(e.target.value)}
-            placeholder="Type a custom note here (e.g. 'Please prioritize these tasks today!'). It will be appended to the Telegram report."
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-            rows={2}
-          />
-          
-          {savedNotes.length > 0 && (
-            <div className="mt-3">
-              <span className="block text-xs font-medium text-gray-500 mb-1.5">Saved Templates (Click to use):</span>
-              <div className="flex flex-wrap gap-2">
-                {savedNotes.map((note) => (
-                  <div 
-                    key={note.id}
-                    className="group inline-flex items-center gap-1 bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 rounded-lg pl-2.5 pr-1 py-1 text-xs text-gray-600 hover:text-blue-700 transition-all cursor-pointer shadow-sm"
-                  >
-                    <span onClick={() => setCustomNote(note.content)} className="flex-1 select-none pr-1">
-                      {note.content}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteNote(note.id);
-                      }}
-                      className="w-5 h-5 flex items-center justify-center rounded-md text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                      title="Delete template"
-                    >
-                      ×
-                    </button>
+
+          {isNoteOpen && (
+            <div className="mt-3 pt-3 border-t border-slate-200/70 animate-fadeIn">
+              <textarea
+                value={customNote}
+                onChange={(e) => setCustomNote(e.target.value)}
+                placeholder="Type a custom note here (e.g. 'Please prioritize these tasks today!'). It will be appended to the Telegram report."
+                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white"
+                rows={2}
+              />
+              
+              {savedNotes.length > 0 && (
+                <div className="mt-2.5">
+                  <span className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Saved Templates:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {savedNotes.map((note) => (
+                      <div 
+                        key={note.id}
+                        className="group inline-flex items-center gap-1.5 bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 rounded-lg pl-2.5 pr-1 py-1 text-xs text-slate-600 hover:text-indigo-700 transition-all cursor-pointer shadow-2xs"
+                      >
+                        <span onClick={() => setCustomNote(note.content)} className="flex-1 select-none pr-1">
+                          {note.content}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteNote(note.id);
+                          }}
+                          className="w-4 h-4 flex items-center justify-center rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Delete template"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Configuration Warning */}
         {configuredCount === 0 && (
-          <div className="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-xl animate-fadeIn">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">⚠️</span>
+          <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl animate-fadeIn">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-bold text-rose-700">No Group IDs Configured</h4>
-                <p className="text-sm text-rose-600">
-                  Please add group IDs in <code className="bg-rose-100 px-1.5 py-0.5 rounded">src/services/telegramBot.js</code>
+                <h4 className="font-bold text-xs text-rose-700">No Group IDs Configured</h4>
+                <p className="text-xs text-rose-600">
+                  Please add group IDs in <code className="bg-rose-100 px-1 py-0.5 rounded font-mono">src/services/telegramBot.js</code>
                 </p>
               </div>
             </div>
@@ -2318,12 +2363,15 @@ const Dashboard_Request = (props = {}) => {
 
         {/* Unit Selector */}
         {showUnitSelector && (
-          <div className="p-5 bg-gray-50 rounded-xl border border-gray-200 mt-4 animate-fadeIn">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <span>📍</span> Select Province/Unit to send report:
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 mt-4 animate-fadeIn">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-indigo-600" />
+                <span>Select Province / Unit to send report:</span>
               </h3>
-              <button onClick={() => setShowUnitSelector(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+              <button onClick={() => setShowUnitSelector(false)} className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
               {allUnits.map((unit) => {
@@ -2347,34 +2395,36 @@ const Dashboard_Request = (props = {}) => {
                       }
                     }}
                     disabled={isSending || !isConfigured}
-                    className={`px-3 py-2 rounded-xl text-sm font-medium transition-all relative ${
+                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all relative ${
                       !isConfigured
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-60'
                         : telegramSelectedUnit === unit
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                        : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'
-                    } disabled:opacity-50`}
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200'
+                    } disabled:opacity-50 cursor-pointer`}
                   >
                     {unit}
                     {isConfigured && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white"></span>
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
                     )}
                     {hasTokenForUnit && isConfigured && (
-                      <span className="absolute -bottom-1 -right-1 text-[8px] bg-blue-500 text-white rounded-full px-1">🤖</span>
+                      <span className="absolute -bottom-1 -right-1 text-[8px] bg-blue-500 text-white rounded-full px-1">
+                        <Bot className="w-2.5 h-2.5" />
+                      </span>
                     )}
                   </button>
                 );
               })}
             </div>
-            <div className="mt-4 flex items-center gap-4 text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span> Configured
+            <div className="mt-3 flex items-center gap-4 text-[11px] text-slate-500">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-emerald-500 rounded-full"></span> Configured
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 bg-gray-300 rounded-full"></span> Not configured
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-slate-300 rounded-full"></span> Not configured
               </span>
-              <span className="flex items-center gap-1">
-                <span className="text-blue-500">🤖</span> Has custom token
+              <span className="flex items-center gap-1.5">
+                <Bot className="w-3 h-3 text-blue-500" /> Has custom token
               </span>
             </div>
           </div>
@@ -2383,41 +2433,81 @@ const Dashboard_Request = (props = {}) => {
 
       {/* ─── SUMMARY CARDS ─── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-2xl shadow-md p-5 border-l-4 border-blue-500 hover:shadow-xl transition-shadow">
-          <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Total Requests</div>
-          <div className="text-2xl font-bold text-blue-600 mt-1">{filteredKPI.summary.totalRequests}</div>
-          <div className="text-[10px] text-gray-400 mt-1">All records</div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-md p-5 border-l-4 border-emerald-500 hover:shadow-xl transition-shadow">
-          <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Completed</div>
-          <div className="text-2xl font-bold text-emerald-600 mt-1">{filteredKPI.summary.totalCompleted}</div>
-          <div className="text-[10px] text-gray-400 mt-1">{filteredKPI.summary.completionRate.toFixed(1)}% rate</div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-md p-5 border-l-4 border-amber-500 hover:shadow-xl transition-shadow">
-          <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Pending</div>
-          <div className="text-2xl font-bold text-amber-600 mt-1">{filteredKPI.summary.totalPending}</div>
-          <div className="text-[10px] text-gray-400 mt-1">Awaiting completion</div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-md p-5 border-l-4 border-rose-500 hover:shadow-xl transition-shadow">
-          <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Alarms</div>
-          <div className={`text-2xl font-bold ${getAlarmColor(filteredKPI.summary.totalAlarms)} mt-1`}>
-            {filteredKPI.summary.totalAlarms}
+        <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-blue-500 hover:shadow-md transition-shadow border-slate-200/60">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Requests</div>
+              <div className="text-2xl font-black text-slate-800 mt-1">{filteredKPI.summary.totalRequests}</div>
+            </div>
+            <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+              <BarChart3 className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-[10px] text-gray-400 mt-1">Exceeding threshold</div>
+          <div className="text-[10px] text-slate-400 font-medium mt-2">All records</div>
         </div>
-        <div className="bg-white rounded-2xl shadow-md p-5 border-l-4 border-purple-500 hover:shadow-xl transition-shadow">
-          <div className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Units Active</div>
-          <div className="text-2xl font-bold text-purple-600 mt-1">
-            {Object.keys(filteredKPI.unitStats).length}
+
+        <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-emerald-500 hover:shadow-md transition-shadow border-slate-200/60">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Completed</div>
+              <div className="text-2xl font-black text-emerald-600 mt-1">{filteredKPI.summary.totalCompleted}</div>
+            </div>
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-[10px] text-gray-400 mt-1">Total units</div>
+          <div className="text-[10px] text-slate-400 font-medium mt-2">{filteredKPI.summary.completionRate.toFixed(1)}% rate</div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-amber-500 hover:shadow-md transition-shadow border-slate-200/60">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pending</div>
+              <div className="text-2xl font-black text-amber-600 mt-1">{filteredKPI.summary.totalPending}</div>
+            </div>
+            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+              <Clock className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-400 font-medium mt-2">Awaiting completion</div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-rose-500 hover:shadow-md transition-shadow border-slate-200/60">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Alarms</div>
+              <div className={`text-2xl font-black ${getAlarmColor(filteredKPI.summary.totalAlarms)} mt-1`}>
+                {filteredKPI.summary.totalAlarms}
+              </div>
+            </div>
+            <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+              <Bell className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-400 font-medium mt-2">Exceeding threshold</div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-5 border-l-4 border-purple-500 hover:shadow-md transition-shadow border-slate-200/60">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Units Active</div>
+              <div className="text-2xl font-black text-purple-600 mt-1">
+                {Object.keys(filteredKPI.unitStats).length}
+              </div>
+            </div>
+            <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
+              <Building2 className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-400 font-medium mt-2">Total active units</div>
         </div>
       </div>
 
       {/* ─── PERFORMANCE TABLE ─── */}
-      <div className="bg-white rounded-2xl shadow-md p-6 mb-6 border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <span>📋</span> Performance by Module
+      <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-slate-200/80">
+        <h3 className="text-base sm:text-lg font-black text-slate-800 mb-4 flex items-center gap-2.5">
+          <span className="p-2 bg-slate-100 text-slate-700 rounded-xl"><BarChart3 className="w-4 h-4" /></span>
+          Performance by Module
         </h3>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">

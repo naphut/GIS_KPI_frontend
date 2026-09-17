@@ -35,7 +35,6 @@ const STORAGE_KEYS = {
   DATA: 'import_ca_data',
   COMPLETION: 'import_ca_completionHistory',
   TARGETS: 'import_ca_targets',
-  TARGET_HISTORY: 'import_ca_targetHistory',
   CONFIRMED: 'import_ca_confirmedStatus',
 };
 
@@ -44,7 +43,7 @@ const getStorageData = (key) => {
   try {
     const saved = localStorage.getItem(key);
     return saved ? JSON.parse(saved) : null;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -69,9 +68,7 @@ const Import_CA = () => {
   const [pasteData, setPasteData] = useState('');
   const [selectedRows, setSelectedRows] = useState(new Set());
   const [showKPIModal, setShowKPIModal] = useState(false);
-  const [showTargetHistoryModal, setShowTargetHistoryModal] = useState(false);
   const [targets, setTargets] = useState(() => getStorageData(STORAGE_KEYS.TARGETS) || {});
-  const [targetHistory, setTargetHistory] = useState(() => getStorageData(STORAGE_KEYS.TARGET_HISTORY) || []);
   const [editingTarget, setEditingTarget] = useState(null);
   const [kpiViewMode, setKpiViewMode] = useState('all');
   const [kpiSortBy, setKpiSortBy] = useState('unit');
@@ -106,9 +103,6 @@ const Import_CA = () => {
       const dbTargets = await loadFromDb(STORAGE_KEYS.TARGETS, {});
       setTargets(dbTargets);
 
-      const dbTargetHistory = await loadFromDb(STORAGE_KEYS.TARGET_HISTORY, []);
-      setTargetHistory(dbTargetHistory);
-
       const dbConfirmed = await loadFromDb(STORAGE_KEYS.CONFIRMED, {});
       setConfirmedStatus(dbConfirmed);
       
@@ -135,12 +129,6 @@ const Import_CA = () => {
       saveToDb(STORAGE_KEYS.TARGETS, targets);
     }
   }, [targets]);
-
-  useEffect(() => {
-    if (isLoaded.current) {
-      saveToDb(STORAGE_KEYS.TARGET_HISTORY, targetHistory);
-    }
-  }, [targetHistory]);
 
   useEffect(() => {
     if (isLoaded.current) {
@@ -471,16 +459,6 @@ const Import_CA = () => {
       }
     }));
 
-    setTargetHistory(prev => [{
-      id: Date.now(),
-      unit: unit,
-      period: period,
-      oldTarget: null,
-      newTarget: newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'System (Auto)',
-      reason: `Auto-created target based on ${dataCount} record(s)`
-    }, ...prev]);
     return newTarget;
   };
 
@@ -496,16 +474,6 @@ const Import_CA = () => {
         lastUpdated: new Date().toISOString()
       }
     }));
-    setTargetHistory(prev => [{
-      id: Date.now(),
-      unit: unit,
-      period: period,
-      oldTarget: oldTarget,
-      newTarget: newTarget,
-      changedAt: new Date().toISOString(),
-      changedBy: 'User',
-      reason: `Manual target adjustment for ${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}`
-    }, ...prev]);
     showNotification(`Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
   };
 
@@ -1084,55 +1052,6 @@ const Import_CA = () => {
   const alarmCount = alarmItems.length;
 
   // ─── MODALS ───
-  const renderTargetHistoryModal = () => {
-    if (!showTargetHistoryModal) return null;
-    return (
-      <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col border border-gray-100 animate-scaleIn">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
-            <div className="flex justify-between items-center text-white">
-              <div className="flex items-center gap-3">
-                <History className="w-6 h-6 text-white" />
-                <h2 className="text-xl font-bold">Target Change History</h2>
-              </div>
-              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl leading-none">✕</button>
-            </div>
-          </div>
-          <div className="p-6 overflow-y-auto flex-1 bg-white">
-            {targetHistory.length === 0 ? (
-              <div className="text-center text-slate-500 py-12 flex flex-col items-center justify-center">
-                <Inbox className="w-12 h-12 text-slate-300 mb-2" />
-                <p className="text-xs font-semibold">No target changes recorded yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {targetHistory.map(history => (
-                  <div key={history.id} className="bg-slate-50 rounded-xl p-4 border-l-4 border-blue-500 shadow-xs">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-base text-slate-900">{history.unit}</div>
-                        <div className="text-xs text-slate-600 mt-1">
-                          {history.oldTarget !== null ? (
-                            <>Changed from <span className="line-through text-rose-500 font-bold">{history.oldTarget}</span> → <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
-                          ) : (<>Auto-created target: <span className="text-emerald-600 font-bold">{history.newTarget}</span></>)}
-                        </div>
-                        <div className="text-[11px] text-slate-400 mt-1">{history.reason} | By: {history.changedBy}</div>
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-mono">{new Date(history.changedAt).toLocaleString()}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
-            <button onClick={() => setShowTargetHistoryModal(false)} className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition-all shadow-xs text-xs cursor-pointer">Close</button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderKPIModal = () => {
     if (!showKPIModal) return null;
     return (
@@ -1147,10 +1066,6 @@ const Import_CA = () => {
                 </div>
               </div>
               <div className="flex gap-2 items-center">
-                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                  <History className="w-3.5 h-3.5" />
-                  <span>History</span>
-                </button>
                 <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl leading-none">✕</button>
               </div>
             </div>
@@ -1489,7 +1404,6 @@ const Import_CA = () => {
     <div className="w-full h-screen max-h-screen p-1 sm:p-1.5 bg-slate-100 flex flex-col overflow-hidden font-sans">
       
       {/* ─── MODALS ─── */}
-      {renderTargetHistoryModal()}
       {renderKPIModal()}
       {renderPasteModal()}
       {renderAlarmModal()}
