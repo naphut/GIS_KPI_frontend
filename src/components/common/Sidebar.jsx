@@ -367,9 +367,9 @@ const Sidebar = ({
   };
 
   return (
-    <div className="w-64 h-full bg-white shadow-xl flex flex-col border-r border-gray-100 animate-fadeIn">
+    <div className="w-72 h-full bg-white shadow-xl flex flex-col border-r border-gray-100 animate-fadeIn select-none">
       {/* ─── LOGO ─── */}
-      <div className="p-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+      <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center overflow-hidden shadow-lg shadow-blue-200/50">
             <img src="/gis_asset_logo.png" alt="GIS Logo" className="w-full h-full object-cover" style={{ transform: 'scale(1.3) translateY(-1px)' }} />
@@ -386,8 +386,8 @@ const Sidebar = ({
       </div>
       
       {/* ─── NAVIGATION ─── */}
-      <nav className="flex-1 p-4 overflow-y-auto scrollbar-thin">
-        <div className="space-y-2">
+      <nav className="flex-1 p-3.5 overflow-y-auto scrollbar-thin">
+        <div className="space-y-1.5">
           {menuItems.map((item) => (
             <div key={item.id}>
               {item.isGroup ? (
@@ -399,7 +399,8 @@ const Sidebar = ({
                       toggleFn();
                       onSelect(item.id);
                     }}
-                    className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-2xl transition-all duration-300 group ${
+                    title={item.label}
+                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-2xl transition-all duration-300 group cursor-pointer ${
                       isGroupActive(item) || selected === item.id || isGroupOpen(item.id)
                         ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                         : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-xs'
@@ -412,8 +413,8 @@ const Sidebar = ({
                     }`}>
                       {item.number}
                     </span>
-                    <span className="text-lg flex-shrink-0">{item.icon}</span>
-                    <span className="text-xs font-extrabold flex-1 text-left truncate tracking-tight uppercase">
+                    <span className="text-base flex-shrink-0">{item.icon}</span>
+                    <span className="text-[11.5px] font-extrabold flex-1 text-left tracking-tight uppercase truncate">
                       {item.label}
                     </span>
                     <span className={`transition-transform duration-300 text-[10px] flex-shrink-0 ${isGroupOpen(item.id) ? 'rotate-180' : ''}`}>
@@ -425,12 +426,13 @@ const Sidebar = ({
                   </button>
                   
                   {/* Group Children */}
-                  <div className={`ml-4 pl-2 border-l-2 border-slate-100 space-y-1.5 overflow-hidden transition-all duration-300 ${
-                    isGroupOpen(item.id) ? 'max-h-[500px] opacity-100 mt-2' : 'max-h-0 opacity-0'
+                  <div className={`ml-3 pl-2 border-l-2 border-slate-100 space-y-1 overflow-hidden transition-all duration-300 ${
+                    isGroupOpen(item.id) ? 'max-h-[500px] opacity-100 mt-1.5' : 'max-h-0 opacity-0'
                   }`}>
                     {item.children.map((child) => (
                       <button
                         key={child.id}
+                        title={child.label}
                         onClick={() => {
                           onSelect(child.id);
                           if (item.id === 'stockout_group') {
@@ -443,7 +445,7 @@ const Sidebar = ({
                             setIsMetfoneNetOpen(true);
                           }
                         }}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 group ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 group cursor-pointer ${
                           selected === child.id
                             ? 'bg-indigo-50/90 text-indigo-700 font-extrabold border-l-4 border-indigo-600 shadow-xs'
                             : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -476,7 +478,8 @@ const Sidebar = ({
                 /* Main Menu Item */
                 <button
                   onClick={() => onSelect(item.id)}
-                  className={`w-full flex items-center gap-2.5 px-3.5 py-3 rounded-2xl transition-all duration-300 group ${
+                  title={item.label}
+                  className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-2xl transition-all duration-300 group cursor-pointer ${
                     selected === item.id
                       ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white shadow-md shadow-blue-500/25'
                       : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:shadow-xs'
@@ -489,8 +492,8 @@ const Sidebar = ({
                   }`}>
                     {item.number}
                   </span>
-                  <span className="text-lg flex-shrink-0">{item.icon}</span>
-                  <span className="text-xs font-extrabold flex-1 text-left truncate tracking-tight uppercase">
+                  <span className="text-base flex-shrink-0">{item.icon}</span>
+                  <span className="text-[11.5px] font-extrabold flex-1 text-left tracking-tight uppercase truncate">
                     {item.label}
                   </span>
                   {selected === item.id && (
