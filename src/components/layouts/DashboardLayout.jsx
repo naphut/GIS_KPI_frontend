@@ -25,9 +25,11 @@ import {
   generateRestockExcelBlob,
   generateMetfoneExcelBlob
 } from '../../services/telegramBot';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const DashboardLayout = () => {
   const [selectedMenuItem, setSelectedMenuItem] = useState('dashboard');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [screenshotState, setScreenshotState] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const cancelRef = useRef(false);
@@ -311,8 +313,12 @@ const DashboardLayout = () => {
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden relative">
-      {/* Sidebar */}
-      <div className="flex-shrink-0 relative z-20">
+      {/* Sidebar with Collapse/Expand Transition */}
+      <div 
+        className={`flex-shrink-0 relative z-20 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'w-0 -translate-x-full overflow-hidden' : 'w-72 translate-x-0'
+        }`}
+      >
         <Sidebar 
           onSelect={setSelectedMenuItem} 
           selected={selectedMenuItem} 
@@ -323,8 +329,23 @@ const DashboardLayout = () => {
         />
       </div>
 
+      {/* Floating Sidebar Toggle Button */}
+      <button
+        onClick={() => setIsSidebarCollapsed(prev => !prev)}
+        className={`absolute top-3.5 z-30 flex items-center justify-center w-7 h-7 bg-white hover:bg-slate-50 text-slate-700 hover:text-blue-600 border border-slate-200 rounded-full shadow-md cursor-pointer transition-all duration-300 ${
+          isSidebarCollapsed ? 'left-3' : 'left-[274px]'
+        }`}
+        title={isSidebarCollapsed ? 'ពង្រីកផ្ទាំងម៉ឺនុយ (Expand Sidebar)' : 'បង្រួមផ្ទាំងម៉ឺនុយ (Collapse Sidebar)'}
+      >
+        {isSidebarCollapsed ? (
+          <ChevronRight className="w-4 h-4" />
+        ) : (
+          <ChevronLeft className="w-4 h-4" />
+        )}
+      </button>
+
       {/* Main Content */}
-      <div key={selectedMenuItem} className="flex-1 overflow-y-auto animate-fadeIn">
+      <div key={selectedMenuItem} className="flex-1 overflow-y-auto animate-fadeIn min-w-0">
         {renderContent()}
       </div>
 

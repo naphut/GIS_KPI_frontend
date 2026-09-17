@@ -1,6 +1,34 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
+import {
+  FileSpreadsheet,
+  Upload,
+  Download,
+  Trash2,
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Layers,
+  AlertCircle,
+  AlertTriangle,
+  History,
+  Copy,
+  Search,
+  CheckCircle2,
+  Clock,
+  HelpCircle,
+  XCircle,
+  PenTool,
+  TrendingUp,
+  Inbox,
+  FileSignature,
+  FileText,
+  BarChart3,
+  RefreshCw
+} from 'lucide-react';
 
 // Storage Keys
 const STORAGE_KEYS = {
@@ -326,34 +354,51 @@ const Import_CA = () => {
     const s = (statusCA || '').toUpperCase();
     if (s.includes('UNSIGNED') || s.includes('CHƯA') || s.includes('CHUA')) {
       return (
-        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[10px] font-bold bg-rose-600 text-white animate-pulse border border-rose-700 shadow-sm">
-          🚨 {statusCA}
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-600 text-white animate-pulse border border-rose-700 shadow-xs">
+          <AlertCircle className="w-3 h-3 flex-shrink-0" />
+          <span>{statusCA}</span>
         </span>
       );
     }
     if (s.includes('IS SIGNING') || s.includes('ISSIGNING') || s.includes('ĐANG') || s.includes('DANG')) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-          ✍️ {statusCA}
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+          <PenTool className="w-3 h-3 flex-shrink-0" />
+          <span>{statusCA}</span>
         </span>
       );
     }
-    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-500">❓ {statusCA}</span>;
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+        <HelpCircle className="w-3 h-3 flex-shrink-0 text-slate-400" />
+        <span>{statusCA || '-'}</span>
+      </span>
+    );
   };
 
   const getStatusBadge = (status) => {
     const isCompleted = status?.includes('Actual Import finished') || status?.includes('Đã thực nhập hết');
     if (isCompleted) {
-      return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">✅ {status}</span>;
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <CheckCircle2 className="w-3 h-3 flex-shrink-0 text-emerald-600" />
+          <span>{status}</span>
+        </span>
+      );
     }
-    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-100 text-rose-800">⏳ {status}</span>;
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-100 text-rose-800 border border-rose-200">
+        <Clock className="w-3 h-3 flex-shrink-0 text-rose-600" />
+        <span>{status}</span>
+      </span>
+    );
   };
 
   const getWarehouseBadge = (warehouse) => {
     if (warehouse && warehouse.toUpperCase().includes('GIS')) {
-      return <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-emerald-100 text-emerald-800">{warehouse}</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">{warehouse}</span>;
     }
-    return <span className="text-gray-600">{warehouse}</span>;
+    return <span className="text-slate-600">{warehouse}</span>;
   };
 
   const playAlarmSound = () => {
@@ -377,34 +422,34 @@ const Import_CA = () => {
 
   const showNotification = (message, type = 'alarm') => {
     const colors = {
-      alarm: 'bg-rose-600',
-      success: 'bg-emerald-600',
-      info: 'bg-blue-600',
-      warning: 'bg-amber-500'
+      alarm: 'bg-rose-600 border-rose-500',
+      success: 'bg-emerald-600 border-emerald-500',
+      info: 'bg-blue-600 border-blue-500',
+      warning: 'bg-amber-500 border-amber-400'
     };
     const icons = {
-      alarm: '🚨',
-      success: '✅',
-      info: '📊',
-      warning: '⚠️'
+      alarm: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+      success: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      info: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      warning: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
     };
     const titles = {
-      alarm: 'ALARM DETECTED!',
-      success: 'Success!',
-      info: 'Info',
+      alarm: 'ALARM DETECTED',
+      success: 'Success',
+      info: 'Notification',
       warning: 'Warning'
     };
 
     const notification = document.createElement('div');
-    notification.className = `fixed top-20 right-4 z-50 p-4 rounded-2xl shadow-2xl transform transition-all duration-500 animate-slideIn ${colors[type] || 'bg-gray-600'} text-white max-w-sm`;
+    notification.className = `fixed top-16 right-4 z-50 p-3.5 rounded-xl shadow-xl border ${colors[type] || 'bg-slate-800 border-slate-700'} text-white max-w-sm animate-slideIn`;
     notification.innerHTML = `
-      <div class="flex items-start gap-3">
-        <div class="text-2xl animate-bounce">${icons[type] || '📌'}</div>
-        <div class="flex-1">
-          <div class="font-bold text-sm">${titles[type] || 'Notification'}</div>
-          <div class="text-xs opacity-90 whitespace-pre-line">${message}</div>
+      <div class="flex items-start gap-2.5">
+        <div class="mt-0.5">${icons[type] || icons.info}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-xs uppercase tracking-wider text-white/90">${titles[type] || 'Notification'}</div>
+          <div class="text-xs text-white/95 mt-0.5 leading-relaxed whitespace-pre-line">${message}</div>
         </div>
-        <button onclick="this.parentElement.parentElement.remove()" class="text-white/70 hover:text-white text-lg leading-none">✕</button>
+        <button onclick="this.parentElement.parentElement.remove()" class="text-white/60 hover:text-white text-base leading-none ml-1 cursor-pointer">✕</button>
       </div>
     `;
     document.body.appendChild(notification);
@@ -461,7 +506,7 @@ const Import_CA = () => {
       changedBy: 'User',
       reason: `Manual target adjustment for ${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}`
     }, ...prev]);
-    showNotification(`📊 Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
+    showNotification(`Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
   };
 
   const processImport = async (newRawData) => {
@@ -479,7 +524,7 @@ const Import_CA = () => {
     });
 
     if (gisData.length === 0) {
-      showNotification('⚠️ No GIS warehouses with Unsigned/Is signing found!', 'warning');
+      showNotification('No GIS warehouses with Unsigned/Is signing found!', 'warning');
       return;
     }
 
@@ -525,7 +570,7 @@ const Import_CA = () => {
       if (!existingUnits.has(unit)) {
         newUnitsFound.push(unit);
         autoCreateTargetForUnit(unit, unitsInNewData[unit]);
-        showNotification(`🎯 Auto-created target for ${unit}: ${unitsInNewData[unit]}`, 'info');
+        showNotification(`Auto-created target for ${unit}: ${unitsInNewData[unit]}`, 'info');
       }
     });
     
@@ -541,14 +586,14 @@ const Import_CA = () => {
       });
       setCompletionHistory(prev => [...newCompletions, ...prev]);
       completedCodesArray.forEach(code => {
-        showNotification(`✅ COMPLETED: ${code} has been cleared! +1 Result`, 'success');
+        showNotification(`COMPLETED: ${code} has been cleared! +1 Result`, 'success');
       });
       playAlarmSound();
     }
     
     setData(processedNewData);
     saveToDb(STORAGE_KEYS.DATA, processedNewData);
-    showNotification(`📊 Import Summary:\n✅ Completed: ${completedCodesArray.length}\n🆕 New Added: ${gisData.length}\n🎯 New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}\n🚫 Filtered out Signed records`, 'info');
+    showNotification(`Import Summary:\nCompleted: ${completedCodesArray.length}\nNew Added: ${gisData.length}\nNew Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}\nFiltered out Signed records`, 'info');
     return { completedCount: completedCodesArray.length, newCount: gisData.length, newUnits: newUnitsFound };
   };
 
@@ -726,7 +771,7 @@ const Import_CA = () => {
   };
 
   const clearAllData = async () => {
-    if (window.confirm('⚠️ Are you sure you want to delete ALL data? This cannot be undone!')) {
+    if (window.confirm('Are you sure you want to delete ALL data? This cannot be undone!')) {
       setData([]);
       setCompletionHistory([]);
       setTargets({});
@@ -755,7 +800,7 @@ const Import_CA = () => {
 
   const deleteSelectedRows = () => {
     if (selectedRows.size === 0) return;
-    if (window.confirm(`⚠️ Delete ${selectedRows.size} row(s)?`)) {
+    if (window.confirm(`Delete ${selectedRows.size} row(s)?`)) {
       const deletedCodes = data.filter(item => selectedRows.has(item.id)).map(item => item.codeReceipt);
       const newCompletions = deletedCodes.map(code => ({
         codeReceipt: code, completedAt: new Date().toISOString(),
@@ -834,7 +879,7 @@ const Import_CA = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Import CA Data');
     XLSX.writeFile(wb, `import_ca_data_${new Date().toISOString().split('T')[0]}.xlsx`);
-    showNotification('📎 Export completed!', 'success');
+    showNotification('Export completed!', 'success');
   };
 
   const exportKPItoExcel = () => {
@@ -870,7 +915,7 @@ const Import_CA = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Import CA KPI');
     XLSX.writeFile(wb, `import_ca_kpi_${new Date().toISOString().split('T')[0]}.xlsx`);
-    showNotification('📎 KPI Export completed!', 'success');
+    showNotification('KPI Export completed!', 'success');
   };
 
   // 🎯 FILTER: Only show GIS warehouses
@@ -880,7 +925,7 @@ const Import_CA = () => {
       item.warehouse && item.warehouse.toUpperCase().includes('GIS')
     );
 
-    // 🗓️ Days Filter
+    // Days Filter
     if (daysFilter !== 'ALL') {
       if (daysFilter === '0') {
         filtered = filtered.filter(item => (item.daysDiff || 0) === 0);
@@ -918,7 +963,7 @@ const Import_CA = () => {
       });
     }
 
-    // ↕️ Days Sorting
+    // Days Sorting
     if (daysSortOrder !== 'none') {
       filtered = [...filtered].sort((a, b) => {
         const aDays = a.daysDiff || 0;
@@ -976,10 +1021,10 @@ const Import_CA = () => {
   const copyAlarmsToClipboard = () => {
     if (filteredAlarmItems.length === 0) return;
     const text = filteredAlarmItems.map(item => 
-      `${item.unit}\n| Receipt: ${item.codeReceipt}\n📅 Date: ${item.date} | Year: ${item.year} | ⏰ Delay: +${item.daysDiff} days\nWarehouse: ${item.warehouse || '-'}\nTEAM: ${item.team || '-'}\nStatus: ${item.status || '-'}\nStatus CA: ${item.statusCA || '-'}`
+      `${item.unit}\n| Receipt: ${item.codeReceipt}\nDate: ${item.date} | Year: ${item.year} | Delay: +${item.daysDiff} days\nWarehouse: ${item.warehouse || '-'}\nTEAM: ${item.team || '-'}\nStatus: ${item.status || '-'}\nStatus CA: ${item.statusCA || '-'}`
     ).join('\n\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('Alarm list copied to clipboard!', 'success');
   };
 
   useEffect(() => {
@@ -1020,15 +1065,20 @@ const Import_CA = () => {
 
   const getStatusBadgeKPI = (status) => {
     const config = {
-      'Completed': { icon: '✅', bg: 'bg-emerald-100', text: 'text-emerald-800' },
-      'Good': { icon: '📈', bg: 'bg-blue-100', text: 'text-blue-800' },
-      'Warning': { icon: '⚠️', bg: 'bg-amber-100', text: 'text-amber-800' },
-      'Critical': { icon: '🚨', bg: 'bg-rose-100', text: 'text-rose-800' },
-      'No Target': { icon: '❓', bg: 'bg-orange-100', text: 'text-orange-800' },
-      'No Data': { icon: '📭', bg: 'bg-gray-100', text: 'text-gray-500' }
+      'Completed': { icon: <CheckCircle2 className="w-3 h-3 text-emerald-700" />, bg: 'bg-emerald-100', text: 'text-emerald-800' },
+      'Good': { icon: <TrendingUp className="w-3 h-3 text-blue-700" />, bg: 'bg-blue-100', text: 'text-blue-800' },
+      'Warning': { icon: <AlertTriangle className="w-3 h-3 text-amber-700" />, bg: 'bg-amber-100', text: 'text-amber-800' },
+      'Critical': { icon: <AlertCircle className="w-3 h-3 text-rose-700" />, bg: 'bg-rose-100', text: 'text-rose-800' },
+      'No Target': { icon: <HelpCircle className="w-3 h-3 text-orange-700" />, bg: 'bg-orange-100', text: 'text-orange-800' },
+      'No Data': { icon: <Inbox className="w-3 h-3 text-slate-400" />, bg: 'bg-slate-100', text: 'text-slate-500' }
     };
     const c = config[status] || config['No Data'];
-    return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>{c.icon} {status}</span>;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${c.bg} ${c.text} border border-black/5`}>
+        {c.icon}
+        <span>{status}</span>
+      </span>
+    );
   };
 
   const alarmCount = alarmItems.length;
@@ -1039,44 +1089,44 @@ const Import_CA = () => {
     return (
       <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
         <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col border border-gray-100 animate-scaleIn">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3 text-white">
-                <span className="text-2xl">📜</span>
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+            <div className="flex justify-between items-center text-white">
+              <div className="flex items-center gap-3">
+                <History className="w-6 h-6 text-white" />
                 <h2 className="text-xl font-bold">Target Change History</h2>
               </div>
-              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl transition-colors">✕</button>
+              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl leading-none">✕</button>
             </div>
           </div>
           <div className="p-6 overflow-y-auto flex-1 bg-white">
             {targetHistory.length === 0 ? (
-              <div className="text-center text-gray-400 py-12">
-                <div className="text-5xl mb-3">📭</div>
-                <p className="text-base font-medium">No target changes recorded yet.</p>
+              <div className="text-center text-slate-500 py-12 flex flex-col items-center justify-center">
+                <Inbox className="w-12 h-12 text-slate-300 mb-2" />
+                <p className="text-xs font-semibold">No target changes recorded yet.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {targetHistory.map(history => (
-                  <div key={history.id} className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-500 shadow-sm hover:shadow-md transition-shadow">
+                  <div key={history.id} className="bg-slate-50 rounded-xl p-4 border-l-4 border-blue-500 shadow-xs">
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="font-bold text-lg text-gray-800">{history.unit}</div>
-                        <div className="text-sm text-gray-600 mt-1">
+                        <div className="font-bold text-base text-slate-900">{history.unit}</div>
+                        <div className="text-xs text-slate-600 mt-1">
                           {history.oldTarget !== null ? (
-                            <>Changed from <span className="line-through text-rose-500 font-medium">{history.oldTarget}</span> → <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
+                            <>Changed from <span className="line-through text-rose-500 font-bold">{history.oldTarget}</span> → <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
                           ) : (<>Auto-created target: <span className="text-emerald-600 font-bold">{history.newTarget}</span></>)}
                         </div>
-                        <div className="text-xs text-gray-400 mt-1">{history.reason} | By: {history.changedBy}</div>
+                        <div className="text-[11px] text-slate-400 mt-1">{history.reason} | By: {history.changedBy}</div>
                       </div>
-                      <div className="text-xs text-gray-400 font-medium">{new Date(history.changedAt).toLocaleString()}</div>
+                      <div className="text-[11px] text-slate-400 font-mono">{new Date(history.changedAt).toLocaleString()}</div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end">
-            <button onClick={() => setShowTargetHistoryModal(false)} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm">Close</button>
+          <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+            <button onClick={() => setShowTargetHistoryModal(false)} className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold rounded-xl transition-all shadow-xs text-xs cursor-pointer">Close</button>
           </div>
         </div>
       </div>
@@ -1091,41 +1141,44 @@ const Import_CA = () => {
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3 text-white">
-                <span className="text-2xl">📊</span>
+                <BarChart3 className="w-6 h-6 text-white" />
                 <div>
                   <h2 className="text-xl font-bold text-white">KPI Dashboard - Import CA Performance</h2>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all">📜 History</button>
-                <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl transition-colors">✕</button>
+              <div className="flex gap-2 items-center">
+                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
+                  <History className="w-3.5 h-3.5" />
+                  <span>History</span>
+                </button>
+                <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl leading-none">✕</button>
               </div>
             </div>
           </div>
           <div className="p-6 overflow-y-auto flex-1 bg-white">
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-md">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-md">
                 <div className="text-xs opacity-90 font-medium">Target ព្រឹក</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.targetMorning}</div>
               </div>
-              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-4 text-white shadow-md">
+              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white shadow-md">
                 <div className="text-xs opacity-90 font-medium">Target ល្ងាច</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.targetEvening}</div>
               </div>
-              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-md">
+              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white shadow-md">
                 <div className="text-xs opacity-90 font-medium">Remaining</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.remain}</div>
               </div>
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-md">
+              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-md">
                 <div className="text-xs opacity-90 font-medium">Result</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.result}</div>
               </div>
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-md">
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-md">
                 <div className="text-xs opacity-90 font-medium">Ratio</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.ratio.toFixed(1)}%</div>
               </div>
-              <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-4 text-white shadow-md">
+              <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-4 text-white shadow-md">
                 <div className="text-xs opacity-90 font-medium">In System</div>
                 <div className="text-2xl font-black mt-1">{calculateKPIData.summary.totalRecords}</div>
               </div>
@@ -1133,104 +1186,121 @@ const Import_CA = () => {
 
             {/* Progress Bar */}
             <div className="mb-6">
-              <div className="flex justify-between text-sm text-gray-600 mb-1.5 font-medium">
+              <div className="flex justify-between text-sm text-gray-600 mb-1.5 font-semibold">
                 <span>Overall Progress (based on Evening Target)</span>
-                <span className="font-bold text-gray-800">{calculateKPIData.summary.ratio.toFixed(1)}%</span>
+                <span className="font-bold text-slate-800">{calculateKPIData.summary.ratio.toFixed(1)}%</span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden shadow-inner">
-                <div className="bg-gradient-to-r from-emerald-500 to-blue-500 h-4 rounded-full transition-all duration-500" style={{ width: `${calculateKPIData.summary.ratio}%` }}></div>
+              <div className="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden">
+                <div className="bg-gradient-to-r from-emerald-500 to-blue-500 h-3.5 rounded-full transition-all duration-500" style={{ width: `${calculateKPIData.summary.ratio}%` }}></div>
               </div>
             </div>
 
             {/* View Mode Tabs */}
-            <div className="flex gap-2 mb-4 border-b border-gray-100 pb-2">
-              <button onClick={() => setKpiViewMode('all')} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${kpiViewMode === 'all' ? 'bg-purple-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>📋 All ({calculateKPIData.allData.length})</button>
-              <button onClick={() => setKpiViewMode('active')} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${kpiViewMode === 'active' ? 'bg-amber-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>🔄 Active</button>
-              <button onClick={() => setKpiViewMode('completed')} className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${kpiViewMode === 'completed' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>✅ Completed</button>
+            <div className="flex gap-2 mb-4 border-b border-slate-100 pb-2">
+              <button onClick={() => setKpiViewMode('all')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${kpiViewMode === 'all' ? 'bg-purple-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                <Layers className="w-3.5 h-3.5" />
+                <span>All ({calculateKPIData.allData.length})</span>
+              </button>
+              <button onClick={() => setKpiViewMode('active')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${kpiViewMode === 'active' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                <Clock className="w-3.5 h-3.5" />
+                <span>Active</span>
+              </button>
+              <button onClick={() => setKpiViewMode('completed')} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${kpiViewMode === 'completed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Completed</span>
+              </button>
             </div>
 
             {/* KPI Table */}
-            <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('unit')}>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-slate-900" onClick={() => handleSort('unit')}>
                         Unit {kpiSortBy === 'unit' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('morning')}>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-slate-900" onClick={() => handleSort('morning')}>
                         ព្រឹក {kpiSortBy === 'morning' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('evening')}>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-slate-900" onClick={() => handleSort('evening')}>
                         ល្ងាច {kpiSortBy === 'evening' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('remain')}>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-slate-900" onClick={() => handleSort('remain')}>
                         Remain {kpiSortBy === 'remain' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('result')}>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-slate-900" onClick={() => handleSort('result')}>
                         Result {kpiSortBy === 'result' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700" onClick={() => handleSort('ratio')}>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-slate-900" onClick={() => handleSort('ratio')}>
                         Ratio {kpiSortBy === 'ratio' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 select-none" onClick={() => handleSort('total')}>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-slate-600 uppercase tracking-wider cursor-pointer hover:text-slate-900 select-none" onClick={() => handleSort('total')}>
                         In System {kpiSortBy === 'total' && (kpiSortOrder === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Action</th>
+                      <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {calculateKPIData.data.map((item) => (
-                      <tr key={item.unit} className={`hover:bg-gray-50/80 transition-colors ${item.hasChange ? 'bg-amber-50/50' : ''}`}>
-                        <td className="px-4 py-3 text-sm font-semibold text-gray-800">
+                      <tr key={item.unit} className={`hover:bg-slate-50/80 transition-colors ${item.hasChange ? 'bg-amber-50/50' : ''}`}>
+                        <td className="px-4 py-3 text-sm font-semibold text-slate-800">
                           {item.unit}
-                          {item.hasChange && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">📊 Changed</span>}
-                          {item.isNew && <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">🆕 New</span>}
+                          {item.hasChange && (
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              <TrendingUp className="w-3 h-3" /> Changed
+                            </span>
+                          )}
+                          {item.isNew && (
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              New
+                            </span>
+                          )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right">
+                        <td className="px-4 py-3 text-sm text-right font-mono">
                           {editingTarget === `${item.unit}-morning` ? (
-                            <input type="number" defaultValue={item.morningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'morning', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border border-gray-300 rounded-lg text-sm font-semibold bg-white text-gray-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                            <input type="number" defaultValue={item.morningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'morning', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border border-slate-300 rounded-lg text-sm font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
                           ) : (
-                            <span className="cursor-pointer hover:bg-gray-100 px-2.5 py-1 rounded-lg transition-colors text-gray-700 font-semibold" onClick={() => setEditingTarget(`${item.unit}-morning`)}>{item.morningTarget || '-'}</span>
+                            <span className="cursor-pointer hover:bg-slate-100 px-2.5 py-1 rounded-lg transition-colors text-slate-700 font-semibold" onClick={() => setEditingTarget(`${item.unit}-morning`)}>{item.morningTarget || '-'}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right">
+                        <td className="px-4 py-3 text-sm text-right font-mono">
                           {editingTarget === `${item.unit}-evening` ? (
-                            <input type="number" defaultValue={item.eveningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'evening', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border border-gray-300 rounded-lg text-sm font-semibold bg-white text-gray-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
+                            <input type="number" defaultValue={item.eveningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'evening', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border border-slate-300 rounded-lg text-sm font-semibold bg-white text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none" />
                           ) : (
-                            <span className={`cursor-pointer hover:bg-gray-100 px-2.5 py-1 rounded-lg transition-colors text-gray-700 font-semibold ${item.hasChange ? 'font-bold text-purple-600' : ''}`} onClick={() => setEditingTarget(`${item.unit}-evening`)}>{item.eveningTarget || '-'}</span>
+                            <span className={`cursor-pointer hover:bg-slate-100 px-2.5 py-1 rounded-lg transition-colors text-slate-700 font-semibold ${item.hasChange ? 'font-bold text-purple-600' : ''}`} onClick={() => setEditingTarget(`${item.unit}-evening`)}>{item.eveningTarget || '-'}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right"><span className={`font-semibold ${item.remain > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{item.remain}</span></td>
-                        <td className="px-4 py-3 text-sm text-right text-emerald-600 font-bold">{item.result}</td>
+                        <td className="px-4 py-3 text-sm text-right font-mono"><span className={`font-semibold ${item.remain > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{item.remain}</span></td>
+                        <td className="px-4 py-3 text-sm text-right text-emerald-600 font-bold font-mono">{item.result}</td>
                         <td className="px-4 py-3 text-sm text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="font-bold text-gray-700">{item.ratio.toFixed(1)}%</span>
-                            <div className="w-16 bg-gray-100 rounded-full h-2">
-                              <div className={`h-2 rounded-full transition-all duration-300 ${item.ratio >= 80 ? 'bg-emerald-500' : item.ratio >= 50 ? 'bg-amber-500' : item.ratio > 0 ? 'bg-rose-500' : 'bg-gray-300'}`} style={{ width: `${item.ratio}%` }}></div>
+                          <div className="flex items-center justify-end gap-2 font-mono">
+                            <span className="font-bold text-slate-700">{item.ratio.toFixed(1)}%</span>
+                            <div className="w-16 bg-slate-100 rounded-full h-2">
+                              <div className={`h-2 rounded-full transition-all duration-300 ${item.ratio >= 80 ? 'bg-emerald-500' : item.ratio >= 50 ? 'bg-amber-500' : item.ratio > 0 ? 'bg-rose-500' : 'bg-slate-300'}`} style={{ width: `${item.ratio}%` }}></div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-right text-gray-500 font-medium">{item.total}</td>
+                        <td className="px-4 py-3 text-sm text-right text-slate-500 font-mono">{item.total}</td>
                         <td className="px-4 py-3 text-center">{getStatusBadgeKPI(item.status)}</td>
                         <td className="px-4 py-3 text-center">
                           {item.hasData && (
-                            <button onClick={() => { setSearchTerm(item.unit); setShowKPIModal(false); }} className="text-blue-600 hover:text-blue-800 text-xs font-semibold hover:underline transition-all">View</button>
+                            <button onClick={() => { setSearchTerm(item.unit); setShowKPIModal(false); }} className="text-blue-600 hover:text-blue-800 text-xs font-bold hover:underline transition-all cursor-pointer">View</button>
                           )}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 font-bold border-t-2 border-gray-200">
+                  <tfoot className="bg-slate-50 font-bold border-t-2 border-slate-200">
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-800">TOTAL</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-800">{calculateKPIData.summary.targetMorning}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-800">{calculateKPIData.summary.targetEvening}</td>
-                      <td className="px-4 py-3 text-sm text-right text-amber-600">{calculateKPIData.summary.remain}</td>
-                      <td className="px-4 py-3 text-sm text-right text-emerald-600">{calculateKPIData.summary.result}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-800">{calculateKPIData.summary.ratio.toFixed(1)}%</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-500">{calculateKPIData.summary.totalRecords}</td>
+                      <td className="px-4 py-3 text-sm text-slate-800">TOTAL</td>
+                      <td className="px-4 py-3 text-sm text-right text-slate-800 font-mono">{calculateKPIData.summary.targetMorning}</td>
+                      <td className="px-4 py-3 text-sm text-right text-slate-800 font-mono">{calculateKPIData.summary.targetEvening}</td>
+                      <td className="px-4 py-3 text-sm text-right text-amber-600 font-mono">{calculateKPIData.summary.remain}</td>
+                      <td className="px-4 py-3 text-sm text-right text-emerald-600 font-mono">{calculateKPIData.summary.result}</td>
+                      <td className="px-4 py-3 text-sm text-right text-slate-800 font-mono">{calculateKPIData.summary.ratio.toFixed(1)}%</td>
+                      <td className="px-4 py-3 text-sm text-right text-slate-500 font-mono">{calculateKPIData.summary.totalRecords}</td>
                       <td className="px-4 py-3 text-center">-</td>
                       <td className="px-4 py-3 text-center">-</td>
                     </tr>
@@ -1239,12 +1309,17 @@ const Import_CA = () => {
               </div>
             </div>
 
-
           </div>
-          <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-            <button onClick={() => setShowKPIModal(false)} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm">Close</button>
-            <button onClick={exportKPItoExcel} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-all shadow-sm">📎 Export KPI</button>
-            <button onClick={exportToExcel} className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all shadow-sm">📎 Export Data</button>
+          <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            <button onClick={() => setShowKPIModal(false)} className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-all shadow-xs text-xs cursor-pointer">Close</button>
+            <button onClick={exportKPItoExcel} className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-xs text-xs flex items-center gap-1.5 cursor-pointer">
+              <Download className="w-3.5 h-3.5" />
+              <span>Export KPI</span>
+            </button>
+            <button onClick={exportToExcel} className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-all shadow-xs text-xs flex items-center gap-1.5 cursor-pointer">
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export Data</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1255,14 +1330,17 @@ const Import_CA = () => {
     if (!showPasteModal) return null;
     return (
       <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 border border-gray-100 animate-scaleIn">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 rounded-t-2xl">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 border border-slate-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-700 to-indigo-800 px-6 py-4">
             <div className="flex justify-between items-center text-white">
-              <div>
-                <h2 className="text-xl font-bold">🔄 Smart Import</h2>
-                <p className="text-blue-100 text-sm">Auto-filters GIS warehouses & only Unsigned/Is signing</p>
+              <div className="flex items-center gap-2.5">
+                <RefreshCw className="w-5 h-5 text-white" />
+                <div>
+                  <h2 className="text-xl font-bold">Smart Import</h2>
+                  <p className="text-blue-100 text-xs mt-0.5">Auto-filters GIS warehouses & only Unsigned/Is signing</p>
+                </div>
               </div>
-              <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl transition-colors">✕</button>
+              <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl leading-none">✕</button>
             </div>
           </div>
           <div className="p-6 bg-white">
@@ -1270,18 +1348,22 @@ const Import_CA = () => {
               value={pasteData} 
               onChange={(e) => setPasteData(e.target.value)} 
               placeholder="Paste your system data here...&#10;&#10;Format: Receipt Code, Command Code, Date, Warehouse, Creator, Status, Status CA&#10;&#10;Note: Only Unsigned and Is signing will be imported. Signed records will be filtered out.&#10;&#10;Example:&#10;PNKMON_ASU/26/000571	LNKMON_PLA/26/000546	23/06/2026	MON_STOCK_ROTATIONAL_TESTED	mon_aus_tepvasnan	Đã thực nhập hết / Actual Import finished	Unsigned" 
-              className="w-full h-64 px-4 py-3 border border-gray-200 rounded-xl font-mono text-sm bg-white text-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-inner focus:outline-none"
+              className="w-full h-64 px-4 py-3 border border-slate-300 rounded-xl font-mono text-xs bg-slate-50 text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
             />
 
             {data.length > 0 && (
-              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
-                ⚠️ Current data has {data.length} record(s). Import will replace existing data.
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-amber-600" />
+                <span>Current data has <strong>{data.length}</strong> record(s). Import will replace existing data.</span>
               </div>
             )}
           </div>
-          <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-end gap-3">
-            <button onClick={() => { setShowPasteModal(false); setPasteData(''); }} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm">Cancel</button>
-            <button onClick={handleSmartImport} disabled={!pasteData.trim()} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed">🔄 Smart Import</button>
+          <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            <button onClick={() => { setShowPasteModal(false); setPasteData(''); }} className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-all shadow-xs text-xs cursor-pointer">Cancel</button>
+            <button onClick={handleSmartImport} disabled={!pasteData.trim()} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 text-xs cursor-pointer">
+              <Upload className="w-3.5 h-3.5" />
+              <span>Smart Import</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1292,48 +1374,52 @@ const Import_CA = () => {
     if (!showAlarmModal) return null;
     return (
       <div className="fixed inset-0 bg-black/55 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full mx-4 overflow-hidden flex flex-col max-h-[85vh] border border-gray-100 animate-scaleIn">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full mx-4 overflow-hidden flex flex-col max-h-[85vh] border border-rose-100">
           <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-4">
             <div className="flex justify-between items-center text-white">
               <div className="flex items-center gap-3">
-                <span className="animate-bounce text-2xl">🚨</span>
+                <AlertTriangle className="w-7 h-7 text-white animate-bounce" />
                 <div>
                   <h2 className="text-xl font-bold">ALARM DETECTED!</h2>
                   <p className="text-rose-100 text-xs">{alarmItems.length} record(s) exceed {alarmThreshold}-day threshold</p>
                 </div>
               </div>
-              <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white text-2xl transition-colors">✕</button>
+              <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white text-2xl leading-none">✕</button>
             </div>
           </div>
           
-          <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex gap-2 justify-between items-center">
+          <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex gap-2 justify-between items-center">
             <select
               value={selectedAlarmUnit}
               onChange={(e) => setSelectedAlarmUnit(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs bg-white w-40 text-gray-700 font-semibold focus:outline-none focus:ring-1 focus:ring-rose-500"
+              className="px-3 py-1.5 border border-slate-300 rounded-xl text-xs bg-white w-40 text-slate-700 font-semibold focus:outline-none focus:ring-1 focus:ring-rose-500"
             >
               <option value="">All Units</option>
               {alarmUnits.map(unit => (
                 <option key={unit} value={unit}>{unit}</option>
               ))}
             </select>
-            <input 
-              type="text" 
-              placeholder="Search alarm list..." 
-              value={alarmSearchTerm} 
-              onChange={(e) => setAlarmSearchTerm(e.target.value)} 
-              className="flex-1 px-3 py-1.5 border border-gray-200 rounded-xl text-xs bg-white text-gray-800 focus:outline-none focus:ring-1 focus:ring-rose-500"
-            />
-            <button onClick={copyAlarmsToClipboard} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-all">
-              📋 Copy ({filteredAlarmItems.length})
+            <div className="flex-1 relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                placeholder="Search alarm list..." 
+                value={alarmSearchTerm} 
+                onChange={(e) => setAlarmSearchTerm(e.target.value)} 
+                className="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-xl text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-rose-500"
+              />
+            </div>
+            <button onClick={copyAlarmsToClipboard} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-all cursor-pointer">
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy ({filteredAlarmItems.length})</span>
             </button>
           </div>
 
           <div className="p-6 overflow-y-auto flex-1 bg-white">
             {filteredAlarmItems.length === 0 ? (
-              <div className="text-center text-gray-400 py-12">
-                <div className="text-4xl mb-2">🔍</div>
-                <p className="text-base font-semibold">No alarm items match your search.</p>
+              <div className="text-center text-slate-400 py-12 flex flex-col items-center">
+                <Search className="w-10 h-10 text-slate-300 mb-2" />
+                <p className="text-xs font-semibold">No alarm items match your search.</p>
               </div>
             ) : (
               <div className="overflow-x-auto border border-rose-100 rounded-2xl shadow-sm animate-fadeIn">
@@ -1352,12 +1438,12 @@ const Import_CA = () => {
                   <tbody className="divide-y divide-rose-100">
                     {filteredAlarmItems.map((item, idx) => (
                       <tr key={item.id} className="hover:bg-rose-50/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-gray-500 text-center">{idx + 1}</td>
-                        <td className="px-4 py-3 font-mono font-semibold text-gray-800">{item.codeReceipt || '-'}</td>
+                        <td className="px-4 py-3 font-medium text-slate-500 text-center">{idx + 1}</td>
+                        <td className="px-4 py-3 font-mono font-semibold text-slate-800">{item.codeReceipt || '-'}</td>
                         <td className="px-4 py-3 text-center">{getStatusBadge(item.status)}</td>
                         <td className="px-4 py-3 text-center">{getStatusCABadge(item.statusCA)}</td>
                         <td className="px-4 py-3 text-center">
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 font-mono">
                             +{item.daysDiff}
                           </span>
                         </td>
@@ -1367,7 +1453,7 @@ const Import_CA = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-3 py-1 text-xs bg-white border border-rose-200 rounded-xl hover:bg-rose-50 text-rose-700 font-semibold shadow-sm transition-colors animate-fadeIn">Dismiss</button>
+                          <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-3 py-1 text-xs bg-white border border-rose-200 rounded-xl hover:bg-rose-50 text-rose-700 font-semibold shadow-xs transition-colors cursor-pointer">Dismiss</button>
                         </td>
                       </tr>
                     ))}
@@ -1377,9 +1463,9 @@ const Import_CA = () => {
             )}
           </div>
           
-          <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-            <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm text-xs">Close</button>
-            <button onClick={() => { setDismissedItems(prev => new Set([...prev, ...alarmItems.map(i => i.id)])); setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold transition-all shadow-md">Dismiss All</button>
+          <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+            <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition-all shadow-xs text-xs cursor-pointer">Close</button>
+            <button onClick={() => { setDismissedItems(prev => new Set([...prev, ...alarmItems.map(i => i.id)])); setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer">Dismiss All</button>
           </div>
         </div>
       </div>
@@ -1391,8 +1477,8 @@ const Import_CA = () => {
     if (alarmCount === 0 || showAlarmModal) return null;
     return (
       <div className="fixed bottom-20 right-6 flex flex-col gap-3 z-40">
-        <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-full shadow-lg animate-bounce flex items-center gap-2 border-2 border-white transition-colors">
-          <span className="text-lg">🚨</span>
+        <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-full shadow-lg animate-bounce flex items-center gap-2 border-2 border-white transition-colors cursor-pointer">
+          <AlertTriangle className="w-5 h-5 text-white" />
           <span className="font-bold text-sm">{alarmCount}</span>
         </button>
       </div>
@@ -1400,7 +1486,7 @@ const Import_CA = () => {
   };
 
   return (
-    <div className="w-full px-4 py-6 bg-gray-50 min-h-screen">
+    <div className="w-full h-screen max-h-screen p-1 sm:p-1.5 bg-slate-100 flex flex-col overflow-hidden font-sans">
       
       {/* ─── MODALS ─── */}
       {renderTargetHistoryModal()}
@@ -1413,15 +1499,17 @@ const Import_CA = () => {
       <div className="bg-white rounded-lg shadow-xl border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
         
         {/* ─── HEADER RIBBON ─── */}
-        <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-3 py-1 border-b border-slate-900 text-white flex-shrink-0 shadow-sm">
+        <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-3 py-1.5 border-b border-slate-900 text-white flex-shrink-0 shadow-sm">
           <div className="flex justify-between items-center gap-2 flex-wrap">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
-                  <span>📥</span> IMPORT CA
+                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1.5">
+                  <Download className="w-4 h-4 text-blue-400" />
+                  <span>IMPORT CA</span>
                 </h1>
-                <span className="bg-blue-500/30 text-blue-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-blue-400/30 font-bold">
-                  🟢 LIVE • {currentTime.toLocaleTimeString()}
+                <span className="bg-blue-500/30 text-blue-200 text-[9px] font-mono px-1.5 py-0.5 rounded-full uppercase tracking-wider border border-blue-400/30 font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                  LIVE • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
             </div>
@@ -1429,8 +1517,14 @@ const Import_CA = () => {
               <span className="text-slate-300 text-[10px] hidden lg:inline mr-2">
                 <strong>IMPORT CA:</strong> បញ្ជីបង្កាន់ដៃ Stock In មិនទាន់បានចុះ CA
               </span>
-              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer">📊 KPI Matrix</button>
+              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer flex items-center gap-1">
+                <Trash2 className="w-3 h-3" />
+                <span>Clear All</span>
+              </button>
+              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1">
+                <BarChart3 className="w-3 h-3" />
+                <span>KPI Matrix</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1439,44 +1533,61 @@ const Import_CA = () => {
         <div className="px-3 py-1 bg-slate-100 border-b border-slate-300 flex-shrink-0">
           <div className="flex flex-wrap gap-2 justify-between items-center">
             <div className="flex flex-wrap gap-1.5 items-center">
-              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">📎 Export Excel</button>
+              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-1 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Smart Import</span>
+              </button>
+              <button onClick={exportToExcel} className="px-2.5 py-1 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Export Excel</span>
+              </button>
               {selectedRows.size > 0 && (
-                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">🗑️ Complete ({selectedRows.size})</button>
+                <button onClick={deleteSelectedRows} className="px-2.5 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-extrabold flex items-center gap-1 shadow-xs cursor-pointer">
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Complete ({selectedRows.size})</span>
+                </button>
               )}
 
-              {/* 🗓️ DAYS QUICK FILTER CHIPS */}
+              {/* DAYS QUICK FILTER CHIPS */}
               <div className="flex items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
-                <span className="text-[10px] font-extrabold text-slate-600">🗓️ Days:</span>
+                <span className="text-[10px] font-extrabold text-slate-600 flex items-center gap-0.5">
+                  <Calendar className="w-3 h-3 text-slate-500" />
+                  <span>Days:</span>
+                </span>
                 {[
-                  { id: 'ALL', label: 'All' },
-                  { id: '0', label: '0d' },
-                  { id: '1-3', label: '1-3d' },
-                  { id: '4-6', label: '4-6d' },
-                  { id: '>=4', label: '>=4d 🚨' },
-                  { id: '>=7', label: '>=7d 🔴' },
+                  { id: 'ALL', label: 'All', icon: null },
+                  { id: '0', label: '0d', icon: null },
+                  { id: '1-3', label: '1-3d', icon: null },
+                  { id: '4-6', label: '4-6d', icon: null },
+                  { id: '>=4', label: '>=4d (Alarm)', icon: <AlertTriangle className="w-2.5 h-2.5 text-amber-500" /> },
+                  { id: '>=7', label: '>=7d (Critical)', icon: <AlertCircle className="w-2.5 h-2.5 text-rose-500" /> },
                 ].map(pill => (
                   <button
                     key={pill.id}
                     onClick={() => { setDaysFilter(pill.id); setCurrentPage(1); }}
-                    className={`px-1.5 py-0.25 rounded text-[9.5px] font-black transition-all cursor-pointer ${
+                    className={`px-1.5 py-0.5 rounded text-[9.5px] font-black transition-all cursor-pointer flex items-center gap-1 ${
                       daysFilter === pill.id 
                         ? 'bg-blue-700 text-white shadow-2xs' 
                         : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
                     }`}
                   >
-                    {pill.label}
+                    {pill.icon}
+                    <span>{pill.label}</span>
                   </button>
                 ))}
               </div>
             </div>
             <div className="flex gap-2 items-center flex-wrap">
               <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-xs text-[10px]">
-                <span className="font-bold text-amber-900">⚠️ Threshold &ge;</span>
+                <AlertTriangle className="w-3 h-3 text-amber-700" />
+                <span className="font-bold text-amber-900">Threshold &ge;</span>
                 <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-10 px-1 py-0 text-[10px] font-bold border border-amber-300 rounded text-center bg-white" min="1"/>
                 <span className="font-bold text-amber-900">d</span>
               </div>
-              <input type="text" placeholder="Search receipt, command, unit..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-44 sm:w-56 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-xs" />
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
+                <input type="text" placeholder="Search receipt, command, unit..." value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} className="w-44 sm:w-56 pl-7 pr-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-blue-500 focus:border-transparent outline-none transition-all shadow-xs" />
+              </div>
             </div>
           </div>
         </div>
@@ -1524,7 +1635,14 @@ const Import_CA = () => {
                     className={`border border-slate-700 px-1.5 py-0.5 font-extrabold whitespace-nowrap sticky top-0 z-20 bg-slate-800 ${col.width} ${col.align || 'text-left'} ${col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-700 select-none text-amber-300' : ''}`}
                     title={col.key === 'daysDiff' ? 'Click to sort by Days' : undefined}
                   >
-                    {col.key === 'daysDiff' ? `Days ${daysSortOrder === 'desc' ? '⬇️' : daysSortOrder === 'asc' ? '⬆️' : '↕️'}` : col.label}
+                    {col.key === 'daysDiff' ? (
+                      <div className="inline-flex items-center gap-1">
+                        <span>Days</span>
+                        {daysSortOrder === 'desc' ? <ArrowDown className="w-3 h-3 text-amber-300" /> : daysSortOrder === 'asc' ? <ArrowUp className="w-3 h-3 text-amber-300" /> : <ArrowUpDown className="w-3 h-3 text-slate-400" />}
+                      </div>
+                    ) : (
+                      col.label
+                    )}
                   </th>
                 ))}
               </tr>
@@ -1581,8 +1699,8 @@ const Import_CA = () => {
                     <td className="border border-slate-300 px-1.5 py-0.25 text-center whitespace-nowrap">
                       {editingCell?.id === item.id && editingCell?.field === 'statusCA' ? (
                         <select defaultValue={item.statusCA} autoFocus onBlur={(e) => saveEdit(item.id, 'statusCA', e.target.value)} className="w-full px-1 py-0 border border-blue-500 rounded text-[9.5px] bg-white">
-                          <option value="Unsigned">📝 Unsigned</option>
-                          <option value="Is signing">✍️ Is signing</option>
+                          <option value="Unsigned">Unsigned</option>
+                          <option value="Is signing">Is signing</option>
                         </select>
                       ) : (
                         <div onClick={() => startEdit(item.id, 'statusCA', item.statusCA)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0 rounded">{getStatusCABadge(item.statusCA)}</div>
@@ -1605,10 +1723,10 @@ const Import_CA = () => {
               {filteredData.length === 0 && (
                 <tr>
                   <td colSpan={columns.length + 1} className="border border-slate-300 px-6 py-12 text-center text-slate-400 font-bold text-sm bg-white">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="text-4xl">📭</div>
-                      <p className="text-lg font-bold text-slate-700">No GIS records found with Unsigned/Is signing</p>
-                      <p className="text-xs text-slate-500">Please click "Smart Import" to enter data.</p>
+                    <div className="flex flex-col items-center gap-2">
+                      <Inbox className="w-10 h-10 text-slate-300" />
+                      <p className="text-base font-bold text-slate-700">No GIS records found with Unsigned/Is signing</p>
+                      <p className="text-xs text-slate-500 font-normal">Please click "Smart Import" to enter data.</p>
                     </div>
                   </td>
                 </tr>
@@ -1688,7 +1806,10 @@ const Import_CA = () => {
 
         {/* ─── FOOTER ─── */}
         <div className="bg-slate-100 px-4 py-1.5 border-t border-slate-300 text-[10px] font-semibold text-slate-600 flex justify-between flex-wrap gap-2 flex-shrink-0">
-          <span>📋 Total GIS (Unsigned/Is signing): <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
+          <span className="flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5 text-slate-500" />
+            <span>Total GIS (Unsigned/Is signing): <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
+          </span>
         </div>
       </div>
 

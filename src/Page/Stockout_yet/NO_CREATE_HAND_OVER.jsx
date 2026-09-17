@@ -1,6 +1,34 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
+import {
+  Package,
+  Trash2,
+  BarChart3,
+  RefreshCw,
+  FileSpreadsheet,
+  CheckCircle2,
+  AlertTriangle,
+  Search,
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Layers,
+  AlertCircle,
+  ShieldAlert,
+  History,
+  Download,
+  Upload,
+  Copy,
+  Inbox,
+  Maximize2,
+  Minimize2,
+  Columns,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
 
 // Storage Keys
 const STORAGE_KEYS = {
@@ -183,9 +211,12 @@ const NO_CREATE_HAND_OVER = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(100);
   const [daysFilter, setDaysFilter] = useState('ALL');
   const [daysSortOrder, setDaysSortOrder] = useState('none');
+  const [isFitScreen, setIsFitScreen] = useState(true);
+  const [tableDensity, setTableDensity] = useState('ultra'); // 'ultra' (fits 70 rows), 'compact' (45 rows), 'normal' (25 rows)
+  const [showStatsBar, setShowStatsBar] = useState(true);
 
   // Load data from DB on mount
   useEffect(() => {
@@ -256,16 +287,16 @@ const NO_CREATE_HAND_OVER = () => {
 
   // Columns
   const columns = [
-    { key: 'no', label: '#', width: 'w-10', align: 'text-center' },
-    { key: 'code', label: 'Code of stock-out note', width: 'whitespace-nowrap min-w-[170px]', align: 'text-left' },
-    { key: 'warehouse', label: 'Warehouse', width: 'w-32', align: 'text-left' },
-    { key: 'recipient', label: 'Recipient', width: 'w-36', align: 'text-left' },
-    { key: 'creator', label: 'Creator', width: 'w-28', align: 'text-left' },
-    { key: 'date', label: 'Creating date', width: 'w-24', align: 'text-center' },
-    { key: 'team', label: 'TEAM', width: 'min-w-[140px]', align: 'text-center' },
-    { key: 'unit', label: 'Unit', width: 'w-16', align: 'text-center' },
-    { key: 'daysDiff', label: 'Days', width: 'w-14', align: 'text-center' },
-    { key: 'status', label: 'Status', width: 'w-20', align: 'text-center' }
+    { key: 'no', label: '#', width: 'w-8 min-w-[32px]', align: 'text-center' },
+    { key: 'code', label: 'Code of stock-out note', width: isFitScreen ? 'w-[150px] min-w-[150px]' : 'min-w-[170px]', align: 'text-left' },
+    { key: 'warehouse', label: 'Warehouse', width: isFitScreen ? 'max-w-[130px] truncate' : 'min-w-[150px]', align: 'text-left' },
+    { key: 'recipient', label: 'Recipient', width: isFitScreen ? 'max-w-[140px] truncate' : 'min-w-[160px]', align: 'text-left' },
+    { key: 'creator', label: 'Creator', width: isFitScreen ? 'max-w-[100px] truncate' : 'min-w-[120px]', align: 'text-left' },
+    { key: 'date', label: 'Creating date', width: 'w-20 min-w-[80px]', align: 'text-center' },
+    { key: 'team', label: 'TEAM', width: 'w-[110px] min-w-[110px]', align: 'text-center' },
+    { key: 'unit', label: 'Unit', width: 'w-14 min-w-[56px]', align: 'text-center' },
+    { key: 'daysDiff', label: 'Days', width: 'w-14 min-w-[56px]', align: 'text-center' },
+    { key: 'status', label: 'Status', width: 'w-20 min-w-[80px]', align: 'text-center' }
   ];
 
   // Helper functions
@@ -298,10 +329,10 @@ const NO_CREATE_HAND_OVER = () => {
         delete newStatus[code];
         return newStatus;
       });
-      showNotification(`❌ ${code} marked as NOT CONFIRMED`, 'warning');
+      showNotification(`${code} marked as NOT CONFIRMED`, 'warning');
     } else {
       setConfirmedStatus(prev => ({ ...prev, [code]: true }));
-      showNotification(`✅ ${code} marked as CONFIRMED! +1 Result`, 'success');
+      showNotification(`${code} marked as CONFIRMED! +1 Result`, 'success');
       playAlarmSound();
     }
   };
@@ -328,34 +359,34 @@ const NO_CREATE_HAND_OVER = () => {
 
   const showNotification = (message, type = 'alarm') => {
     const colors = {
-      alarm: 'bg-rose-600',
-      success: 'bg-emerald-600',
-      info: 'bg-blue-600',
-      warning: 'bg-amber-500'
+      alarm: 'bg-rose-600 border-rose-500',
+      success: 'bg-emerald-600 border-emerald-500',
+      info: 'bg-blue-600 border-blue-500',
+      warning: 'bg-amber-500 border-amber-400'
     };
     const icons = {
-      alarm: '🚨',
-      success: '✅',
-      info: '📊',
-      warning: '⚠️'
+      alarm: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+      success: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      info: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      warning: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
     };
     const titles = {
-      alarm: 'ALARM DETECTED!',
-      success: 'Success!',
-      info: 'Info',
+      alarm: 'ALARM DETECTED',
+      success: 'Success',
+      info: 'Notification',
       warning: 'Warning'
     };
 
     const notification = document.createElement('div');
-    notification.className = `fixed top-20 right-4 z-50 p-4 rounded-2xl shadow-2xl transform transition-all duration-500 animate-slideIn ${colors[type] || 'bg-gray-600'} text-white max-w-sm`;
+    notification.className = `fixed top-16 right-4 z-50 p-3.5 rounded-xl shadow-xl border ${colors[type] || 'bg-slate-800 border-slate-700'} text-white max-w-sm animate-slideIn`;
     notification.innerHTML = `
-      <div class="flex items-start gap-3">
-        <div class="text-2xl animate-bounce">${icons[type] || '📌'}</div>
-        <div class="flex-1">
-          <div class="font-bold text-sm">${titles[type] || 'Notification'}</div>
-          <div class="text-xs opacity-90 whitespace-pre-line">${message}</div>
+      <div class="flex items-start gap-2.5">
+        <div class="mt-0.5">${icons[type] || icons.info}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-xs uppercase tracking-wider text-white/90">${titles[type] || 'Notification'}</div>
+          <div class="text-xs text-white/95 mt-0.5 leading-relaxed whitespace-pre-line">${message}</div>
         </div>
-        <button onclick="this.parentElement.parentElement.remove()" class="text-white/70 hover:text-white text-lg leading-none">✕</button>
+        <button onclick="this.parentElement.parentElement.remove()" class="text-white/60 hover:text-white text-base leading-none ml-1 cursor-pointer">✕</button>
       </div>
     `;
     document.body.appendChild(notification);
@@ -412,7 +443,7 @@ const NO_CREATE_HAND_OVER = () => {
       changedBy: 'User',
       reason: `Manual target adjustment for ${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}`
     }, ...prev]);
-    showNotification(`📊 Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
+    showNotification(`Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit} changed from ${oldTarget} to ${newTarget}`, 'info');
   };
 
   const processImport = (newRawData) => {
@@ -422,7 +453,7 @@ const NO_CREATE_HAND_OVER = () => {
     );
 
     if (gisData.length === 0) {
-      showNotification('⚠️ No valid recipients found in the data!', 'warning');
+      showNotification('No valid recipients found in the data!', 'warning');
       return;
     }
 
@@ -460,7 +491,7 @@ const NO_CREATE_HAND_OVER = () => {
       if (!existingUnits.has(unit)) {
         newUnitsFound.push(unit);
         autoCreateTargetForUnit(unit, unitsInNewData[unit]);
-        showNotification(`🎯 Auto-created target for ${unit}: ${unitsInNewData[unit]}`, 'info');
+        showNotification(`Auto-created target for ${unit}: ${unitsInNewData[unit]}`, 'info');
       }
     });
     
@@ -477,14 +508,14 @@ const NO_CREATE_HAND_OVER = () => {
         return newStatus;
       });
       completedCodesArray.forEach(code => {
-        showNotification(`✅ COMPLETED: ${code} has been cleared! +1 Result`, 'success');
+        showNotification(`COMPLETED: ${code} has been cleared! +1 Result`, 'success');
       });
       playAlarmSound();
     }
     
     setData(processedNewData);
     saveToDb(STORAGE_KEYS.DATA, processedNewData);
-    showNotification(`📊 Import Summary:\n✅ Completed: ${completedCodesArray.length}\n🆕 New Added: ${gisData.length}\n🎯 New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}`, 'info');
+    showNotification(`Import Summary:\n• Completed: ${completedCodesArray.length}\n• New Added: ${gisData.length}\n• New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}`, 'info');
     return { completedCount: completedCodesArray.length, newCount: gisData.length, newUnits: newUnitsFound };
   };
 
@@ -647,7 +678,7 @@ const NO_CREATE_HAND_OVER = () => {
   };
 
   const clearAllData = async () => {
-    if (window.confirm('⚠️ Are you sure you want to delete ALL data?')) {
+    if (window.confirm('Are you sure you want to delete ALL data?')) {
       setData([]);
       setCompletionHistory([]);
       setTargets({});
@@ -678,7 +709,7 @@ const NO_CREATE_HAND_OVER = () => {
 
   const deleteSelectedRows = () => {
     if (selectedRows.size === 0) return;
-    if (window.confirm(`⚠️ Delete ${selectedRows.size} row(s)?`)) {
+    if (window.confirm(`Delete ${selectedRows.size} selected row(s)?`)) {
       const deletedCodes = data.filter(item => selectedRows.has(item.id)).map(item => item.code);
       const newCompletions = deletedCodes.map(code => ({
         code, completedAt: new Date().toISOString(),
@@ -703,7 +734,7 @@ const NO_CREATE_HAND_OVER = () => {
       const newData = data.filter(item => item.id !== id);
       setData(newData.map((item, index) => ({ ...item, no: index + 1, id: index + 1 })));
       setSelectedRows(prev => { const newSet = new Set(prev); newSet.delete(id); return newSet; });
-      showNotification(`✅ Completed: ${itemToDelete.code}`, 'success');
+      showNotification(`Completed: ${itemToDelete.code}`, 'success');
       playAlarmSound();
     }
   };
@@ -765,7 +796,7 @@ const NO_CREATE_HAND_OVER = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Hand Over Data');
     XLSX.writeFile(wb, `hand_over_data_${new Date().toISOString().split('T')[0]}.xlsx`);
-    showNotification('📎 Export completed!', 'success');
+    showNotification('Export completed successfully!', 'success');
   };
 
   const exportKPItoExcel = () => {
@@ -801,7 +832,7 @@ const NO_CREATE_HAND_OVER = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Hand Over KPI Dashboard');
     XLSX.writeFile(wb, `hand_over_kpi_${new Date().toISOString().split('T')[0]}.xlsx`);
-    showNotification('📎 KPI Export completed!', 'success');
+    showNotification('KPI Export completed successfully!', 'success');
   };
 
   // 🎯 FILTER: Show matching recipients (GIS or other mapped Units)
@@ -909,7 +940,7 @@ const NO_CREATE_HAND_OVER = () => {
       `${item.unit}\n| Code: ${item.code}\n📅 Date: ${item.date} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.recipient || '-'} (${item.warehouse || '-'})\nTEAM: ${item.team || '-'}\nStatus: ${item.status || '-'}`
     ).join('\n\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('Alarm list copied to clipboard!', 'success');
   };
 
   useEffect(() => {
@@ -949,15 +980,15 @@ const NO_CREATE_HAND_OVER = () => {
 
   const getStatusBadge = (status) => {
     const config = {
-      'Completed': { icon: '✅', bg: 'bg-emerald-100', text: 'text-emerald-800' },
-      'Good': { icon: '📈', bg: 'bg-blue-100', text: 'text-blue-800' },
-      'Warning': { icon: '⚠️', bg: 'bg-amber-100', text: 'text-amber-800' },
-      'Critical': { icon: '🚨', bg: 'bg-rose-100', text: 'text-rose-800' },
-      'No Target': { icon: '❓', bg: 'bg-orange-100', text: 'text-orange-800' },
-      'No Data': { icon: '📭', bg: 'bg-gray-100', text: 'text-gray-500' }
+      'Completed': { icon: <CheckCircle2 className="w-3 h-3 text-emerald-600 inline" />, bg: 'bg-emerald-100', text: 'text-emerald-800' },
+      'Good': { icon: <CheckCircle2 className="w-3 h-3 text-blue-600 inline" />, bg: 'bg-blue-100', text: 'text-blue-800' },
+      'Warning': { icon: <AlertTriangle className="w-3 h-3 text-amber-600 inline" />, bg: 'bg-amber-100', text: 'text-amber-800' },
+      'Critical': { icon: <AlertCircle className="w-3 h-3 text-rose-600 inline" />, bg: 'bg-rose-100', text: 'text-rose-800' },
+      'No Target': { icon: <AlertCircle className="w-3 h-3 text-orange-600 inline" />, bg: 'bg-orange-100', text: 'text-orange-800' },
+      'No Data': { icon: <Inbox className="w-3 h-3 text-gray-500 inline" />, bg: 'bg-gray-100', text: 'text-gray-500' }
     };
     const c = config[status] || config['No Data'];
-    return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>{c.icon} {status}</span>;
+    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${c.bg} ${c.text}`}>{c.icon} {status}</span>;
   };
 
   const getRecipientBadge = (recipient) => {
@@ -973,13 +1004,13 @@ const NO_CREATE_HAND_OVER = () => {
     if (confirmed) {
       return (
         <button onClick={() => toggleConfirm(item.id, item.code, item.unit)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors">
-          ✅ Confirmed
+          Confirmed
         </button>
       );
     }
     return (
       <button onClick={() => toggleConfirm(item.id, item.code, item.unit)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors">
-        🔄 Mark Confirm
+        Mark Confirm
       </button>
     );
   };
@@ -995,17 +1026,17 @@ const NO_CREATE_HAND_OVER = () => {
         <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📜</span>
+              <div className="flex items-center gap-2 text-white">
+                <History className="w-5 h-5" />
                 <h2 className="text-xl font-bold text-white">Target Change History</h2>
               </div>
-              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
+              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl cursor-pointer">✕</button>
             </div>
           </div>
           <div className="p-6 overflow-y-auto flex-1">
             {targetHistory.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
-                <div className="text-4xl mb-2">📭</div>
+                <Inbox className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                 <p>No target changes recorded yet.</p>
               </div>
             ) : (
@@ -1030,7 +1061,7 @@ const NO_CREATE_HAND_OVER = () => {
             )}
           </div>
           <div className="p-4 border-t bg-gray-50 flex justify-end">
-            <button onClick={() => setShowTargetHistoryModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Close</button>
+            <button onClick={() => setShowTargetHistoryModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors cursor-pointer font-bold text-sm">Close</button>
           </div>
         </div>
       </div>
@@ -1044,15 +1075,15 @@ const NO_CREATE_HAND_OVER = () => {
         <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
           <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📊</span>
+              <div className="flex items-center gap-2 text-white">
+                <BarChart3 className="w-5 h-5" />
                 <div>
                   <h2 className="text-xl font-bold text-white">KPI Dashboard - Hand Over Performance</h2>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-xl text-sm transition-colors">📜 History</button>
-                <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
+              <div className="flex gap-2 items-center">
+                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-xl text-sm transition-colors flex items-center gap-1 cursor-pointer"><History className="w-4 h-4" /> History</button>
+                <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl cursor-pointer">✕</button>
               </div>
             </div>
           </div>
@@ -1072,20 +1103,20 @@ const NO_CREATE_HAND_OVER = () => {
                 <div className="text-2xl font-bold">{calculateKPIData.summary.remain}</div>
               </div>
               <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">Result</div>
+                <div className="text-xs opacity-90">Completed Result</div>
                 <div className="text-2xl font-bold">{calculateKPIData.summary.result}</div>
               </div>
               <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">Ratio</div>
+                <div className="text-xs opacity-90">Achievement Rate</div>
                 <div className="text-2xl font-bold">{calculateKPIData.summary.ratio.toFixed(1)}%</div>
               </div>
-              <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">In System</div>
+              <div className="bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl p-4 text-white shadow-lg">
+                <div className="text-xs opacity-90">Total In System</div>
                 <div className="text-2xl font-bold">{calculateKPIData.summary.totalRecords}</div>
               </div>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-6 bg-gray-50 rounded-xl p-4">
               <div className="flex justify-between text-sm text-gray-600 mb-1">
                 <span>Overall Progress (based on Evening Target)</span>
                 <span className="font-bold">{calculateKPIData.summary.ratio.toFixed(1)}%</span>
@@ -1096,9 +1127,9 @@ const NO_CREATE_HAND_OVER = () => {
             </div>
 
             <div className="flex gap-2 mb-4 border-b pb-2">
-              <button onClick={() => setKpiViewMode('all')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${kpiViewMode === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>📋 All ({calculateKPIData.allData.length})</button>
-              <button onClick={() => setKpiViewMode('active')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${kpiViewMode === 'active' ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>🔄 Active</button>
-              <button onClick={() => setKpiViewMode('completed')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${kpiViewMode === 'completed' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>✅ Completed</button>
+              <button onClick={() => setKpiViewMode('all')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${kpiViewMode === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><Layers className="w-4 h-4" /> All ({calculateKPIData.allData.length})</button>
+              <button onClick={() => setKpiViewMode('active')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${kpiViewMode === 'active' ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><RefreshCw className="w-4 h-4" /> Active</button>
+              <button onClick={() => setKpiViewMode('completed')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${kpiViewMode === 'completed' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}><CheckCircle2 className="w-4 h-4" /> Completed</button>
             </div>
 
             <div className="border rounded-xl overflow-hidden">
@@ -1122,8 +1153,8 @@ const NO_CREATE_HAND_OVER = () => {
                       <tr key={item.unit} className={`hover:bg-gray-50 ${item.hasChange ? 'bg-amber-50' : ''}`}>
                         <td className="px-4 py-3 text-sm font-medium">
                           {item.unit}
-                          {item.hasChange && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-200 text-amber-800">📊 Changed</span>}
-                          {item.isNew && <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded text-xs bg-emerald-200 text-emerald-800">🆕 New</span>}
+                          {item.hasChange && <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-amber-200 text-amber-800"><BarChart3 className="w-3 h-3" /> Changed</span>}
+                          {item.isNew && <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded text-xs bg-emerald-200 text-emerald-800 font-bold">New</span>}
                         </td>
                         <td className="px-4 py-3 text-sm text-right">
                           {editingTarget === `${item.unit}-morning` ? (
@@ -1153,7 +1184,7 @@ const NO_CREATE_HAND_OVER = () => {
                         <td className="px-4 py-3 text-center">{getStatusBadge(item.status)}</td>
                         <td className="px-4 py-3 text-center">
                           {item.hasData && (
-                            <button onClick={() => { setSearchTerm(item.unit); setShowKPIModal(false); }} className="text-blue-500 hover:text-blue-700 text-xs transition-colors">View</button>
+                            <button onClick={() => { setSearchTerm(item.unit); setShowKPIModal(false); }} className="text-blue-500 hover:text-blue-700 text-xs transition-colors cursor-pointer font-bold">View</button>
                           )}
                         </td>
                       </tr>
@@ -1179,9 +1210,9 @@ const NO_CREATE_HAND_OVER = () => {
           </div>
 
           <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
-            <button onClick={() => setShowKPIModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Close</button>
-            <button onClick={exportKPItoExcel} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors">📎 Export KPI</button>
-            <button onClick={exportToExcel} className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors">📎 Export Data</button>
+            <button onClick={() => setShowKPIModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors cursor-pointer font-bold text-sm">Close</button>
+            <button onClick={exportKPItoExcel} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-1.5 cursor-pointer font-bold text-sm shadow-xs"><FileSpreadsheet className="w-4 h-4" /> Export KPI</button>
+            <button onClick={exportToExcel} className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-1.5 cursor-pointer font-bold text-sm shadow-xs"><Download className="w-4 h-4" /> Export Data</button>
           </div>
         </div>
       </div>
@@ -1192,14 +1223,14 @@ const NO_CREATE_HAND_OVER = () => {
     if (!showPasteModal) return null;
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 rounded-t-2xl">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-bold text-white">🔄 Smart Import</h2>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2"><Upload className="w-5 h-5" /> Smart Import</h2>
                 <p className="text-blue-100 text-sm">Paste data - Auto-create targets based on Unit</p>
               </div>
-              <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
+              <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl cursor-pointer">✕</button>
             </div>
           </div>
           <div className="p-6">
@@ -1211,14 +1242,14 @@ const NO_CREATE_HAND_OVER = () => {
             />
 
             {data.length > 0 && (
-              <div className="mt-3 p-2 bg-amber-50 rounded-xl text-sm text-amber-800">
-                ⚠️ Current data has {data.length} record(s). Import will replace existing data.
+              <div className="mt-3 p-2 bg-amber-50 rounded-xl text-sm text-amber-800 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" /> Current data has {data.length} record(s). Import will replace existing data.
               </div>
             )}
           </div>
-          <div className="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-3">
-            <button onClick={() => { setShowPasteModal(false); setPasteData(''); }} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Cancel</button>
-            <button onClick={handleSmartImport} disabled={!pasteData.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">🔄 Smart Import</button>
+          <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
+            <button onClick={() => { setShowPasteModal(false); setPasteData(''); }} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors cursor-pointer font-bold text-sm">Cancel</button>
+            <button onClick={handleSmartImport} disabled={!pasteData.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5 cursor-pointer font-bold text-sm shadow-xs"><Upload className="w-4 h-4" /> Smart Import</button>
           </div>
         </div>
       </div>
@@ -1233,13 +1264,13 @@ const NO_CREATE_HAND_OVER = () => {
           <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-4">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <span className="animate-bounce text-2xl">🚨</span>
+                <ShieldAlert className="w-6 h-6 text-white animate-pulse" />
                 <div>
                   <h2 className="text-xl font-bold text-white">ALARM DETECTED!</h2>
                   <p className="text-rose-100 text-xs">{alarmItems.length} record(s) exceed {alarmThreshold}-day threshold</p>
                 </div>
               </div>
-              <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white text-2xl">✕</button>
+              <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white text-2xl cursor-pointer">✕</button>
             </div>
           </div>
           
@@ -1261,15 +1292,15 @@ const NO_CREATE_HAND_OVER = () => {
               onChange={(e) => setAlarmSearchTerm(e.target.value)} 
               className="flex-1 px-3 py-1.5 border rounded-xl text-xs bg-white"
             />
-            <button onClick={copyAlarmsToClipboard} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors">
-              📋 Copy ({filteredAlarmItems.length})
+            <button onClick={copyAlarmsToClipboard} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer">
+              <Copy className="w-3.5 h-3.5" /> Copy ({filteredAlarmItems.length})
             </button>
           </div>
 
           <div className="p-6 overflow-y-auto flex-1">
             {filteredAlarmItems.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
-                <div className="text-3xl mb-2">🔍</div>
+                <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                 <p>No alarm items match your search.</p>
               </div>
             ) : (
@@ -1302,7 +1333,7 @@ const NO_CREATE_HAND_OVER = () => {
                         </td>
                         <td className="px-4 py-3 text-center">{getStatusBadge(item.status)}</td>
                         <td className="px-4 py-3 text-center">
-                          <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-2 py-1 text-[11px] font-semibold text-rose-700 bg-white border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors shadow-xs">Dismiss</button>
+                          <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-2 py-1 text-[11px] font-semibold text-rose-700 bg-white border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors shadow-xs cursor-pointer">Dismiss</button>
                         </td>
                       </tr>
                     ))}
@@ -1313,8 +1344,8 @@ const NO_CREATE_HAND_OVER = () => {
           </div>
           
           <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
-            <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors text-xs">Close</button>
-            <button onClick={() => { setDismissedItems(prev => new Set([...prev, ...alarmItems.map(i => i.id)])); setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs transition-colors shadow-md">Dismiss All</button>
+            <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors text-xs cursor-pointer font-bold">Close</button>
+            <button onClick={() => { setDismissedItems(prev => new Set([...prev, ...alarmItems.map(i => i.id)])); setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs transition-colors shadow-md cursor-pointer font-bold">Dismiss All</button>
           </div>
         </div>
       </div>
@@ -1326,8 +1357,8 @@ const NO_CREATE_HAND_OVER = () => {
     if (alarmCount === 0 || showAlarmModal) return null;
     return (
       <div className="fixed bottom-20 right-6 flex flex-col gap-3 z-40">
-        <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 text-white px-4 py-2.5 rounded-full shadow-lg animate-bounce flex items-center gap-2 hover:bg-rose-700 transition-colors border-2 border-white">
-          <span className="text-lg">🚨</span>
+        <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 text-white px-4 py-2.5 rounded-full shadow-lg animate-bounce flex items-center gap-2 hover:bg-rose-700 transition-colors border-2 border-white cursor-pointer">
+          <ShieldAlert className="w-5 h-5" />
           <span className="font-bold text-sm">{alarmCount}</span>
         </button>
       </div>
@@ -1335,7 +1366,7 @@ const NO_CREATE_HAND_OVER = () => {
   };
 
   return (
-    <div className="w-full h-screen max-h-screen p-1 sm:p-1.5 bg-slate-100 flex flex-col overflow-hidden">
+    <div className="w-full h-screen max-h-screen p-0 sm:p-0.5 bg-slate-100 flex flex-col overflow-hidden">
       
       {/* ─── MODALS ─── */}
       {renderTargetHistoryModal()}
@@ -1345,18 +1376,18 @@ const NO_CREATE_HAND_OVER = () => {
       {renderFloatingButtons()}
 
       {/* ─── MAIN CONTENT CONTAINER (FULL SCREEN FLEX) ─── */}
-      <div className="bg-white rounded-lg shadow-xl border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
+      <div className="bg-white rounded-none sm:rounded-lg shadow-xs border-0 sm:border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
         
         {/* ─── COMPACT EXCEL HEADER RIBBON ─── */}
         <div className="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 px-3 py-1 border-b border-slate-900 text-white flex-shrink-0">
           <div className="flex justify-between items-center gap-2 flex-wrap">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
-                  <span>📝</span> NO CREATE HAND OVER
+                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1.5">
+                  <FileSpreadsheet className="w-4 h-4 text-indigo-300" /> NO CREATE HAND OVER
                 </h1>
-                <span className="bg-indigo-500/30 text-indigo-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-indigo-400/30 font-bold">
-                  🟢 LIVE • {currentTime.toLocaleTimeString()}
+                <span className="bg-indigo-500/30 text-indigo-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-indigo-400/30 font-bold flex items-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block mr-1.5 animate-pulse"></span>LIVE • {currentTime.toLocaleTimeString()}
                 </span>
               </div>
             </div>
@@ -1364,8 +1395,8 @@ const NO_CREATE_HAND_OVER = () => {
               <span className="text-slate-300 text-[10px] hidden lg:inline mr-2">
                 <strong>ASSET STEP 2:</strong> តាមដានសម្ភារៈដែលមិនទាន់ Create Hand Over
               </span>
-              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer">📊 KPI Matrix</button>
+              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer flex items-center gap-1"><Trash2 className="w-3 h-3" /> Clear All</button>
+              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1"><BarChart3 className="w-3 h-3" /> KPI Matrix</button>
             </div>
           </div>
         </div>
@@ -1374,22 +1405,22 @@ const NO_CREATE_HAND_OVER = () => {
         <div className="px-3 py-1 bg-slate-100 border-b border-slate-300 flex-shrink-0">
           <div className="flex flex-wrap gap-2 justify-between items-center">
             <div className="flex flex-wrap gap-1.5 items-center">
-              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">📎 Export Excel</button>
+              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer"><Upload className="w-3 h-3" /> Smart Import</button>
+              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer"><FileSpreadsheet className="w-3 h-3" /> Export Excel</button>
               {selectedRows.size > 0 && (
-                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">🗑️ Complete ({selectedRows.size})</button>
+                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer"><CheckCircle2 className="w-3 h-3" /> Complete ({selectedRows.size})</button>
               )}
 
               {/* 🗓️ DAYS QUICK FILTER CHIPS */}
               <div className="flex items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
-                <span className="text-[10px] font-extrabold text-slate-600">🗓️ Days:</span>
+                <span className="text-[10px] font-extrabold text-slate-600 flex items-center gap-1"><Calendar className="w-3 h-3 text-slate-500" /> Days:</span>
                 {[
                   { id: 'ALL', label: 'All' },
                   { id: '0', label: '0d' },
                   { id: '1-3', label: '1-3d' },
                   { id: '4-6', label: '4-6d' },
-                  { id: '>=4', label: '>=4d 🚨' },
-                  { id: '>=7', label: '>=7d 🔴' },
+                  { id: '>=4', label: '>=4d (Alarm)' },
+                  { id: '>=7', label: '>=7d (Critical)' },
                 ].map(pill => (
                   <button
                     key={pill.id}
@@ -1407,18 +1438,69 @@ const NO_CREATE_HAND_OVER = () => {
             </div>
             <div className="flex gap-2 items-center flex-wrap">
               <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-xs text-[10px]">
-                <span className="font-bold text-amber-900">⚠️ Threshold &ge;</span>
+                <span className="font-bold text-amber-900 flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-amber-600" /> Threshold &ge;</span>
                 <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-10 px-1 py-0 text-[10px] font-bold border border-amber-300 rounded text-center bg-white" min="1"/>
                 <span className="font-bold text-amber-900">days</span>
               </div>
               <div className="relative">
-                <input type="text" placeholder="Search code, warehouse, recipient..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-44 sm:w-56 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent transition-all shadow-xs" />
+                <input type="text" placeholder="Search code, warehouse, recipient..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-36 sm:w-48 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent transition-all shadow-xs" />
               </div>
+
+              {/* Density Toggle (Ultra 70 rows / Compact / Standard) */}
+              <button
+                onClick={() => setTableDensity(prev => prev === 'ultra' ? 'compact' : prev === 'compact' ? 'normal' : 'ultra')}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer shadow-2xs ${
+                  tableDensity === 'ultra'
+                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                    : tableDensity === 'compact'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+                title="ចុចដើម្បីប្តូរទំហំជួរដេក (Ultra 70 rows → Compact → Standard)"
+              >
+                <Columns className="w-3 h-3" />
+                <span>
+                  {tableDensity === 'ultra' ? 'Ultra View (70 rows)' : tableDensity === 'compact' ? 'Compact (45 rows)' : 'Standard'}
+                </span>
+              </button>
+
+              {/* Fit Screen / Scroll Mode Toggle */}
+              <button
+                onClick={() => setIsFitScreen(prev => !prev)}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer shadow-2xs ${
+                  isFitScreen 
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
+                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={isFitScreen ? 'Switch to Expanded (Horizontal Scroll)' : 'Switch to Fit Screen (100% Responsive)'}
+              >
+                {isFitScreen ? (
+                  <>
+                    <Minimize2 className="w-3 h-3 text-blue-600" />
+                    <span>Fit Screen</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3 h-3 text-slate-600" />
+                    <span>Expanded</span>
+                  </>
+                )}
+              </button>
+
+              {/* Stats Ribbon Toggle */}
+              <button
+                onClick={() => setShowStatsBar(prev => !prev)}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+                title={showStatsBar ? 'លាក់របារស្ថិតិ (Hide Stats bar)' : 'បង្ហាញរបារស្ថិតិ (Show Stats bar)'}
+              >
+                {showStatsBar ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
             </div>
           </div>
         </div>
 
         {/* ─── STATS SUMMARY BAR (COMPACT INLINE) ─── */}
+        {showStatsBar && (
         <div className="px-3 py-0.5 bg-slate-200/70 border-b border-slate-300 grid grid-cols-3 sm:grid-cols-6 gap-1.5 flex-shrink-0 text-[9.5px]">
           <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
             <span className="font-black uppercase tracking-wider text-slate-500">Total Records</span>
@@ -1445,14 +1527,17 @@ const NO_CREATE_HAND_OVER = () => {
             <span className="text-xs font-black text-purple-700">{calculateKPIData.summary.result}</span>
           </div>
         </div>
+        )}
 
         {/* ─── EXCEL MATRIX TABLE (DYNAMIC FILL SCREEN) ─── */}
         <div className="flex-1 min-h-0 overflow-auto bg-white">
-          <table className="min-w-full border-collapse border border-slate-300 text-[9.5px] leading-tight table-auto">
+          <table className="min-w-full border-collapse border border-slate-300 leading-tight table-auto">
             <thead>
               <tr className="bg-slate-800 text-white font-black uppercase tracking-wider text-[9px]">
-                <th className="border border-slate-700 px-1 py-0.5 w-6 text-center sticky top-0 z-20 bg-slate-800">
-                  <input type="checkbox" checked={selectedRows.size === filteredData.length && filteredData.length > 0} onChange={toggleSelectAll} className="rounded" />
+                <th className={`border border-slate-700 text-center sticky top-0 z-20 bg-slate-800 w-6 ${
+                  tableDensity === 'ultra' ? 'px-1 py-0.5' : 'px-1 py-1'
+                }`}>
+                  <input type="checkbox" checked={selectedRows.size === filteredData.length && filteredData.length > 0} onChange={toggleSelectAll} className="rounded cursor-pointer" />
                 </th>
                 {columns.map(col => (
                   <th 
@@ -1462,78 +1547,129 @@ const NO_CREATE_HAND_OVER = () => {
                         setDaysSortOrder(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none');
                       }
                     }}
-                    className={`border border-slate-700 px-1.5 py-0.5 font-extrabold whitespace-nowrap sticky top-0 z-20 bg-slate-800 ${col.width} ${col.align || 'text-left'} ${col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-700 select-none text-amber-300' : ''}`}
+                    className={`border border-slate-700 font-extrabold whitespace-nowrap sticky top-0 z-20 bg-slate-800 ${col.width} ${col.align || 'text-left'} ${
+                      tableDensity === 'ultra' ? 'px-1.5 py-0.5 text-[8.5px]' : 'px-2 py-1 text-[9px]'
+                    } ${col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-700 select-none text-amber-300' : ''}`}
                     title={col.key === 'daysDiff' ? 'Click to sort by Days (Descending / Ascending)' : ''}
                   >
-                    {col.label}
-                    {col.key === 'daysDiff' && (
-                      <span className="ml-1 text-[9px]">
-                        {daysSortOrder === 'desc' ? '⬇️' : daysSortOrder === 'asc' ? '⬆️' : '↕️'}
-                      </span>
-                    )}
+                    <div className="inline-flex items-center gap-1">
+                      <span>{col.label}</span>
+                      {col.key === 'daysDiff' && (
+                        <span>
+                          {daysSortOrder === 'desc' ? (
+                            <ArrowDown className="w-3 h-3 text-amber-400 inline" />
+                          ) : daysSortOrder === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-amber-400 inline" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 inline" />
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-300 font-normal text-slate-800 bg-white">
+            <tbody className={`divide-y divide-slate-300 font-normal text-slate-800 bg-white ${
+              tableDensity === 'ultra' ? 'text-[10px] leading-none' : tableDensity === 'compact' ? 'text-[11px] leading-tight' : 'text-xs'
+            }`}>
               {paginatedData.map((item) => {
                 const isAlarm = item.daysDiff >= alarmThreshold && !dismissedItems.has(item.id);
                 return (
-                  <tr key={item.id} className={`transition-colors ${isAlarm ? 'bg-rose-50/90 font-semibold' : selectedRows.has(item.id) ? 'bg-blue-50/90' : 'even:bg-slate-50/70 odd:bg-white hover:bg-amber-50/80'}`}>
-                    <td className="border border-slate-300 px-1.5 py-1 text-center bg-white/50">
-                      <input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" />
+                  <tr 
+                    key={item.id} 
+                    className={`transition-colors ${
+                      tableDensity === 'ultra' ? 'h-5 max-h-5' : tableDensity === 'compact' ? 'h-6 max-h-6' : 'h-7.5'
+                    } ${
+                      isAlarm 
+                        ? 'bg-rose-50/90 font-semibold' 
+                        : selectedRows.has(item.id) 
+                        ? 'bg-blue-50/90' 
+                        : 'even:bg-slate-50/70 odd:bg-white hover:bg-amber-50/80'
+                    }`}
+                  >
+                    <td className={`border border-slate-300 text-center bg-white/50 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-1'
+                    }`}>
+                      <input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded cursor-pointer" />
                     </td>
-                    <td className="border border-slate-300 px-1.5 py-1 text-slate-500 font-bold text-center bg-slate-100/70">{item.no}</td>
-                    <td className="border border-slate-300 px-1.5 py-0.25 font-mono font-bold text-slate-900 whitespace-nowrap min-w-[170px]">
+                    <td className={`border border-slate-300 text-slate-500 font-bold text-center bg-slate-100/70 ${
+                      tableDensity === 'ultra' ? 'px-0.5 py-0 text-[9.5px]' : 'px-1.5 py-1'
+                    }`}>
+                      {item.no}
+                    </td>
+                    <td className={`border border-slate-300 font-mono font-bold text-slate-900 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : 'px-1.5 py-0.25 text-[11px]'
+                    } ${isFitScreen ? 'w-[150px] truncate' : 'whitespace-nowrap min-w-[170px]'}`} title={item.code || ''}>
                       {editingCell?.id === item.id && editingCell?.field === 'code' ? (
                         <input type="text" defaultValue={item.code} autoFocus onBlur={(e) => saveEdit(item.id, 'code', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'code')} className="w-full px-0.5 py-0 border border-blue-500 rounded text-[9.5px] bg-white font-mono" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'code', item.code)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors font-mono whitespace-nowrap">{item.code || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'code', item.code)} className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors font-mono ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-0.5 py-0'} ${isFitScreen ? 'truncate' : 'whitespace-nowrap'}`}>{item.code || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
+                    <td className={`border border-slate-300 text-slate-800 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : 'px-2 py-1'
+                    } ${isFitScreen ? 'max-w-[130px] truncate' : 'break-words'}`} title={item.warehouse || ''}>
                       {editingCell?.id === item.id && editingCell?.field === 'warehouse' ? (
                         <input type="text" defaultValue={item.warehouse} autoFocus onBlur={(e) => saveEdit(item.id, 'warehouse', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'warehouse')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'warehouse', item.warehouse)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{item.warehouse || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'warehouse', item.warehouse)} className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : ''}`}>{item.warehouse || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
+                    <td className={`border border-slate-300 text-slate-800 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : 'px-2 py-1'
+                    } ${isFitScreen ? 'max-w-[140px] truncate' : 'break-words'}`} title={item.recipient || ''}>
                       {editingCell?.id === item.id && editingCell?.field === 'recipient' ? (
                         <input type="text" defaultValue={item.recipient} autoFocus onBlur={(e) => saveEdit(item.id, 'recipient', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'recipient')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'recipient', item.recipient)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{getRecipientBadge(item.recipient)}</div>
+                        <div onClick={() => startEdit(item.id, 'recipient', item.recipient)} className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : ''}`}>{getRecipientBadge(item.recipient)}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
+                    <td className={`border border-slate-300 text-slate-800 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : 'px-2 py-1'
+                    } ${isFitScreen ? 'max-w-[100px] truncate' : 'break-words'}`} title={item.creator || ''}>
                       {editingCell?.id === item.id && editingCell?.field === 'creator' ? (
                         <input type="text" defaultValue={item.creator} autoFocus onBlur={(e) => saveEdit(item.id, 'creator', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'creator')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'creator', item.creator)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{item.creator || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'creator', item.creator)} className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : ''}`}>{item.creator || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-mono text-slate-700 whitespace-nowrap">
+                    <td className={`border border-slate-300 text-center font-mono text-slate-700 whitespace-nowrap ${
+                      tableDensity === 'ultra' ? 'px-0.5 py-0 text-[9.5px]' : 'px-2 py-1 text-[10.5px]'
+                    }`}>
                       {editingCell?.id === item.id && editingCell?.field === 'date' ? (
                         <input type="text" defaultValue={item.date} autoFocus onBlur={(e) => saveEdit(item.id, 'date', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'date')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] text-center bg-white font-mono" />
                       ) : (
                         <div onClick={() => startEdit(item.id, 'date', item.date)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded font-mono text-center transition-colors">{item.date || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-bold text-purple-700 whitespace-nowrap bg-purple-50/70 font-mono">
+                    <td className={`border border-slate-300 text-center font-bold text-indigo-700 whitespace-nowrap bg-indigo-50/70 font-mono ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : 'px-2 py-1 text-xs'
+                    }`}>
                       {item.team || '-'}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center whitespace-nowrap">
-                      <span className="inline-flex px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold bg-slate-200 text-slate-800 border border-slate-300">{item.unit}</span>
+                    <td className={`border border-slate-300 text-center whitespace-nowrap ${
+                      tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-2 py-1'
+                    }`}>
+                      <span className={`inline-flex rounded-full font-extrabold bg-slate-200 text-slate-800 border border-slate-300 ${
+                        tableDensity === 'ultra' ? 'px-1 py-0 text-[9px]' : 'px-1.5 py-0.5 text-[9.5px]'
+                      }`}>{item.unit}</span>
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-bold whitespace-nowrap">
-                      <span className={`inline-flex px-1.5 py-0.5 rounded font-mono text-[10px] font-black ${
+                    <td className={`border border-slate-300 text-center font-bold whitespace-nowrap ${
+                      tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-2 py-1'
+                    }`}>
+                      <span className={`inline-flex rounded font-mono font-black ${
+                        tableDensity === 'ultra' ? 'px-1 py-0 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'
+                      } ${
                         item.daysDiff >= alarmThreshold ? 'bg-rose-100 text-rose-800 border border-rose-300 animate-pulse' :
                         item.daysDiff > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                       }`}>
                         {item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} d
                       </span>
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-700 whitespace-nowrap">
+                    <td className={`border border-slate-300 text-center font-bold text-slate-700 whitespace-nowrap ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : 'px-2 py-1 text-xs'
+                    }`}>
                       {item.status || '-'}
                     </td>
                   </tr>
@@ -1543,7 +1679,7 @@ const NO_CREATE_HAND_OVER = () => {
                 <tr>
                   <td colSpan={columns.length + 1} className="border border-slate-300 px-6 py-12 text-center text-slate-400 font-bold text-sm bg-white">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="text-4xl">📭</div>
+                      <Inbox className="w-10 h-10 text-slate-300 mx-auto mb-2" />
                       <p className="text-lg font-bold text-slate-700">No GIS records found</p>
                       <p className="text-xs text-slate-500">Please click "Smart Import" to enter data.</p>
                     </div>
@@ -1570,6 +1706,7 @@ const NO_CREATE_HAND_OVER = () => {
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
+              <option value={70}>70</option>
               <option value={100}>100</option>
               <option value={200}>200</option>
               <option value={500}>500</option>
@@ -1625,7 +1762,7 @@ const NO_CREATE_HAND_OVER = () => {
 
         {/* ─── FOOTER ─── */}
         <div className="bg-slate-100 px-4 py-1.5 border-t border-slate-300 text-[11px] font-semibold text-slate-600 flex justify-between flex-wrap gap-2 flex-shrink-0">
-          <span>📋 Total GIS: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
+          <span>Total GIS: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
         </div>
       </div>
 

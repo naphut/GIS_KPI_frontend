@@ -1,6 +1,31 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
+import {
+  Package,
+  Trash2,
+  FileSpreadsheet,
+  CheckCircle2,
+  AlertTriangle,
+  Search,
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Layers,
+  AlertCircle,
+  Download,
+  Upload,
+  Copy,
+  Inbox,
+  Maximize2,
+  Minimize2,
+  Columns,
+  ChevronDown,
+  ChevronUp,
+  HardHat
+} from 'lucide-react';
 
 // Storage Keys
 const STORAGE_KEYS = {
@@ -101,8 +126,11 @@ export const New_construction = () => {
   const [notification, setNotification] = useState(null);
   
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(100);
   const [selectedRows, setSelectedRows] = useState(new Set());
+  const [isFitScreen, setIsFitScreen] = useState(true);
+  const [tableDensity, setTableDensity] = useState('ultra'); // 'ultra' (fits 70 rows), 'compact' (45 rows), 'normal' (25 rows)
+  const [showStatsBar, setShowStatsBar] = useState(true);
   
   const isLoaded = useRef(false);
 
@@ -261,7 +289,7 @@ export const New_construction = () => {
   };
 
   const clearAllData = () => {
-    if (window.confirm('⚠️ Are you sure you want to clear all construction records?')) {
+    if (window.confirm('Are you sure you want to clear all construction records?')) {
       setData([]);
       setConfirmedStatus({});
       setSelectedRows(new Set());
@@ -401,7 +429,7 @@ export const New_construction = () => {
   };
 
   return (
-    <div className="w-full h-screen max-h-screen p-2 sm:p-3 bg-slate-100 flex flex-col overflow-hidden">
+    <div className="w-full h-screen max-h-screen p-0 sm:p-0.5 bg-slate-100 flex flex-col overflow-hidden">
       
       {/* ─── Smart Import Modal ─── */}
       {showPasteModal && (
@@ -409,7 +437,7 @@ export const New_construction = () => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-200 animate-fadeIn">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
               <h2 className="text-lg font-black flex items-center gap-2">
-                <span>📋</span> Smart Import Construction PXK Data
+                <FileSpreadsheet className="w-5 h-5 text-emerald-400" /> Smart Import Construction PXK Data
               </h2>
               <button onClick={() => setShowPasteModal(false)} className="text-slate-400 hover:text-white text-xl cursor-pointer">✕</button>
             </div>
@@ -426,7 +454,7 @@ export const New_construction = () => {
               />
               <div className="flex justify-end gap-2.5 mt-5">
                 <button onClick={() => setShowPasteModal(false)} className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-sm transition-colors cursor-pointer border-0">Cancel</button>
-                <button onClick={handleImport} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-lg text-sm shadow-md transition-colors cursor-pointer border-0">Import Records</button>
+                <button onClick={handleImport} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-lg text-sm shadow-md transition-colors cursor-pointer border-0 flex items-center gap-1.5"><Upload className="w-4 h-4" /> Import Records</button>
               </div>
             </div>
           </div>
@@ -443,9 +471,9 @@ export const New_construction = () => {
             'bg-rose-50 text-rose-800 border-rose-100 shadow-rose-100/50'
           }`}>
             <span>{
-              notification.type === 'success' ? '✅' :
-              notification.type === 'warning' ? '⚠️' :
-              notification.type === 'info' ? 'ℹ️' : '🚨'
+              notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> :
+              notification.type === 'warning' ? <AlertTriangle className="w-4 h-4 text-amber-600" /> :
+              notification.type === 'info' ? <AlertCircle className="w-4 h-4 text-indigo-600" /> : <AlertCircle className="w-4 h-4 text-rose-600" />
             }</span>
             {notification.message}
           </div>
@@ -453,15 +481,15 @@ export const New_construction = () => {
       )}
 
       {/* ─── MAIN CONTAINER (FULL SCREEN FLEX) ─── */}
-      <div className="bg-white rounded-lg shadow-xl border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
+      <div className="bg-white rounded-none sm:rounded-lg shadow-xs border-0 sm:border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
         
         {/* Header Ribbon */}
         <div className="bg-gradient-to-r from-emerald-950 via-teal-900 to-emerald-950 px-3 py-1 text-white flex-shrink-0 border-b border-emerald-900 shadow-sm">
           <div className="flex justify-between items-center gap-2 flex-wrap">
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm font-black tracking-tight flex items-center gap-1 text-white">
-                  <span>🏗️</span> 04 NEW CONSTRUCTION TRACKER
+                <h1 className="text-sm font-black tracking-tight flex items-center gap-1.5 text-white">
+                  <HardHat className="w-4 h-4 text-emerald-400" /> 04 NEW CONSTRUCTION TRACKER
                 </h1>
                 <span className="bg-emerald-500/30 text-emerald-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-emerald-400/30 font-bold">
                   PXK FILTERED • KPI = 3 DAYS
@@ -472,8 +500,8 @@ export const New_construction = () => {
               <span className="text-slate-300 text-[10px] hidden lg:inline mr-2">
                 <strong>BTS Handover:</strong> តាមដានការសាងសង់ BTS Handover &amp; PXK
               </span>
-              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white font-bold px-2 py-0.5 rounded text-[10px] transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
-              <button onClick={exportToExcel} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-0.5 rounded text-[10px] transition-all shadow-xs cursor-pointer border-0">📎 Export Excel</button>
+              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white font-bold px-2 py-0.5 rounded text-[10px] transition-all border border-rose-500/50 shadow-xs cursor-pointer flex items-center gap-1"><Trash2 className="w-3 h-3" /> Clear All</button>
+              <button onClick={exportToExcel} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-0.5 rounded text-[10px] transition-all shadow-xs cursor-pointer border-0 flex items-center gap-1"><FileSpreadsheet className="w-3 h-3" /> Export Excel</button>
             </div>
           </div>
         </div>
@@ -482,22 +510,22 @@ export const New_construction = () => {
         <div className="px-3 py-1 bg-slate-100 border-b border-slate-300 flex-shrink-0">
           <div className="flex flex-wrap gap-2 justify-between items-center">
             <div className="flex flex-wrap gap-1.5 items-center">
-              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-[11px] font-extrabold shadow-xs transition-all cursor-pointer border-0 flex items-center gap-1">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-900 text-white rounded text-[11px] font-extrabold shadow-xs transition-all cursor-pointer border-0 flex items-center gap-1">📎 Export Excel</button>
+              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded text-[11px] font-extrabold shadow-xs transition-all cursor-pointer border-0 flex items-center gap-1"><Upload className="w-3 h-3" /> Smart Import</button>
+              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 hover:bg-slate-900 text-white rounded text-[11px] font-extrabold shadow-xs transition-all cursor-pointer border-0 flex items-center gap-1"><FileSpreadsheet className="w-3 h-3" /> Export Excel</button>
               {selectedRows.size > 0 && (
-                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-extrabold shadow-xs transition-all cursor-pointer border-0 flex items-center gap-1">🗑️ Complete ({selectedRows.size})</button>
+                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-extrabold shadow-xs transition-all cursor-pointer border-0 flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Complete ({selectedRows.size})</button>
               )}
 
               {/* 🗓️ DAYS QUICK FILTER CHIPS */}
               <div className="flex items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
-                <span className="text-[10px] font-extrabold text-slate-600">🗓️ Days:</span>
+                <span className="text-[10px] font-extrabold text-slate-600 flex items-center gap-1"><Calendar className="w-3 h-3 text-slate-500" /> Days:</span>
                 {[
                   { id: 'ALL', label: 'All' },
                   { id: '0', label: '0d' },
                   { id: '1-3', label: '1-3d' },
                   { id: '4-6', label: '4-6d' },
-                  { id: '>=4', label: '>=4d 🚨' },
-                  { id: '>=7', label: '>=7d 🔴' },
+                  { id: '>=4', label: '>=4d (Alarm)' },
+                  { id: '>=7', label: '>=7d (Critical)' },
                 ].map(pill => (
                   <button
                     key={pill.id}
@@ -513,37 +541,92 @@ export const New_construction = () => {
                 ))}
               </div>
             </div>
-            <input 
-              type="text" 
-              placeholder="Search station, building, PXK..." 
-              value={searchTerm} 
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-44 sm:w-56 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition-all shadow-xs" 
-            />
+            
+            <div className="flex gap-2 items-center flex-wrap">
+              <input 
+                type="text" 
+                placeholder="Search station, building, PXK..." 
+                value={searchTerm} 
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="w-40 sm:w-52 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-emerald-500 focus:border-transparent outline-none transition-all shadow-xs" 
+              />
+
+              {/* Density Toggle (Ultra 70 rows / Compact / Standard) */}
+              <button
+                onClick={() => setTableDensity(prev => prev === 'ultra' ? 'compact' : prev === 'compact' ? 'normal' : 'ultra')}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer shadow-2xs ${
+                  tableDensity === 'ultra'
+                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                    : tableDensity === 'compact'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+                title="ចុចដើម្បីប្តូរទំហំជួរដេក (Ultra 70 rows → Compact → Standard)"
+              >
+                <Columns className="w-3 h-3" />
+                <span>
+                  {tableDensity === 'ultra' ? 'Ultra View (70 rows)' : tableDensity === 'compact' ? 'Compact (45 rows)' : 'Standard'}
+                </span>
+              </button>
+
+              {/* Fit Screen / Scroll Mode Toggle */}
+              <button
+                onClick={() => setIsFitScreen(prev => !prev)}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer shadow-2xs ${
+                  isFitScreen 
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
+                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={isFitScreen ? 'Switch to Expanded (Horizontal Scroll)' : 'Switch to Fit Screen (100% Responsive)'}
+              >
+                {isFitScreen ? (
+                  <>
+                    <Minimize2 className="w-3 h-3 text-blue-600" />
+                    <span>Fit Screen</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3 h-3 text-slate-600" />
+                    <span>Expanded</span>
+                  </>
+                )}
+              </button>
+
+              {/* Stats Ribbon Toggle */}
+              <button
+                onClick={() => setShowStatsBar(prev => !prev)}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border border-slate-300 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+                title={showStatsBar ? 'លាក់របារស្ថិតិ (Hide Stats bar)' : 'បង្ហាញរបារស្ថិតិ (Show Stats bar)'}
+              >
+                {showStatsBar ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* stats bar (COMPACT INLINE) */}
-        <div className="px-3 py-0.5 bg-slate-200/70 border-b border-slate-300 grid grid-cols-2 sm:grid-cols-4 gap-1.5 flex-shrink-0 text-[9.5px]">
-          <div className="bg-white rounded px-2 py-0.5 shadow-xs border border-slate-300 flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-slate-500">Total PXK</span>
-            <span className="text-xs font-black text-emerald-700">{data.length}</span>
+        {showStatsBar && (
+          <div className="px-3 py-0.5 bg-slate-200/70 border-b border-slate-300 grid grid-cols-2 sm:grid-cols-4 gap-1.5 flex-shrink-0 text-[9.5px]">
+            <div className="bg-white rounded px-2 py-0.5 shadow-xs border border-slate-300 flex items-center justify-between">
+              <span className="font-black uppercase tracking-wider text-slate-500">Total PXK</span>
+              <span className="text-xs font-black text-emerald-700">{data.length}</span>
+            </div>
+            <div className="bg-white rounded px-2 py-0.5 shadow-xs border border-slate-300 flex items-center justify-between">
+              <span className="font-black uppercase tracking-wider text-amber-700">Active Pending</span>
+              <span className="text-xs font-black text-amber-700">{filteredData.length}</span>
+            </div>
+            <div className="bg-white rounded px-2 py-0.5 shadow-xs border border-slate-300 flex items-center justify-between">
+              <span className="font-black uppercase tracking-wider text-indigo-700">Selected</span>
+              <span className="text-xs font-black text-indigo-700">{selectedRows.size}</span>
+            </div>
+            <div className="bg-white rounded px-2 py-0.5 shadow-xs border border-slate-300 flex items-center justify-between">
+              <span className="font-black uppercase tracking-wider text-purple-700">Completed</span>
+              <span className="text-xs font-black text-purple-700">
+                {Object.keys(confirmedStatus).filter(id => confirmedStatus[id]?.confirmed).length}
+              </span>
+            </div>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 shadow-xs border border-slate-300 flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-amber-700">Active Pending</span>
-            <span className="text-xs font-black text-amber-700">{filteredData.length}</span>
-          </div>
-          <div className="bg-white rounded px-2 py-0.5 shadow-xs border border-slate-300 flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-indigo-700">Selected</span>
-            <span className="text-xs font-black text-indigo-700">{selectedRows.size}</span>
-          </div>
-          <div className="bg-white rounded px-2 py-0.5 shadow-xs border border-slate-300 flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-purple-700">Completed</span>
-            <span className="text-xs font-black text-purple-700">
-              {Object.keys(confirmedStatus).filter(id => confirmedStatus[id]?.confirmed).length}
-            </span>
-          </div>
-        </div>
+        )}
 
         {/* Unit Tabs */}
         {activeUnits.length > 2 && (
@@ -569,48 +652,61 @@ export const New_construction = () => {
           <table className="min-w-full border-collapse border border-slate-300 text-[9.5px] leading-tight table-auto bg-white">
             <thead>
               <tr className="bg-slate-800 text-white font-black uppercase tracking-wider text-[9px]">
-                <th className="border border-slate-700 px-1 py-0.5 w-6 text-center sticky top-0 z-20 bg-slate-800">
+                <th className={`border border-slate-700 w-6 text-center sticky top-0 z-20 bg-slate-800 ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1 py-0.5'}`}>
                   <input type="checkbox" checked={selectedRows.size === filteredData.length && filteredData.length > 0} onChange={toggleSelectAll} className="rounded" />
                 </th>
-                <th className="border border-slate-700 px-1 py-0.5 w-8 text-center sticky top-0 z-20 bg-slate-800">No</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Code Units / Agency Management</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Name of the unit / agency management</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap min-w-[150px]">Station Code / line</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Building code</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Type of construction</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Code list</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Name lists</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Serial Number</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Status</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Property Type</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Count</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-right sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Former financial price (VND)</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-right sticky top-0 z-20 bg-slate-800 whitespace-nowrap">The original price of consoles (VND)</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-right sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Amount at cost financing (VND)</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-right sticky top-0 z-20 bg-slate-800 whitespace-nowrap">To hand over money at cost (VND)</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Process is involved</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">The station management / line</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Representing management TS TBVP, CDC</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Representing management TSML</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Time at work (Day)</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Current business processes</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Code generated unit current business processes</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">The next professional step</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Time join existing business</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap text-blue-300 min-w-[170px]">Business process finally closed</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap">The time involved in the process has finally closed</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Explain</th>
-                <th className="border border-slate-700 px-1.5 py-0.5 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap">Note</th>
+                <th className={`border border-slate-700 w-8 text-center sticky top-0 z-20 bg-slate-800 ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1 py-0.5'}`}>No</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Code Units / Agency Management</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Name of the unit / agency management</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${isFitScreen ? 'max-w-[120px]' : 'min-w-[150px]'} ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Station Code / line</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Building code</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Type of construction</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Code list</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Name lists</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Serial Number</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Status</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Property Type</th>
+                <th className={`border border-slate-700 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Count</th>
+                <th className={`border border-slate-700 text-right sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Former financial price (VND)</th>
+                <th className={`border border-slate-700 text-right sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>The original price of consoles (VND)</th>
+                <th className={`border border-slate-700 text-right sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Amount at cost financing (VND)</th>
+                <th className={`border border-slate-700 text-right sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>To hand over money at cost (VND)</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Process is involved</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>The station management / line</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Representing management TS TBVP, CDC</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Representing management TSML</th>
+                <th className={`border border-slate-700 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Time at work (Day)</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Current business processes</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Code generated unit current business processes</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>The next professional step</th>
+                <th className={`border border-slate-700 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Time join existing business</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap text-blue-300 ${isFitScreen ? 'max-w-[130px]' : 'min-w-[170px]'} ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Business process finally closed</th>
+                <th className={`border border-slate-700 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>The time involved in the process has finally closed</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Explain</th>
+                <th className={`border border-slate-700 text-left sticky top-0 z-20 bg-slate-800 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}>Note</th>
                 <th 
                   onClick={() => setDaysSortOrder(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none')}
-                  className="border border-slate-700 px-1.5 py-0.5 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-700 select-none text-amber-300"
+                  className={`border border-slate-700 text-center sticky top-0 z-20 bg-slate-800 whitespace-nowrap cursor-pointer hover:bg-slate-700 select-none text-amber-300 ${tableDensity === 'ultra' ? 'px-1 py-0.25 text-[8px]' : 'px-1.5 py-0.5'}`}
                   title="Click to sort by Days"
                 >
-                  Days {daysSortOrder === 'desc' ? '⬇️' : daysSortOrder === 'asc' ? '⬆️' : '↕️'}
+                  <div className="inline-flex items-center gap-1">
+                    <span>Days</span>
+                    <span>
+                      {daysSortOrder === 'desc' ? (
+                        <ArrowDown className="w-2.5 h-2.5 text-amber-400 inline" />
+                      ) : daysSortOrder === 'asc' ? (
+                        <ArrowUp className="w-2.5 h-2.5 text-amber-400 inline" />
+                      ) : (
+                        <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 inline" />
+                      )}
+                    </span>
+                  </div>
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-300 font-normal text-slate-800 bg-white">
+            <tbody className={`divide-y divide-slate-300 font-normal text-slate-800 bg-white ${
+              tableDensity === 'ultra' ? 'text-[9.5px] leading-none' : tableDensity === 'compact' ? 'text-[10px] leading-tight' : 'text-xs'
+            }`}>
               {paginatedData.length === 0 ? (
                 <tr>
                   <td colSpan={32} className="border border-slate-300 px-6 py-12 text-center text-slate-400 font-bold text-sm bg-white">
@@ -624,40 +720,45 @@ export const New_construction = () => {
                   const isOver = item.daysDiff >= 4;
                   
                   return (
-                    <tr key={item.id} className={`transition-colors ${isSelected ? 'bg-blue-50' : 'even:bg-slate-50/70 odd:bg-white hover:bg-emerald-50/70'}`}>
-                      <td className="border border-slate-300 px-1 py-0.25 text-center bg-white">
+                    <tr 
+                      key={item.id} 
+                      className={`transition-colors ${
+                        tableDensity === 'ultra' ? 'h-5 max-h-5' : tableDensity === 'compact' ? 'h-6 max-h-6' : 'h-7.5'
+                      } ${isSelected ? 'bg-blue-50' : 'even:bg-slate-50/70 odd:bg-white hover:bg-emerald-50/70'}`}
+                    >
+                      <td className={`border border-slate-300 text-center bg-white ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1 py-0.25'}`}>
                         <input type="checkbox" checked={isSelected} onChange={() => toggleSelectRow(item.id)} className="rounded" />
                       </td>
-                      <td className="border border-slate-300 px-1 py-0.25 text-center font-bold text-slate-500 bg-slate-100/70">{globalIdx}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 font-semibold text-slate-700 whitespace-nowrap">{item.codeUnits}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 font-bold text-slate-900 whitespace-nowrap">{item.teamName}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 font-mono font-bold text-slate-900 whitespace-nowrap min-w-[150px]">{item.stationCode}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 font-mono text-slate-600 whitespace-nowrap">{item.buildingCode}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.constructionType}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 font-mono text-slate-600 whitespace-nowrap">{item.codeList}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap max-w-md truncate" title={item.nameLists}>{item.nameLists}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 font-mono text-slate-600 whitespace-nowrap">{item.serialNumber}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.status}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.propertyType}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-center text-slate-700">{item.count}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-right font-mono text-slate-600">{item.formerPrice}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-right font-mono text-slate-600">{item.originalPrice}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-right font-mono text-slate-600">{item.amountCost}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-right font-mono text-slate-600">{item.handoverMoney}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.processInvolved}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.stationManagement}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.repManagementCDC}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.repManagementTSML}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-center text-slate-700">{item.timeAtWork}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.currentBusinessProcess}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.codeUnitCurrentProcess}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap">{item.nextStep}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-center font-mono text-slate-600">{item.timeJoinBusiness}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 font-mono font-bold text-blue-800 bg-blue-50/60 whitespace-nowrap min-w-[170px]">{item.businessProcessClosed}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-center font-mono text-slate-600">{item.timeClosed}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap max-w-xs truncate" title={item.explain}>{item.explain}</td>
-                      <td className="border border-slate-300 px-1.5 py-0.25 text-slate-700 whitespace-nowrap max-w-xs truncate" title={item.note}>{item.note}</td>
-                      <td className="border border-slate-300 px-1 py-0.25 text-center font-extrabold whitespace-nowrap">
+                      <td className={`border border-slate-300 text-center font-bold text-slate-500 bg-slate-100/70 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1 py-0.25'}`}>{globalIdx}</td>
+                      <td className={`border border-slate-300 font-semibold text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.codeUnits}</td>
+                      <td className={`border border-slate-300 font-bold text-slate-900 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.teamName}</td>
+                      <td className={`border border-slate-300 font-mono font-bold text-slate-900 ${isFitScreen ? 'max-w-[120px] truncate' : 'whitespace-nowrap min-w-[150px]'} ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`} title={item.stationCode}>{item.stationCode}</td>
+                      <td className={`border border-slate-300 font-mono text-slate-600 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.buildingCode}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.constructionType}</td>
+                      <td className={`border border-slate-300 font-mono text-slate-600 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.codeList}</td>
+                      <td className={`border border-slate-300 text-slate-700 ${isFitScreen ? 'max-w-[140px] truncate' : 'max-w-md truncate'} ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`} title={item.nameLists}>{item.nameLists}</td>
+                      <td className={`border border-slate-300 font-mono text-slate-600 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.serialNumber}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.status}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.propertyType}</td>
+                      <td className={`border border-slate-300 text-center text-slate-700 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.count}</td>
+                      <td className={`border border-slate-300 text-right font-mono text-slate-600 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.formerPrice}</td>
+                      <td className={`border border-slate-300 text-right font-mono text-slate-600 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.originalPrice}</td>
+                      <td className={`border border-slate-300 text-right font-mono text-slate-600 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.amountCost}</td>
+                      <td className={`border border-slate-300 text-right font-mono text-slate-600 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.handoverMoney}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.processInvolved}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.stationManagement}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.repManagementCDC}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.repManagementTSML}</td>
+                      <td className={`border border-slate-300 text-center text-slate-700 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.timeAtWork}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.currentBusinessProcess}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.codeUnitCurrentProcess}</td>
+                      <td className={`border border-slate-300 text-slate-700 whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.nextStep}</td>
+                      <td className={`border border-slate-300 text-center font-mono text-slate-600 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.timeJoinBusiness}</td>
+                      <td className={`border border-slate-300 font-mono font-bold text-blue-800 bg-blue-50/60 ${isFitScreen ? 'max-w-[130px] truncate' : 'whitespace-nowrap min-w-[170px]'} ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`} title={item.businessProcessClosed}>{item.businessProcessClosed}</td>
+                      <td className={`border border-slate-300 text-center font-mono text-slate-600 ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`}>{item.timeClosed}</td>
+                      <td className={`border border-slate-300 text-slate-700 ${isFitScreen ? 'max-w-[100px] truncate' : 'max-w-xs truncate'} ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`} title={item.explain}>{item.explain}</td>
+                      <td className={`border border-slate-300 text-slate-700 ${isFitScreen ? 'max-w-[80px] truncate' : 'max-w-xs truncate'} ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1.5 py-0.25'}`} title={item.note}>{item.note}</td>
+                      <td className={`border border-slate-300 text-center font-extrabold whitespace-nowrap ${tableDensity === 'ultra' ? 'px-1 py-0' : 'px-1 py-0.25'}`}>
                         <span className={`px-1 py-0 rounded font-mono text-[9px] font-black ${
                           isOver ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                         }`}>
@@ -689,6 +790,7 @@ export const New_construction = () => {
                 <option value={10}>10</option>
                 <option value={25}>25</option>
                 <option value={50}>50</option>
+                <option value={70}>70</option>
                 <option value={100}>100</option>
                 <option value={200}>200</option>
                 <option value={500}>500</option>

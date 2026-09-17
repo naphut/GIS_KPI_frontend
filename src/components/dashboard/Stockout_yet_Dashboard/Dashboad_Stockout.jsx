@@ -1,6 +1,26 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import html2canvas from 'html2canvas';
+import { 
+  BarChart3, 
+  Send, 
+  Share2, 
+  Calendar, 
+  CheckCircle2, 
+  AlertTriangle, 
+  FileSpreadsheet, 
+  FileText, 
+  Layers, 
+  ChevronDown, 
+  ChevronUp,
+  MessageSquare, 
+  Save, 
+  Camera, 
+  Image as ImageIcon, 
+  ArrowRight, 
+  TrendingUp, 
+  Building2
+} from 'lucide-react';
 import Navbar from '../../common/Navbar';
 import Sidebar from '../../common/Sidebar';
 import { 
@@ -12,12 +32,10 @@ import {
   getAllUnits,
   getConfiguredUnits,
   hasGroupId,
-  hasToken,
   getSavedTemplates,
   saveTemplate,
   deleteTemplate,
   cleanWarehouseName,
-  // eslint-disable-next-line no-unused-vars
   getTeamFromRecipient,
   getUnitFromTeam
 } from '../../../services/telegramBot';
@@ -47,6 +65,7 @@ const Dashboad_Stockout = (props = {}) => {
 
   const [customNote, setCustomNote] = useState('');
   const [savedNotes, setSavedNotes] = useState([]);
+  const [showNoteBox, setShowNoteBox] = useState(false);
 
   // Fetch templates from database on component mount
   useEffect(() => {
@@ -2150,45 +2169,69 @@ const Dashboad_Stockout = (props = {}) => {
         const configuredCount = configured.length;
         
         return (
-          <div className="w-full px-4 py-6 bg-gray-50 min-h-screen">
+          <div className="w-full px-4 py-5 bg-slate-50 min-h-screen">
             {/* ─── HEADER ─── */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl px-6 py-6 mb-6 shadow-lg shadow-blue-200">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-blue-950 rounded-2xl px-6 py-4 mb-5 text-white shadow-md border border-slate-800">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-                      <span>📊</span> **របាយការណ៍ជូនដំណឹងអំពីការទទួលសម្ភារៈ ដែលមិនទាន់បានបញ្ជាក់ (Confirm) ការប្រគល់ក្នុងប្រព័ន្ធនៅឡើយ។**
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                      <BarChart3 className="w-6 h-6 text-blue-400" />
+                      របាយការណ៍ជូនដំណឹងអំពីការទទួលសម្ភារៈ ដែលមិនទាន់បានបញ្ជាក់ (Confirm) ការប្រគល់ក្នុងប្រព័ន្ធនៅឡើយ
                     </h1>
-                    <span className="bg-white/20 text-white text-[10px] px-2.5 py-1 rounded-full uppercase tracking-wider border border-white/30">
-                      🟢 Live • {currentTime.toLocaleTimeString()}
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-mono px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-emerald-500/30 font-bold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                      LIVE • {currentTime.toLocaleTimeString()}
                     </span>
                   </div>
-                  <p className="text-blue-100 mt-1 text-sm">REPORT OF WARMING RECIEPTS WHICH HAVEN'T &amp; CONFIRMED HAND OVER ON THE SYSTEM YET </p>
+                  <p className="text-slate-400 mt-1 text-xs font-medium tracking-wide uppercase">
+                    REPORT OF UNCONFIRMED HANDOVER RECEIPTS PENDING IN SYSTEM
+                  </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <span className="bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-medium backdrop-blur-sm">
-                    📅 {currentTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 bg-white/10 text-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-semibold backdrop-blur-sm border border-white/10">
+                    <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                    {currentTime.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* ─── TELEGRAM BOT OVERVIEW ─── */}
-            <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 mb-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            {/* ─── TELEGRAM DISPATCH TOOLBAR ─── */}
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 mb-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                    <span>📤</span> KPI Dashboard Overview
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1 flex items-center gap-2 flex-wrap">
-                    <span>Configured: <strong className="text-blue-600">{configuredCount}</strong>/{totalUnits} provinces</span>
-                    {configuredCount === 0 && (
-                      <span className="text-rose-500 font-medium">⚠️ Please add group IDs in telegramBot.js</span>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4 text-blue-600" />
+                    <h2 className="text-base font-black text-slate-800">Telegram Dispatch Operations</h2>
+                    <span className="bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                      {configuredCount}/{totalUnits} Provinces Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Select dispatch mode to send automated reports or image summaries to province group chats
                   </p>
                 </div>
-                
-                <div className="flex flex-wrap items-center gap-3">
+
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Toggle Note Drawer Button */}
+                  <button
+                    type="button"
+                    onClick={() => setShowNoteBox(!showNoteBox)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                      showNoteBox || customNote.trim()
+                        ? 'bg-blue-50 text-blue-700 border-blue-300 shadow-2xs'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                    <span>{showNoteBox ? 'Hide Note' : 'Add Note / Template'}</span>
+                    {customNote.trim() && (
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    )}
+                    {showNoteBox ? <ChevronUp className="w-3 h-3 ml-0.5" /> : <ChevronDown className="w-3 h-3 ml-0.5" />}
+                  </button>
+
                   {/* 1. Batch Actions Dropdown (Send All) */}
                   <div className="relative inline-block text-left">
                     <button
@@ -2198,17 +2241,17 @@ const Dashboad_Stockout = (props = {}) => {
                         setOpenSingleDropdown(false);
                       }}
                       disabled={isSending || configuredCount === 0}
-                      className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-extrabold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-sm"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer text-xs"
                     >
-                      <span>🚀</span>
+                      <Send className="w-3.5 h-3.5" />
                       <span>Send All ({configuredCount})</span>
-                      <span className={`transition-transform duration-200 text-[10px] ml-1 ${openBatchDropdown ? 'rotate-180' : ''}`}>▼</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${openBatchDropdown ? 'rotate-180' : ''}`} />
                     </button>
 
                     {openBatchDropdown && (
-                      <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
+                      <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-200">
                         <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                          🌐 Batch Operations ({configuredCount} Provinces)
+                          Batch Dispatch ({configuredCount} Provinces)
                         </div>
                         <div className="py-1 space-y-1">
                           <button
@@ -2218,12 +2261,12 @@ const Dashboad_Stockout = (props = {}) => {
                               setIsSelectingForSummary(false);
                               sendToAll();
                             }}
-                            className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                           >
-                            <span className="text-base mt-0.5">📤</span>
+                            <FileText className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                             <div>
                               <div className="font-black text-slate-800">Send Text Receipts All ({configuredCount})</div>
-                              <div className="text-[10px] text-slate-400 font-medium">Send text receipts to all 25 units</div>
+                              <div className="text-[10px] text-slate-400 font-medium">Send text notifications to all units</div>
                             </div>
                           </button>
 
@@ -2234,9 +2277,9 @@ const Dashboad_Stockout = (props = {}) => {
                               setIsSelectingForSummary(false);
                               sendToAllScreenshot();
                             }}
-                            className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                           >
-                            <span className="text-base mt-0.5">📸</span>
+                            <Camera className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
                             <div>
                               <div className="font-black text-slate-800">Send Detail ({configuredCount})</div>
                               <div className="text-[10px] text-slate-400 font-medium">Send Detail Screenshot + Excel file</div>
@@ -2249,9 +2292,9 @@ const Dashboad_Stockout = (props = {}) => {
                               setIsSelectingForSummary(true);
                               sendSummaryImageScreenshotAll();
                             }}
-                            className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                           >
-                            <span className="text-base mt-0.5">🖼️</span>
+                            <ImageIcon className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
                             <div>
                               <div className="font-black text-slate-800">Summary Image all Unit ({configuredCount})</div>
                               <div className="text-[10px] text-slate-400 font-medium">Send Excel Matrix Table Screenshot</div>
@@ -2271,17 +2314,17 @@ const Dashboad_Stockout = (props = {}) => {
                         setOpenBatchDropdown(false);
                       }}
                       disabled={isSending}
-                      className="px-5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-extrabold rounded-xl shadow-md transition-all duration-200 flex items-center gap-2 disabled:opacity-50 cursor-pointer text-sm"
+                      className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-extrabold rounded-xl shadow-xs transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer text-xs"
                     >
-                      <span>🎯</span>
-                      <span>Send Single Branch (1)</span>
-                      <span className={`transition-transform duration-200 text-[10px] ml-1 ${openSingleDropdown ? 'rotate-180' : ''}`}>▼</span>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>Send Single Branch</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${openSingleDropdown ? 'rotate-180' : ''}`} />
                     </button>
 
                     {openSingleDropdown && (
-                      <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-100">
+                      <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-2xl shadow-xl bg-white ring-1 ring-black/5 divide-y divide-slate-100 z-50 animate-fadeIn p-2 border border-slate-200">
                         <div className="px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                          📍 Single Unit Operations (1 Province)
+                          Single Province Dispatch
                         </div>
                         <div className="py-1 space-y-1">
                           <button
@@ -2291,9 +2334,9 @@ const Dashboad_Stockout = (props = {}) => {
                               setIsSelectingForSummary(false);
                               setShowUnitSelector(true);
                             }}
-                            className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                           >
-                            <span className="text-base mt-0.5">📤</span>
+                            <FileText className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
                             <div>
                               <div className="font-black text-slate-800">Send Text Receipts (1)</div>
                               <div className="text-[10px] text-slate-400 font-medium">Select 1 province to send text</div>
@@ -2307,9 +2350,9 @@ const Dashboad_Stockout = (props = {}) => {
                               setIsSelectingForSummary(false);
                               setShowUnitSelector(true);
                             }}
-                            className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                           >
-                            <span className="text-base mt-0.5">📸</span>
+                            <Camera className="w-4 h-4 text-indigo-600 mt-0.5 flex-shrink-0" />
                             <div>
                               <div className="font-black text-slate-800">Send Detail (1)</div>
                               <div className="text-[10px] text-slate-400 font-medium">Select 1 province to send Detail + Excel</div>
@@ -2323,9 +2366,9 @@ const Dashboad_Stockout = (props = {}) => {
                               setScreenshotMode(false);
                               setShowUnitSelector(true);
                             }}
-                            className="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-purple-50 hover:text-purple-700 flex items-start gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 flex items-start gap-2.5 transition-colors cursor-pointer"
                           >
-                            <span className="text-base mt-0.5">🖼️</span>
+                            <ImageIcon className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
                             <div>
                               <div className="font-black text-slate-800">Summary Image (1)</div>
                               <div className="text-[10px] text-slate-400 font-medium">Select 1 province to send Summary Image</div>
@@ -2338,67 +2381,72 @@ const Dashboad_Stockout = (props = {}) => {
                 </div>
               </div>
 
-              {/* Custom Note */}
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200 mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-                    <span>✍️</span> Note/Comment to append to Telegram reports (Optional)
-                  </label>
-                  {customNote.trim() && !savedNotes.some(n => n.content === customNote.trim()) && (
-                    <button
-                      onClick={handleSaveNote}
-                      className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <span>💾</span> Save Template
-                    </button>
-                  )}
-                </div>
-                <textarea
-                  value={customNote}
-                  onChange={(e) => setCustomNote(e.target.value)}
-                  placeholder="Type a custom note here (e.g. 'Please prioritize these tasks today!'). It will be appended to the Telegram report."
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
-                  rows={2}
-                />
-                
-                {savedNotes.length > 0 && (
-                  <div className="mt-3">
-                    <span className="block text-xs font-medium text-gray-500 mb-1.5">Saved Templates (Click to use):</span>
-                    <div className="flex flex-wrap gap-2">
-                      {savedNotes.map((note) => (
-                        <div 
-                          key={note.id}
-                          className="group inline-flex items-center gap-1 bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50/30 rounded-lg pl-2.5 pr-1 py-1 text-xs text-gray-600 hover:text-blue-700 transition-all cursor-pointer shadow-sm"
+              {/* Collapsible Note Drawer */}
+              {showNoteBox && (
+                <div className="mt-4 pt-4 border-t border-slate-100 animate-fadeIn">
+                  <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <MessageSquare className="w-3.5 h-3.5 text-blue-600" />
+                        Note/Comment to append to Telegram reports (Optional)
+                      </label>
+                      {customNote.trim() && !savedNotes.some(n => n.content === customNote.trim()) && (
+                        <button
+                          onClick={handleSaveNote}
+                          className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-blue-100/70 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                         >
-                          <span onClick={() => setCustomNote(note.content)} className="flex-1 select-none pr-1">
-                            {note.content}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteNote(note.id);
-                            }}
-                            className="w-5 h-5 flex items-center justify-center rounded-md text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                            title="Delete template"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                          <Save className="w-3 h-3" /> Save Template
+                        </button>
+                      )}
                     </div>
+                    <textarea
+                      value={customNote}
+                      onChange={(e) => setCustomNote(e.target.value)}
+                      placeholder="Type a custom note here (e.g. 'Please prioritize these tasks today!'). It will be appended to the Telegram report."
+                      className="w-full px-3.5 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white shadow-inner resize-y"
+                      rows={2}
+                    />
+                    
+                    {savedNotes.length > 0 && (
+                      <div className="mt-2.5">
+                        <span className="block text-[11px] font-bold text-slate-500 mb-1">Saved Templates (Click to use):</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {savedNotes.map((note) => (
+                            <div 
+                              key={note.id}
+                              className="group inline-flex items-center gap-1 bg-white border border-slate-200 hover:border-blue-300 hover:bg-blue-50/50 rounded-lg pl-2 pr-1 py-0.5 text-[11px] text-slate-600 hover:text-blue-700 transition-all cursor-pointer shadow-2xs"
+                            >
+                              <span onClick={() => setCustomNote(note.content)} className="flex-1 select-none pr-1">
+                                {note.content}
+                              </span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteNote(note.id);
+                                }}
+                                className="w-4 h-4 flex items-center justify-center rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                                title="Delete template"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Configuration Warning */}
               {configuredCount === 0 && (
-                <div className="mb-4 p-4 bg-rose-50 border border-rose-200 rounded-xl animate-fadeIn">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">⚠️</span>
+                <div className="mt-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl animate-fadeIn">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-bold text-rose-700">No Group IDs Configured</h4>
-                      <p className="text-sm text-rose-600">
-                        Please add group IDs in <code className="bg-rose-100 px-1.5 py-0.5 rounded">src/services/telegramBot.js</code>
+                      <h4 className="font-bold text-xs text-rose-700">No Group IDs Configured</h4>
+                      <p className="text-[11px] text-rose-600 mt-0.5">
+                        Please add group IDs in <code className="bg-rose-100 px-1.5 py-0.5 rounded font-mono text-[10px]">src/services/telegramBot.js</code>
                       </p>
                     </div>
                   </div>
@@ -2407,17 +2455,16 @@ const Dashboad_Stockout = (props = {}) => {
 
               {/* Unit Selector */}
               {showUnitSelector && (
-                <div className="p-5 bg-gray-50 rounded-xl border border-gray-200 mt-4 animate-fadeIn">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                      <span>📍</span> Select Province/Unit to send report:
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 mt-4 animate-fadeIn">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-blue-600" /> Select Province/Unit to send report:
                     </h3>
-                    <button onClick={() => setShowUnitSelector(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+                    <button onClick={() => setShowUnitSelector(false)} className="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">✕</button>
                   </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 gap-1.5">
                     {allUnits.map((unit) => {
                       const isConfigured = hasGroupId(unit);
-                      const hasTokenForUnit = hasToken(unit);
                       return (
                         <button
                           key={unit}
@@ -2432,199 +2479,170 @@ const Dashboad_Stockout = (props = {}) => {
                                 sendReportToTelegram(unit);
                               }
                             } else {
-                              alert(`⚠️ No group ID configured for ${unit}. Please add it in telegramBot.js`);
+                              alert(`No group ID configured for ${unit}. Please add it in telegramBot.js`);
                             }
                           }}
                           disabled={isSending || !isConfigured}
-                          className={`px-3 py-2 rounded-xl text-sm font-medium transition-all relative ${
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all relative cursor-pointer ${
                             !isConfigured
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-50'
                               : selectedUnit === unit
-                              ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                              : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'
-                          } disabled:opacity-50`}
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : 'bg-white hover:bg-blue-50 text-slate-700 border border-slate-200'
+                          }`}
                         >
                           {unit}
                           {isConfigured && (
-                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white"></span>
-                          )}
-                          {hasTokenForUnit && isConfigured && (
-                            <span className="absolute -bottom-1 -right-1 text-[8px] bg-blue-500 text-white rounded-full px-1">🤖</span>
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-emerald-500 rounded-full border border-white"></span>
                           )}
                         </button>
                       );
                     })}
                   </div>
-                  <div className="mt-4 flex items-center gap-4 text-xs text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span> Configured
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2.5 h-2.5 bg-gray-300 rounded-full"></span> Not configured
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="text-blue-500">🤖</span> Has custom token
-                    </span>
-                  </div>
                 </div>
               )}
             </div>
             
-            {/* ─── SUMMARY CARDS ─── */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg shadow-blue-200">
-                <div className="text-[10px] opacity-80 uppercase tracking-wider">Target ព្រឹក</div>
-                <div className="text-2xl font-bold mt-1">{totals.targetMorning}</div>
+            {/* ─── SUMMARY METRICS CARDS ─── */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+              <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Target ព្រឹក</div>
+                <div className="text-2xl font-black text-slate-800 mt-1">{totals.targetMorning}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Morning target</div>
               </div>
-              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-4 text-white shadow-lg shadow-indigo-200">
-                <div className="text-[10px] opacity-80 uppercase tracking-wider">Target ល្ងាច</div>
-                <div className="text-2xl font-bold mt-1">{totals.targetEvening}</div>
-              </div>
-              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-lg shadow-amber-200">
-                <div className="text-[10px] opacity-80 uppercase tracking-wider">Remain</div>
-                <div className="text-2xl font-bold mt-1">{totals.remain}</div>
-              </div>
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg shadow-emerald-200">
-                <div className="text-[10px] opacity-80 uppercase tracking-wider">Result</div>
-                <div className="text-2xl font-bold mt-1">{totals.result}</div>
-              </div>
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg shadow-purple-200">
-                <div className="text-[10px] opacity-80 uppercase tracking-wider">Ratio</div>
-                <div className="text-2xl font-bold mt-1">{totals.ratio}%</div>
-              </div>
-              <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl p-4 text-white shadow-lg shadow-cyan-200">
-                <div className="text-[10px] opacity-80 uppercase tracking-wider">In System</div>
-                <div className="text-2xl font-bold mt-1">{totals.inSystem}</div>
-              </div>
-            </div>
 
-            {/* ─── PROGRESS BAR ─── */}
-            <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-100 mb-6">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-                <span className="text-sm font-bold text-gray-800">{totals.ratio}%</span>
+              <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Target ល្ងាច</div>
+                <div className="text-2xl font-black text-slate-800 mt-1">{totals.targetEvening}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Evening target</div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-emerald-400 to-blue-500 h-3 rounded-full transition-all duration-1000"
-                  style={{ width: `${Math.min(100, parseFloat(totals.ratio))}%` }}
-                ></div>
+
+              <div className="bg-amber-50/70 rounded-xl p-3.5 border border-amber-200/80 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Remain</div>
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                </div>
+                <div className="text-2xl font-black text-amber-900 mt-1">{totals.remain}</div>
+                <div className="text-[10px] text-amber-700/80 mt-0.5 font-bold">Unconfirmed in field</div>
+              </div>
+
+              <div className="bg-emerald-50/70 rounded-xl p-3.5 border border-emerald-200/80 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-black text-emerald-800 uppercase tracking-wider">Result</div>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                </div>
+                <div className="text-2xl font-black text-emerald-900 mt-1">{totals.result}</div>
+                <div className="text-[10px] text-emerald-700/80 mt-0.5 font-bold">Confirmed today</div>
+              </div>
+
+              <div className="bg-indigo-50/70 rounded-xl p-3.5 border border-indigo-200/80 shadow-2xs flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-[10px] font-black text-indigo-800 uppercase tracking-wider">Overall Ratio</div>
+                    <TrendingUp className="w-3.5 h-3.5 text-indigo-600" />
+                  </div>
+                  <div className="text-2xl font-black text-indigo-900 mt-1">{totals.ratio}%</div>
+                </div>
+                <div className="w-full bg-indigo-200/80 rounded-full h-1.5 mt-2 overflow-hidden">
+                  <div 
+                    className="bg-indigo-600 h-1.5 rounded-full transition-all duration-700" 
+                    style={{ width: `${Math.min(100, parseFloat(totals.ratio))}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-3.5 border border-slate-200 shadow-2xs">
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">In System</div>
+                <div className="text-2xl font-black text-slate-800 mt-1">{totals.inSystem}</div>
+                <div className="text-[10px] text-slate-400 mt-0.5">Total records loaded</div>
               </div>
             </div>
 
             {/* ─── KPI PERFORMANCE TABLE ─── */}
-            <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-100 mb-6 overflow-hidden">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <span>📋</span> Performance by Module
-              </h3>
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+              <div className="px-5 py-3.5 bg-slate-900 text-white flex justify-between items-center flex-wrap gap-2">
+                <h3 className="text-sm font-black flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-400" /> Performance by Module Task
+                </h3>
+                <div className="flex items-center gap-2 text-xs text-slate-300 font-medium">
+                  <span>Click any row to open full module interface</span>
+                </div>
+              </div>
+
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-slate-200 text-left">
+                  <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Module/KPI Task</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Target ព្រឹក</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Target ល្ងាច</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Remain</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Result</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Ratio</th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">In System</th>
+                      <th className="px-4 py-2.5 text-xs font-black text-slate-600 uppercase tracking-wider">Module / KPI Task</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-black text-slate-600 uppercase tracking-wider">Target ព្រឹក</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-black text-slate-600 uppercase tracking-wider">Target ល្ងាច</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-black text-amber-700 uppercase tracking-wider">Remain</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-black text-emerald-700 uppercase tracking-wider">Result</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-black text-slate-600 uppercase tracking-wider w-44">Ratio</th>
+                      <th className="px-4 py-2.5 text-right text-xs font-black text-slate-600 uppercase tracking-wider">In System</th>
+                      <th className="px-4 py-2.5 text-center text-xs font-black text-slate-600 uppercase tracking-wider w-24">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
+                  <tbody className="bg-white divide-y divide-slate-100">
                     {kpiData.map((item) => (
                       <tr 
                         key={item.id} 
-                        className="hover:bg-gray-50 cursor-pointer transition-colors" 
+                        className="hover:bg-blue-50/50 cursor-pointer transition-colors group" 
                         onClick={() => onNavigate ? onNavigate(item.component) : setSelectedComponent(item.component)}
                       >
-                        <td className="px-4 py-3.5 text-sm font-medium text-gray-900 flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${item.color}`}></span>
-                          <span className="flex items-center gap-1.5">
-                            <span>{item.icon}</span>
-                            {item.task}
+                        <td className="px-4 py-3 text-xs font-black text-slate-800 flex items-center gap-2.5">
+                          <span className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.bgColor} border ${item.borderColor}`}>
+                            {item.component === 'STOCKOUT_YET_CONFIRM' ? <Layers className="w-4 h-4 text-blue-600" /> :
+                             item.component === 'NO_CREATE_HAND_OVER' ? <FileText className="w-4 h-4 text-emerald-600" /> :
+                             <FileSpreadsheet className="w-4 h-4 text-purple-600" />}
                           </span>
+                          <div>
+                            <div className="font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">{item.task}</div>
+                            <div className="text-[10px] text-slate-400 font-normal">
+                              {item.component === 'STOCKOUT_YET_CONFIRM' ? 'Step 1: Stock out not confirmed goods' :
+                               item.component === 'NO_CREATE_HAND_OVER' ? 'Step 2: Stock out not create handover' :
+                               'Step 3: Handover not confirmed'}
+                            </div>
+                          </div>
                         </td>
-                        <td className="px-4 py-3.5 text-sm text-right text-gray-600 font-medium">{item.targetMorning}</td>
-                        <td className="px-4 py-3.5 text-sm text-right text-gray-600 font-medium">{item.targetEvening}</td>
-                        <td className="px-4 py-3.5 text-sm text-right font-semibold text-amber-600">{item.remain}</td>
-                        <td className="px-4 py-3.5 text-sm text-right font-semibold text-emerald-600">{item.result}</td>
-                        <td className="px-4 py-3.5 text-sm text-right">
+                        <td className="px-4 py-3 text-xs text-right text-slate-700 font-bold">{item.targetMorning}</td>
+                        <td className="px-4 py-3 text-xs text-right text-slate-700 font-bold">{item.targetEvening}</td>
+                        <td className="px-4 py-3 text-xs text-right font-black text-amber-600">{item.remain}</td>
+                        <td className="px-4 py-3 text-xs text-right font-black text-emerald-600">{item.result}</td>
+                        <td className="px-4 py-3 text-xs text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <span className="font-semibold text-gray-800">{item.ratio}</span>
-                            <div className="w-16 bg-gray-200 rounded-full h-2">
+                            <span className="font-black text-slate-800 text-xs">{item.ratio}</span>
+                            <div className="w-16 bg-slate-200 rounded-full h-1.5 overflow-hidden">
                               <div 
-                                className="h-2 rounded-full bg-blue-500" 
+                                className="h-1.5 rounded-full bg-blue-600 transition-all duration-500" 
                                 style={{ width: `${Math.min(100, parseFloat(item.ratio))}%` }}
                               ></div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-sm text-right text-gray-500">{item.inSystem}</td>
+                        <td className="px-4 py-3 text-xs text-right text-slate-500 font-semibold">{item.inSystem}</td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 group-hover:text-blue-700 group-hover:translate-x-0.5 transition-all">
+                            Open <ArrowRight className="w-3 h-3" />
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 font-bold border-t border-gray-200">
+                  <tfoot className="bg-slate-50 font-black border-t-2 border-slate-200 text-xs">
                     <tr>
-                      <td className="px-4 py-3 text-sm text-gray-900">សរុប (TOTAL)</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900">{totals.targetMorning}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900">{totals.targetEvening}</td>
-                      <td className="px-4 py-3 text-sm text-right text-amber-600">{totals.remain}</td>
-                      <td className="px-4 py-3 text-sm text-right text-emerald-600">{totals.result}</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900">{totals.ratio}%</td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-500">{totals.inSystem}</td>
+                      <td className="px-4 py-3 text-slate-900 font-black">សរុប (TOTAL)</td>
+                      <td className="px-4 py-3 text-right text-slate-900">{totals.targetMorning}</td>
+                      <td className="px-4 py-3 text-right text-slate-900">{totals.targetEvening}</td>
+                      <td className="px-4 py-3 text-right text-amber-600 font-black">{totals.remain}</td>
+                      <td className="px-4 py-3 text-right text-emerald-600 font-black">{totals.result}</td>
+                      <td className="px-4 py-3 text-right text-slate-900">{totals.ratio}%</td>
+                      <td className="px-4 py-3 text-right text-slate-600">{totals.inSystem}</td>
+                      <td></td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
-            </div>
-
-            {/* ─── KPI CARDS GRID ─── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {kpiData.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => onNavigate ? onNavigate(item.component) : setSelectedComponent(item.component)}
-                  className={`group ${item.bgColor} border ${item.borderColor} rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer hover:-translate-y-1`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-r ${item.color} flex items-center justify-center text-2xl text-white shadow-lg`}>
-                      {item.icon}
-                    </div>
-                    <span className="text-3xl font-bold text-gray-800 group-hover:scale-110 transition-transform">
-                      {item.ratio}
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-1">{item.task}</h4>
-                  <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                    <div>
-                      <span className="text-gray-500">Target</span>
-                      <span className="block font-bold text-gray-800">{item.target}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Result</span>
-                      <span className="block font-bold text-emerald-600">{item.result}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Remain</span>
-                      <span className="block font-bold text-amber-600">{item.remain}</span>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">In System</span>
-                      <span className="block font-bold text-blue-600">{item.inSystem}</span>
-                    </div>
-                  </div>
-                  <div className="mt-3 w-full bg-gray-200 rounded-full h-1.5">
-                    <div 
-                      className={`h-1.5 rounded-full bg-gradient-to-r ${item.color}`}
-                      style={{ width: `${Math.min(100, parseFloat(item.ratio))}%` }}
-                    ></div>
-                  </div>
-                  <div className="mt-3 text-xs text-blue-600 font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                    <span>View Details</span>
-                    <span>➔</span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         );

@@ -8,6 +8,40 @@ import {
   hasGroupId, 
   getUnitFromTeam
 } from '../../services/telegramBot';
+import {
+  LayoutDashboard,
+  LayoutGrid,
+  TableProperties,
+  ClipboardCheck,
+  FileSignature,
+  ArrowLeftRight,
+  Radio,
+  PackageCheck,
+  FileEdit,
+  Clock,
+  HardHat,
+  Upload,
+  Download,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Search,
+  X,
+  Send,
+  Camera,
+  CheckCircle2,
+  AlertTriangle,
+  TrendingUp,
+  Sparkles,
+  Layers,
+  ArrowUpRight,
+  Building2,
+  Activity,
+  Calendar,
+  ChevronRight,
+  BarChart3,
+  RefreshCw,
+  ArrowLeft
+} from 'lucide-react';
 
 // Storage helper
 const getStorageData = (key) => {
@@ -226,89 +260,85 @@ const MainDashboard = ({ onNavigate }) => {
   const modules = [
     {
       id: 'stockout_group',
-      title: '📋 CONFIRMED HAND OVER',
+      title: 'CONFIRMED HAND OVER',
       subtitle: 'CONFIRMED HAND OVER ON SYSTEM',
       description: '',
-      icon: '📋',
-      color: 'from-amber-500 to-orange-600',
-      shadow: 'hover:shadow-orange-500/20',
-      borderColor: 'border-orange-200 dark:border-orange-800',
-      bgColor: 'bg-orange-50 dark:bg-orange-900/10',
+      Icon: ClipboardCheck,
+      topBarColor: 'bg-amber-500',
+      iconContainer: 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200/60 dark:border-amber-900/50',
+      badgeColor: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800',
       stats: [
-        { label: 'Total Tasks', value: confirmedStats.total, color: 'text-gray-900 dark:text-white' },
+        { label: 'Total Tasks', value: confirmedStats.total, color: 'text-slate-900 dark:text-white' },
         { label: 'Completed', value: confirmedStats.completed, color: 'text-emerald-600 dark:text-emerald-400' },
         { label: 'Pending', value: confirmedStats.pending, color: 'text-amber-600 dark:text-amber-400' },
-        { label: 'Success Rate', value: `${confirmedStats.rate.toFixed(1)}%`, color: 'text-blue-600 dark:text-blue-400 font-bold' },
+        { label: 'Success Rate', value: `${confirmedStats.rate.toFixed(1)}%`, color: 'text-amber-600 dark:text-amber-400 font-bold' },
       ],
       subtasks: [
-        { id: 'STOCKOUT_YET_CONFIRM', label: 'STOCKOUT YET CONFIRM', icon: '📦', desc: 'Pending stockout confirmations' },
-        { id: 'NO_CREATE_HAND_OVER', label: 'NOT CREATE HAND OVER', icon: '📝', desc: 'Handover not yet created' },
-        { id: 'STOCK_OUT_NOTE_CONFIRMED', label: 'HAND OVER YET CONFIRM', icon: '⚠️', desc: 'Handover awaiting confirmation' },
-        { id: 'NEW_CONSTRUCTION', label: 'NEW CONSTRUCTION', icon: '🏗️', desc: 'Construction tracker' }
+        { id: 'STOCKOUT_YET_CONFIRM', label: 'STOCKOUT YET CONFIRM', Icon: PackageCheck, iconColor: 'text-amber-500', desc: 'Pending stockout confirmations' },
+        { id: 'NO_CREATE_HAND_OVER', label: 'NOT CREATE HAND OVER', Icon: FileEdit, iconColor: 'text-sky-500', desc: 'Handover not yet created' },
+        { id: 'STOCK_OUT_NOTE_CONFIRMED', label: 'HAND OVER YET CONFIRM', Icon: Clock, iconColor: 'text-rose-500', desc: 'Handover awaiting confirmation' },
+        { id: 'NEW_CONSTRUCTION', label: 'NEW CONSTRUCTION', Icon: HardHat, iconColor: 'text-emerald-500', desc: 'Construction tracker' }
       ]
     },
     {
       id: 'signed_ca_group',
-      title: '✅ IMPORT CA & EXPORT CA',
+      title: 'IMPORT CA & EXPORT CA',
       subtitle: 'SIGNED "CA" ON THE SYSTEM YET',
       description: '',
-      icon: '✅',
-      color: 'from-blue-500 to-indigo-600',
-      shadow: 'hover:shadow-indigo-500/20',
-      borderColor: 'border-indigo-200 dark:border-indigo-800',
-      bgColor: 'bg-indigo-50 dark:bg-indigo-900/10',
+      Icon: FileSignature,
+      topBarColor: 'bg-blue-600',
+      iconContainer: 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-900/50',
+      badgeColor: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
       stats: [
-        { label: 'Total Records', value: caStats.total, color: 'text-gray-900 dark:text-white' },
+        { label: 'Total Records', value: caStats.total, color: 'text-slate-900 dark:text-white' },
         { label: 'Is Signing', value: caStats.signing, color: 'text-emerald-600 dark:text-emerald-400' },
         { label: 'Unsigned', value: caStats.unsigned, color: 'text-rose-600 dark:text-rose-400' },
-        { label: 'Signed Rate', value: `${caStats.rate.toFixed(1)}%`, color: 'text-indigo-600 dark:text-indigo-400 font-bold' },
+        { label: 'Signed Rate', value: `${caStats.rate.toFixed(1)}%`, color: 'text-blue-600 dark:text-blue-400 font-bold' },
       ],
       subtasks: [
-        { id: 'STOCK_OUT_IS_SIGNING', label: 'STOCK OUT IS SIGNING', icon: '📤', desc: 'Export documents signing' },
-        { id: 'STOCK_IN_IS_SIGNING', label: 'STOCK IN IS SIGNING', icon: '📥', desc: 'Import documents signing' }
+        { id: 'STOCK_OUT_IS_SIGNING', label: 'STOCK OUT IS SIGNING', Icon: Upload, iconColor: 'text-blue-500', desc: 'Export documents signing' },
+        { id: 'STOCK_IN_IS_SIGNING', label: 'STOCK IN IS SIGNING', Icon: Download, iconColor: 'text-emerald-500', desc: 'Import documents signing' }
       ]
     },
     {
       id: 'restock_group',
-      title: '🔄 RESTOCK IN & RESTOCK OUT',
+      title: 'RESTOCK IN & RESTOCK OUT',
       subtitle: 'RESTOCK IN CA / RESTOCK OUT',
       description: '',
-      icon: '🔄',
-      color: 'from-emerald-500 to-teal-600',
-      shadow: 'hover:shadow-emerald-500/20',
-      borderColor: 'border-teal-200 dark:border-teal-800',
-      bgColor: 'bg-teal-50 dark:bg-teal-900/10',
+      Icon: ArrowLeftRight,
+      topBarColor: 'bg-emerald-500',
+      iconContainer: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-900/50',
+      badgeColor: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
       stats: [
-        { label: 'Total Requests', value: restockStats.total, color: 'text-gray-900 dark:text-white' },
+        { label: 'Total Requests', value: restockStats.total, color: 'text-slate-900 dark:text-white' },
         { label: 'Completed', value: restockStats.completed, color: 'text-emerald-600 dark:text-emerald-400' },
         { label: 'Pending', value: restockStats.pending, color: 'text-amber-600 dark:text-amber-400' },
         { label: 'Restock Rate', value: `${restockStats.rate.toFixed(1)}%`, color: 'text-emerald-600 dark:text-emerald-400 font-bold' },
       ],
       subtasks: [
-        { id: 'RESTOCK_IN', label: 'RESTOCK IN', icon: '📥', desc: 'Incoming restock requests' },
-        { id: 'RESTOCK_OUT', label: 'RESTOCK OUT', icon: '📤', desc: 'Outgoing restock requests' }
+        { id: 'RESTOCK_IN', label: 'RESTOCK IN', Icon: ArrowDownToLine, iconColor: 'text-emerald-500', desc: 'Incoming restock requests' },
+        { id: 'RESTOCK_OUT', label: 'RESTOCK OUT', Icon: ArrowUpFromLine, iconColor: 'text-rose-500', desc: 'Outgoing restock requests' }
       ]
     },
     {
       id: 'metfone_net_group',
-      title: '🌐 SYSTEM METFONE NET',
+      title: 'SYSTEM METFONE NET',
       subtitle: 'METFONE NET WAREHOUSE STOCKOUT',
       description: '',
-      icon: '🌐',
-      color: 'from-blue-600 via-indigo-600 to-indigo-800',
-      shadow: 'hover:shadow-indigo-500/20',
-      borderColor: 'border-indigo-200 dark:border-indigo-800',
-      bgColor: 'bg-indigo-50 dark:bg-indigo-900/10',
+      Icon: Radio,
+      topBarColor: 'bg-indigo-600',
+      iconContainer: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900/50',
+      badgeColor: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
       stats: [
-        { label: 'GIS Records', value: metfoneStats.total, color: 'text-gray-900 dark:text-white' },
+        { label: 'GIS Records', value: metfoneStats.total, color: 'text-slate-900 dark:text-white' },
         { label: 'Completed', value: metfoneStats.completed, color: 'text-emerald-600 dark:text-emerald-400' },
         { label: 'Pending', value: metfoneStats.pending, color: 'text-amber-600 dark:text-amber-400' },
         { label: 'Success Rate', value: `${metfoneStats.rate.toFixed(1)}%`, color: 'text-indigo-600 dark:text-indigo-400 font-bold' },
       ],
       subtasks: [
-        { id: 'METFONE_STOCKOUT_YET_CONFIRM', label: '01_STOCKOUT_YET CONFIRM', icon: '📦', desc: 'Stockout yet confirm (GIS Only)' },
-        { id: 'METFONE_NOT_CREATE_HAND_OVER', label: '02_NOT CREATE HAND OVER', icon: '📝', desc: 'Not create hand over (GIS Only)' },
-        { id: 'METFONE_HAND_OVER_YET_CONFIRM', label: '03_HAND OVER_YET CONFIRM', icon: '⚠️', desc: 'Hand over yet confirm (GIS Only)' }
+        { id: 'METFONE_STOCKOUT_YET_CONFIRM', label: '01_STOCKOUT_YET CONFIRM', Icon: PackageCheck, iconColor: 'text-amber-500', desc: 'Stockout yet confirm (GIS Only)' },
+        { id: 'METFONE_NOT_CREATE_HAND_OVER', label: '02_NOT CREATE HAND OVER', Icon: FileEdit, iconColor: 'text-sky-500', desc: 'Not create hand over (GIS Only)' },
+        { id: 'METFONE_HAND_OVER_YET_CONFIRM', label: '03_HAND OVER_YET CONFIRM', Icon: Clock, iconColor: 'text-rose-500', desc: 'Hand over yet confirm (GIS Only)' }
       ]
     }
   ];
@@ -538,6 +568,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'CONFIRMED HAND OVER',
         moduleColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
         name: 'STOCKOUT YET CONFIRM',
+        Icon: PackageCheck,
+        iconColor: 'text-amber-600',
         icon: '📦',
         targetMorning: sT.morning,
         targetEvening: sT.evening,
@@ -552,6 +584,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'CONFIRMED HAND OVER',
         moduleColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
         name: 'NOT CREATE HAND OVER',
+        Icon: FileEdit,
+        iconColor: 'text-sky-600',
         icon: '📝',
         targetMorning: ncT.morning,
         targetEvening: ncT.evening,
@@ -566,6 +600,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'CONFIRMED HAND OVER',
         moduleColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
         name: 'HAND OVER YET CONFIRM',
+        Icon: Clock,
+        iconColor: 'text-rose-600',
         icon: '⚠️',
         targetMorning: ncfT.morning,
         targetEvening: ncfT.evening,
@@ -580,6 +616,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'CONFIRMED HAND OVER',
         moduleColor: 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
         name: 'NEW CONSTRUCTION',
+        Icon: HardHat,
+        iconColor: 'text-emerald-600',
         icon: '🏗️',
         targetMorning: cT.morning,
         targetEvening: cT.evening,
@@ -594,6 +632,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'SIGNED "CA" SYSTEM',
         moduleColor: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
         name: 'STOCK OUT IS SIGNING',
+        Icon: Upload,
+        iconColor: 'text-indigo-600',
         icon: '📤',
         targetMorning: expT.morning,
         targetEvening: expT.evening,
@@ -608,6 +648,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'SIGNED "CA" SYSTEM',
         moduleColor: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800',
         name: 'STOCK IN IS SIGNING',
+        Icon: Download,
+        iconColor: 'text-emerald-600',
         icon: '📥',
         targetMorning: impT.morning,
         targetEvening: impT.evening,
@@ -622,6 +664,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'RESTOCK IN / OUT',
         moduleColor: 'bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300 border-teal-200 dark:border-teal-800',
         name: 'RESTOCK IN',
+        Icon: ArrowDownToLine,
+        iconColor: 'text-emerald-600',
         icon: '📥',
         targetMorning: rInT.morning,
         targetEvening: rInT.evening,
@@ -636,6 +680,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'RESTOCK IN / OUT',
         moduleColor: 'bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300 border-teal-200 dark:border-teal-800',
         name: 'RESTOCK OUT',
+        Icon: ArrowUpFromLine,
+        iconColor: 'text-rose-600',
         icon: '📤',
         targetMorning: rOutT.morning,
         targetEvening: rOutT.evening,
@@ -650,6 +696,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'SYSTEM METFONE NET',
         moduleColor: 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
         name: '01_STOCKOUT_YET CONFIRM',
+        Icon: PackageCheck,
+        iconColor: 'text-blue-600',
         icon: '📦',
         targetMorning: m1T.morning,
         targetEvening: m1T.evening,
@@ -664,6 +712,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'SYSTEM METFONE NET',
         moduleColor: 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
         name: '02_NOT CREATE HAND OVER',
+        Icon: FileEdit,
+        iconColor: 'text-cyan-600',
         icon: '📝',
         targetMorning: m2T.morning,
         targetEvening: m2T.evening,
@@ -678,6 +728,8 @@ const MainDashboard = ({ onNavigate }) => {
         module: 'SYSTEM METFONE NET',
         moduleColor: 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800',
         name: '03_HAND OVER_YET CONFIRM',
+        Icon: Clock,
+        iconColor: 'text-indigo-600',
         icon: '⚠️',
         targetMorning: m3T.morning,
         targetEvening: m3T.evening,
@@ -882,178 +934,203 @@ const MainDashboard = ({ onNavigate }) => {
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'dark' : ''}`}>
-      <div className="w-full px-4 sm:px-6 py-6 sm:py-8 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="w-full px-4 sm:px-6 py-6 sm:py-8 bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
         
-        {/* ─── VIEW NAVIGATION TABS ─── */}
-        <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-800 p-2 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('modules')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                viewMode === 'modules'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60'
-              }`}
-            >
-              <span>🏛️</span>
-              <span>4 Modules Overview</span>
-            </button>
-            <button
-              onClick={() => setViewMode('kpi')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                viewMode === 'kpi'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-indigo-500/25'
-                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60'
-              }`}
-            >
-              <span>📋</span>
-              <span>តារាងសង្ខេបប្រតិបត្តិការ KPI (11 Tasks)</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                viewMode === 'kpi' ? 'bg-white/25 text-white' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
-              }`}>
-                11
-              </span>
-            </button>
-          </div>
+        {/* ─── ENTERPRISE PORTAL HEADER ─── */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 p-5 sm:p-6 mb-6 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <span>Enterprise Portal</span>
+                <span className="text-slate-300 dark:text-slate-600">/</span>
+                <span className="text-blue-600 dark:text-blue-400 font-bold">GIS Asset Management</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                  <Clock className="w-3 h-3 text-slate-400" />
+                  {currentTime.toLocaleTimeString()}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 mt-1.5">
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200/60 dark:border-blue-900/50 text-blue-600 dark:text-blue-400 shrink-0">
+                  <LayoutDashboard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                    GIS Asset Management Portal
+                  </h1>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                    ផ្ទាំងគ្រប់គ្រងទិន្នន័យប្រតិបត្តិការទ្រព្យសកម្ម និងប្រព័ន្ធតាមដាន KPI Performance
+                  </p>
+                </div>
+              </div>
+            </div>
 
-          <div className="text-xs text-gray-500 dark:text-gray-400 font-medium px-2">
-            {viewMode === 'kpi' ? '📄 កំពុងបង្ហាញ: ទំព័រតារាង KPI Performance 11 Tasks' : '🏛️ កំពុងបង្ហាញ: ផ្ទាំង Modules ធំៗទាំង 4'}
+            {/* Right Action: View Mode Toggle & Live Pill */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="inline-flex p-1 bg-slate-100 dark:bg-slate-900/70 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                <button
+                  onClick={() => setViewMode('modules')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
+                    viewMode === 'modules'
+                      ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>4 Modules Overview</span>
+                </button>
+                <button
+                  onClick={() => setViewMode('kpi')}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer ${
+                    viewMode === 'kpi'
+                      ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-xs font-black'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <TableProperties className="w-3.5 h-3.5" />
+                  <span>តារាងប្រតិបត្តិការ KPI (11 Tasks)</span>
+                  <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${
+                    viewMode === 'kpi' 
+                      ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300' 
+                      : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                  }`}>
+                    11
+                  </span>
+                </button>
+              </div>
+
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[11px]">System Live</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ─── HEADER BANNER (Shown ONLY when in 4 Modules Overview) ─── */}
-        {viewMode === 'modules' && (
-          <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-950 rounded-2xl shadow-2xl p-6 sm:p-8 mb-6 sm:mb-8 text-white border border-slate-800">
-            <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
-            <div className="absolute bottom-0 left-0 w-56 sm:w-80 h-56 sm:h-80 bg-blue-500/5 rounded-full blur-3xl -ml-20 -mb-20"></div>
-            
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
-              <div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-indigo-500/30">
-                    v1.0.0
-                  </span>
-                  <span className="bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full uppercase tracking-wider border border-indigo-500/30">
-                    🏢 Enterprise Portal
-                  </span>
-                  <span className="bg-emerald-500/20 text-emerald-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-emerald-500/30">
-                    🟢 Live
-                  </span>
-                  <span className="bg-blue-500/20 text-blue-300 text-[10px] sm:text-xs font-semibold px-2.5 sm:px-3 py-1 rounded-full border border-blue-500/30">
-                    {currentTime.toLocaleTimeString()}
-                  </span>
-                </div>
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mt-2 sm:mt-3 text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-300 flex items-center gap-2 flex-wrap">
-                  📊 GIS Asset Management Portal
-                </h1>
-              </div>
-              
-              <div className="flex gap-3 sm:gap-4 bg-white/5 backdrop-blur-md p-3 sm:p-4 rounded-xl border border-white/10 shrink-0">
-                <div className="text-center px-2 sm:px-4 border-r border-white/10">
-                  <span className="block text-xl sm:text-2xl font-bold text-indigo-400">
-                    {totalPending}
-                  </span>
-                  <span className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-medium">Pending</span>
-                </div>
-                <div className="text-center px-2 sm:px-4 border-r border-white/10">
-                  <span className="block text-xl sm:text-2xl font-bold text-emerald-400">
-                    {totalCompleted}
-                  </span>
-                  <span className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-medium">Completed</span>
-                </div>
-                <div className="text-center px-2 sm:px-4">
-                  <span className="block text-xl sm:text-2xl font-bold text-amber-400">
-                    {avgCompletion.toFixed(1)}%
-                  </span>
-                  <span className="text-[8px] sm:text-[10px] text-slate-400 uppercase font-medium">Avg Rate</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {viewMode === 'modules' && (
           <>
-            {/* ─── STATS ROW ─── */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Total Records</div>
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white mt-1">{totalRecords}</div>
-                  </div>
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-xl">📊</div>
+            {/* ─── ENTERPRISE KPI METRIC CARDS ─── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              {/* Total Records */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/80 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Total Records</span>
+                  <span className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                    <Layers className="w-4 h-4" />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-baseline justify-between">
+                  <span className="text-2xl sm:text-3xl font-mono font-black text-slate-900 dark:text-white tracking-tight">
+                    {totalRecords.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">All Systems</span>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Completed</div>
-                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{totalCompleted}</div>
-                  </div>
-                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center text-xl">✅</div>
+
+              {/* Completed */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/80 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Completed Tasks</span>
+                  <span className="p-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-baseline justify-between">
+                  <span className="text-2xl sm:text-3xl font-mono font-black text-emerald-600 dark:text-emerald-400 tracking-tight">
+                    {totalCompleted.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-md border border-emerald-200/50 dark:border-emerald-800/40">
+                    Resolved
+                  </span>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Pending</div>
-                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{totalPending}</div>
-                  </div>
-                  <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-xl">⏳</div>
+
+              {/* Pending */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/80 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Pending Action</span>
+                  <span className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                    <Clock className="w-4 h-4" />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-baseline justify-between">
+                  <span className="text-2xl sm:text-3xl font-mono font-black text-amber-600 dark:text-amber-400 tracking-tight">
+                    {totalPending.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-md border border-amber-200/50 dark:border-amber-800/40">
+                    In Progress
+                  </span>
                 </div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Avg Completion</div>
-                    <div className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">{avgCompletion.toFixed(1)}%</div>
+
+              {/* Avg Completion */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200/80 dark:border-slate-700 shadow-xs flex flex-col justify-between">
+                <div className="flex items-center justify-between text-slate-500 dark:text-slate-400">
+                  <span className="text-[11px] font-bold uppercase tracking-wider">Average Rate</span>
+                  <span className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                    <TrendingUp className="w-4 h-4" />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-baseline justify-between">
+                  <span className="text-2xl sm:text-3xl font-mono font-black text-purple-600 dark:text-purple-400 tracking-tight">
+                    {avgCompletion.toFixed(1)}%
+                  </span>
+                  <div className="w-20 bg-slate-100 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-purple-600 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, Math.max(0, avgCompletion))}%` }}
+                    />
                   </div>
-                  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-xl">📈</div>
                 </div>
               </div>
             </div>
 
-            {/* ─── MAIN GRID (4 COLUMNS) ─── */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 xl:gap-6">
+            {/* ─── 4 CORE MODULES GRID ─── */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
               {modules.map((mod) => (
                 <div 
                   key={mod.id} 
-                  className={`group bg-white dark:bg-gray-800 rounded-2xl border ${mod.borderColor} shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl ${mod.shadow} flex flex-col overflow-hidden`}
+                  className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-xs hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 flex flex-col justify-between overflow-hidden group"
                 >
-                  {/* Gradient Card Header */}
-                  <div className={`p-4 sm:p-5 bg-gradient-to-br ${mod.color} text-white relative`}>
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full blur-xl -mr-6 -mt-6"></div>
-                    <div className="flex justify-between items-start mb-2.5 sm:mb-3">
-                      <span className="text-2xl sm:text-3xl bg-white/20 p-2 rounded-xl backdrop-blur-sm shadow-inner leading-none">
-                        {mod.icon}
-                      </span>
+                  {/* Subtle top indicator bar */}
+                  <div className={`h-1 w-full ${mod.topBarColor}`} />
+
+                  {/* Card Header */}
+                  <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-700/60">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className={`p-2 rounded-xl flex items-center justify-center shrink-0 ${mod.iconContainer}`}>
+                        {mod.Icon ? <mod.Icon className="w-5 h-5" /> : <LayoutDashboard className="w-5 h-5" />}
+                      </div>
                       <button
                         onClick={() => onNavigate(mod.id)}
-                        className="bg-white/20 hover:bg-white/30 text-white rounded-lg px-2 sm:px-2.5 py-1 text-[10px] font-semibold backdrop-blur-sm transition-colors flex items-center gap-1 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group/link shadow-xs"
                       >
-                        <span>Dashboard</span> ➔
+                        <span>Dashboard</span>
+                        <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover/link:text-slate-700 dark:group-hover/link:text-white group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
                       </button>
                     </div>
-                    <h2 className="text-sm sm:text-base font-bold tracking-tight truncate" title={mod.title}>{mod.title}</h2>
-                    <p className="text-white/70 text-[8px] uppercase font-bold tracking-wider mt-0.5 truncate" title={mod.subtitle}>{mod.subtitle}</p>
+                    
+                    <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight truncate" title={mod.title}>
+                      {mod.title}
+                    </h2>
+                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-0.5 truncate" title={mod.subtitle}>
+                      {mod.subtitle}
+                    </p>
                   </div>
 
                   {/* Card Body */}
-                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between">
+                  <div className="p-4 flex-1 flex flex-col justify-between">
                     <div>
-                      {mod.description && (
-                        <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-relaxed mb-3">
-                          {mod.description}
-                        </p>
-                      )}
-
-                      {/* Quick Stats Grid */}
-                      <div className={`grid grid-cols-2 gap-2 mb-3.5 ${mod.bgColor} p-2.5 sm:p-3 rounded-xl border ${mod.borderColor}`}>
+                      {/* Stats 2x2 Grid */}
+                      <div className="grid grid-cols-2 gap-2 mb-4 p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-800/80">
                         {mod.stats.map((s, idx) => (
                           <div key={idx} className="flex flex-col min-w-0">
-                            <span className="text-[8px] sm:text-[9px] text-gray-400 dark:text-gray-500 uppercase font-medium tracking-wider truncate">{s.label}</span>
-                            <span className={`text-xs sm:text-sm font-bold truncate ${s.color}`}>{s.value}</span>
+                            <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase font-bold tracking-wider truncate">
+                              {s.label}
+                            </span>
+                            <span className={`text-xs sm:text-sm font-mono font-bold truncate ${s.color}`}>
+                              {s.value}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -1061,23 +1138,26 @@ const MainDashboard = ({ onNavigate }) => {
 
                     {/* Sub-Components Link Section */}
                     <div>
-                      <h4 className="text-[9px] sm:text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <span>📂</span> Sub Modules
-                      </h4>
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <Layers className="w-3 h-3 text-slate-400" />
+                        <span>Sub Modules</span>
+                      </div>
+                      <div className="space-y-1.5">
                         {mod.subtasks.map((task) => (
                           <button
                             key={task.id}
                             onClick={() => onNavigate(task.id)}
-                            className="w-full flex items-center justify-between p-1.5 sm:p-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all text-left text-[10px] sm:text-[11px] font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white group/btn cursor-pointer"
+                            className="w-full flex items-center justify-between p-2 rounded-lg border border-slate-100 dark:border-slate-700/80 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/60 hover:border-slate-200 dark:hover:border-slate-600 transition-all text-left text-xs font-bold text-slate-700 dark:text-slate-200 group/btn cursor-pointer shadow-xs"
                           >
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <span className="text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 group-hover/btn:bg-white dark:group-hover/btn:bg-gray-600 p-0.5 rounded transition-colors shrink-0">{task.icon}</span>
-                              <span className="truncate">{task.label}</span>
+                            <div className="flex items-center gap-2 min-w-0">
+                              {task.Icon ? (
+                                <span className={`p-1 rounded-md bg-slate-100 dark:bg-slate-700 ${task.iconColor} group-hover/btn:scale-105 transition-transform shrink-0 flex items-center justify-center`}>
+                                  <task.Icon className="w-3.5 h-3.5" />
+                                </span>
+                              ) : null}
+                              <span className="truncate text-[11px]">{task.label}</span>
                             </div>
-                            <span className="text-gray-400 dark:text-gray-500 group-hover/btn:translate-x-0.5 transition-transform text-[8px] sm:text-[9px] shrink-0">
-                              ➔
-                            </span>
+                            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover/btn:translate-x-0.5 group-hover/btn:text-slate-700 dark:group-hover/btn:text-white transition-all shrink-0" />
                           </button>
                         ))}
                       </div>
@@ -1092,12 +1172,12 @@ const MainDashboard = ({ onNavigate }) => {
         {viewMode === 'kpi' && (
           <div className="mt-2">
             {/* Top Back Navigation Bar */}
-            <div className="flex items-center justify-between mb-4 bg-white dark:bg-gray-800 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs flex-wrap gap-2">
+            <div className="flex items-center justify-between mb-6 bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs flex-wrap gap-2.5">
               <button
                 onClick={() => setViewMode('modules')}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all cursor-pointer shadow-xs"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all cursor-pointer shadow-xs"
               >
-                <span>⬅️</span>
+                <ArrowLeft className="w-3.5 h-3.5" />
                 <span>ត្រឡប់ទៅកាន់ 4 Modules Overview</span>
               </button>
 
@@ -1107,268 +1187,329 @@ const MainDashboard = ({ onNavigate }) => {
                     setIsTelegramModalOpen(true);
                     setTelegramSendSuccess(null);
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-600 hover:to-indigo-700 text-white font-extrabold text-xs shadow-md shadow-blue-500/25 transition-all transform hover:scale-105 cursor-pointer whitespace-nowrap"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all cursor-pointer whitespace-nowrap"
                   title="ផ្ញើរូបភាពតារាង KPI 11 Tasks ទៅ Telegram Bot តាម Unit"
                 >
-                  <span className="text-sm">✈️</span>
+                  <Send className="w-3.5 h-3.5" />
                   <span>ផ្ញើទៅ Telegram Bot (តាម Unit)</span>
-                  <span className="bg-white/20 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">📸 រូបភាព</span>
+                  <span className="bg-white/20 text-white text-[9px] px-2 py-0.5 rounded-full font-bold">High-Res</span>
                 </button>
 
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400 hidden sm:flex items-center gap-1.5">
-                  <span>📋</span>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800">
+                  <Activity className="w-3.5 h-3.5 text-indigo-600" />
                   <span>11 Tasks Performance</span>
                 </span>
               </div>
             </div>
 
-        {/* ─── OVERALL KPI SUMMARY & PERFORMANCE TABLE BY TASK ─── */}
-        <div className="mt-8 sm:mt-10">
-          
-          {/* Header & Filters */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-2xl">📋</span>
-                <h3 className="text-lg sm:text-xl font-black text-gray-900 dark:text-white tracking-tight">
-                  តារាងសង្ខេបប្រតិបត្តិការ KPI (Performance by Module / Task)
-                </h3>
-                <span className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-700">
-                  {filteredKpiTasks.length} Tasks
-                </span>
-                <button
-                  onClick={() => {
-                    setIsTelegramModalOpen(true);
-                    setTelegramSendSuccess(null);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-black text-[11px] shadow-sm hover:shadow transition-all transform hover:scale-105 cursor-pointer ml-1"
-                >
-                  <span>✈️ ផ្ញើរូបភាព Telegram តាម Unit 📸</span>
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                តាមដានទិន្នន័យជាក់ស្តែង Target, Result, Remain, Ratio និង In System ពីគ្រប់ម៉ូឌុលទាំងអស់ (ចុចលើ Task ដើម្បីចូលទំព័រផ្ទាល់)
-              </p>
-            </div>
+            {/* ─── OVERALL KPI SUMMARY & PERFORMANCE TABLE BY TASK ─── */}
+            <div className="mt-4">
+              
+              {/* Header & Filters */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                <div>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <div className="p-1.5 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                      <TableProperties className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                      តារាងសង្ខេបប្រតិបត្តិការ KPI (Performance by Module / Task)
+                    </h3>
+                    <span className="bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                      {filteredKpiTasks.length} Tasks
+                    </span>
+                    <button
+                      onClick={() => {
+                        setIsTelegramModalOpen(true);
+                        setTelegramSendSuccess(null);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-[11px] shadow-xs active:scale-[0.98] transition-all cursor-pointer ml-1"
+                    >
+                      <Camera className="w-3 h-3" />
+                      <span>ផ្ញើរូបភាព Telegram តាម Unit</span>
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+                    តាមដានទិន្នន័យជាក់ស្តែង Target, Result, Remain, Ratio និង In System ពីគ្រប់ម៉ូឌុលទាំងអស់ (ចុចលើ Task ដើម្បីចូលទំព័រផ្ទាល់)
+                  </p>
+                </div>
 
-            {/* Actions: Search & Filter Tabs */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="🔍 ស្វែងរក Task..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full sm:w-56 px-3 py-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200 shadow-xs"
-                />
-                {searchQuery && (
-                  <button 
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-
-              <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-                {[
-                  { key: 'ALL', label: '🌟 ទាំងអស់' },
-                  { key: 'CONFIRMED HAND OVER', label: '📋 Confirmed' },
-                  { key: 'SIGNED "CA" SYSTEM', label: '✅ Signed CA' },
-                  { key: 'RESTOCK IN / OUT', label: '🔄 Restock' },
-                  { key: 'SYSTEM METFONE NET', label: '🌐 Metfone NET' },
-                ].map(cat => (
-                  <button
-                    key={cat.key}
-                    onClick={() => setSelectedCategory(cat.key)}
-                    className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
-                      selectedCategory === cat.key
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25'
-                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/60'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 6 Metric Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-            <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-3.5 sm:p-4 text-white shadow-md shadow-blue-500/15">
-              <div className="text-[10px] uppercase font-bold tracking-wider opacity-85">Target ព្រឹក</div>
-              <div className="text-xl sm:text-2xl font-black mt-1">{kpiTotals.targetMorning.toLocaleString()}</div>
-              <div className="text-[9px] opacity-70 mt-0.5">Morning Target Total</div>
-            </div>
-            <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-2xl p-3.5 sm:p-4 text-white shadow-md shadow-indigo-500/15">
-              <div className="text-[10px] uppercase font-bold tracking-wider opacity-85">Target ល្ងាច</div>
-              <div className="text-xl sm:text-2xl font-black mt-1">{kpiTotals.targetEvening.toLocaleString()}</div>
-              <div className="text-[9px] opacity-70 mt-0.5">Evening Target Total</div>
-            </div>
-            <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-3.5 sm:p-4 text-white shadow-md shadow-amber-500/15">
-              <div className="text-[10px] uppercase font-bold tracking-wider opacity-85">Remain</div>
-              <div className="text-xl sm:text-2xl font-black mt-1">{kpiTotals.remain.toLocaleString()}</div>
-              <div className="text-[9px] opacity-70 mt-0.5">Total Remaining</div>
-            </div>
-            <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-3.5 sm:p-4 text-white shadow-md shadow-emerald-500/15">
-              <div className="text-[10px] uppercase font-bold tracking-wider opacity-85">Result</div>
-              <div className="text-xl sm:text-2xl font-black mt-1">{kpiTotals.result.toLocaleString()}</div>
-              <div className="text-[9px] opacity-70 mt-0.5">Completed Records</div>
-            </div>
-            <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-3.5 sm:p-4 text-white shadow-md shadow-purple-500/15">
-              <div className="text-[10px] uppercase font-bold tracking-wider opacity-85">Ratio</div>
-              <div className="text-xl sm:text-2xl font-black mt-1">{kpiTotals.ratio}</div>
-              <div className="text-[9px] opacity-70 mt-0.5">Avg Achievement Rate</div>
-            </div>
-            <div className="bg-gradient-to-br from-sky-600 to-cyan-700 rounded-2xl p-3.5 sm:p-4 text-white shadow-md shadow-sky-500/15">
-              <div className="text-[10px] uppercase font-bold tracking-wider opacity-85">In System</div>
-              <div className="text-xl sm:text-2xl font-black mt-1">{kpiTotals.inSystem.toLocaleString()}</div>
-              <div className="text-[9px] opacity-70 mt-0.5">Active Total Items</div>
-            </div>
-          </div>
-
-          {/* KPI Performance Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden mb-6">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-left">
-                <thead className="bg-slate-50 dark:bg-gray-900/60 text-gray-600 dark:text-gray-300">
-                  <tr>
-                    <th className="px-4 py-3.5 text-xs font-bold uppercase tracking-wider">Module/KPI Task</th>
-                    <th className="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400">Target ព្រឹក</th>
-                    <th className="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">Target ល្ងាច</th>
-                    <th className="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">Remain</th>
-                    <th className="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Result</th>
-                    <th className="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-400">Ratio</th>
-                    <th className="px-4 py-3.5 text-right text-xs font-bold uppercase tracking-wider text-sky-700 dark:text-sky-400">In System</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 dark:divide-gray-700/60 text-xs text-gray-700 dark:text-gray-300">
-                  {filteredKpiTasks.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-gray-400 dark:text-gray-500">
-                        ពុំមានទិន្នន័យត្រូវគ្នានឹងការស្វែងរកឡើយ
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredKpiTasks.map((item) => (
-                      <tr
-                        key={item.id}
-                        onClick={() => onNavigate && onNavigate(item.id)}
-                        className="hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-colors group"
+                {/* Actions: Search & Filter Tabs */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+                  <div className="relative flex items-center">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="ស្វែងរក Task..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full sm:w-56 pl-8 pr-7 py-2 text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200 shadow-xs placeholder:text-slate-400"
+                    />
+                    {searchQuery && (
+                      <button 
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2.5 p-0.5 rounded-md text-slate-400 hover:text-slate-600 cursor-pointer flex items-center justify-center"
                       >
-                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-base sm:text-lg bg-gray-100 dark:bg-gray-700 p-1 rounded-lg group-hover:scale-110 transition-transform">
-                              {item.icon}
-                            </span>
-                            <span className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
-                              {item.name}
-                            </span>
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                    {[
+                      { key: 'ALL', label: 'ទាំងអស់', Icon: Sparkles },
+                      { key: 'CONFIRMED HAND OVER', label: 'Confirmed', Icon: ClipboardCheck },
+                      { key: 'SIGNED "CA" SYSTEM', label: 'Signed CA', Icon: FileSignature },
+                      { key: 'RESTOCK IN / OUT', label: 'Restock', Icon: ArrowLeftRight },
+                      { key: 'SYSTEM METFONE NET', label: 'Metfone NET', Icon: Radio },
+                    ].map(cat => (
+                      <button
+                        key={cat.key}
+                        onClick={() => setSelectedCategory(cat.key)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                          selectedCategory === cat.key
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/60'
+                        }`}
+                      >
+                        <cat.Icon className="w-3 h-3" />
+                        <span>{cat.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 6 Metric Cards (Modern Minimalist Developer Design) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                {/* Target Morning */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-3.5 sm:p-4 border border-slate-200/90 dark:border-slate-700 shadow-xs hover:border-blue-300 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                      Target ព្រឹក
+                    </span>
+                    <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-2">
+                    {kpiTotals.targetMorning.toLocaleString()}
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-medium mt-0.5">Morning Target Total</div>
+                </div>
+
+                {/* Target Evening */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-3.5 sm:p-4 border border-slate-200/90 dark:border-slate-700 shadow-xs hover:border-indigo-300 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                      Target ល្ងាច
+                    </span>
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-mono font-black text-slate-900 dark:text-white mt-2">
+                    {kpiTotals.targetEvening.toLocaleString()}
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-medium mt-0.5">Evening Target Total</div>
+                </div>
+
+                {/* Remain */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-3.5 sm:p-4 border border-slate-200/90 dark:border-slate-700 shadow-xs hover:border-amber-300 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
+                      Remain
+                    </span>
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-mono font-black text-amber-600 dark:text-amber-400 mt-2">
+                    {kpiTotals.remain.toLocaleString()}
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-medium mt-0.5">Total Remaining</div>
+                </div>
+
+                {/* Result */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-3.5 sm:p-4 border border-slate-200/90 dark:border-slate-700 shadow-xs hover:border-emerald-300 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                      Result
+                    </span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-mono font-black text-emerald-600 dark:text-emerald-400 mt-2">
+                    {kpiTotals.result.toLocaleString()}
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-medium mt-0.5">Completed Records</div>
+                </div>
+
+                {/* Ratio */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-3.5 sm:p-4 border border-slate-200/90 dark:border-slate-700 shadow-xs hover:border-purple-300 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-100">
+                      Ratio
+                    </span>
+                    <TrendingUp className="w-3.5 h-3.5 text-purple-500" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-mono font-black text-purple-600 dark:text-purple-400 mt-2">
+                    {kpiTotals.ratio}
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-medium mt-0.5">Avg Achievement Rate</div>
+                </div>
+
+                {/* In System */}
+                <div className="bg-white dark:bg-slate-800 rounded-2xl p-3.5 sm:p-4 border border-slate-200/90 dark:border-slate-700 shadow-xs hover:border-sky-300 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-extrabold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-100">
+                      In System
+                    </span>
+                    <Layers className="w-3.5 h-3.5 text-sky-500" />
+                  </div>
+                  <div className="text-xl sm:text-2xl font-mono font-black text-sky-600 dark:text-sky-400 mt-2">
+                    {kpiTotals.inSystem.toLocaleString()}
+                  </div>
+                  <div className="text-[9px] text-slate-400 font-medium mt-0.5">Active Total Items</div>
+                </div>
+              </div>
+
+              {/* KPI Performance Table */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mb-6">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-left">
+                    <thead className="bg-slate-50/90 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300">
+                      <tr>
+                        <th className="px-4 py-3.5 text-[11px] font-black uppercase tracking-wider">Module / KPI Task</th>
+                        <th className="px-4 py-3.5 text-right text-[11px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-400">Target ព្រឹក</th>
+                        <th className="px-4 py-3.5 text-right text-[11px] font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400">Target ល្ងាច</th>
+                        <th className="px-4 py-3.5 text-right text-[11px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">Remain</th>
+                        <th className="px-4 py-3.5 text-right text-[11px] font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Result</th>
+                        <th className="px-4 py-3.5 text-right text-[11px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-400">Ratio</th>
+                        <th className="px-4 py-3.5 text-right text-[11px] font-black uppercase tracking-wider text-sky-700 dark:text-sky-400">In System</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs text-slate-700 dark:text-slate-300">
+                      {filteredKpiTasks.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-8 text-center text-slate-400 dark:text-slate-500">
+                            ពុំមានទិន្នន័យត្រូវគ្នានឹងការស្វែងរកឡើយ
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredKpiTasks.map((item) => (
+                          <tr
+                            key={item.id}
+                            onClick={() => onNavigate && onNavigate(item.id)}
+                            className="hover:bg-slate-50/80 dark:hover:bg-slate-700/30 cursor-pointer transition-colors group"
+                          >
+                            <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
+                              <div className="flex items-center gap-2.5">
+                                <span className={`p-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 ${item.iconColor} group-hover:scale-105 transition-transform flex items-center justify-center`}>
+                                  {item.Icon ? <item.Icon className="w-4 h-4" /> : <PackageCheck className="w-4 h-4" />}
+                                </span>
+                                <span className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                                  {item.name}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono font-bold text-blue-700 dark:text-blue-400">
+                              {item.targetMorning.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono font-bold text-indigo-700 dark:text-indigo-400">
+                              {item.targetEvening.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className={`inline-flex px-2 py-0.5 rounded-md font-mono font-bold text-[11px] ${
+                                item.remain > 0 
+                                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200/60' 
+                                  : 'bg-slate-50 text-slate-500 dark:bg-slate-700 dark:text-slate-400 border border-slate-200'
+                              }`}>
+                                {item.remain.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="inline-flex px-2 py-0.5 rounded-md font-mono font-bold text-[11px] bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border border-emerald-200/60">
+                                {item.result.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="inline-flex flex-col items-end gap-1">
+                                <span className="font-mono font-black text-purple-700 dark:text-purple-400 text-xs">
+                                  {item.ratio}
+                                </span>
+                                <div className="w-16 bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                                  <div 
+                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full rounded-full"
+                                    style={{ width: `${Math.min(100, item.ratioVal || 0)}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="inline-flex px-2 py-0.5 rounded-md font-mono font-bold text-[11px] bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border border-sky-200/60">
+                                {item.inSystem.toLocaleString()}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                    {/* Total Summary Footer Row */}
+                    <tfoot className="bg-slate-100/90 dark:bg-slate-900/90 border-t-2 border-slate-300 dark:border-slate-600 text-xs font-black text-slate-900 dark:text-white">
+                      <tr>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4 text-indigo-600" />
+                            <span>សរុប (TOTAL - {filteredKpiTasks.length} TASKS)</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right font-mono font-bold text-blue-700 dark:text-blue-400">
-                          {item.targetMorning.toLocaleString()}
+                        <td className="px-4 py-3.5 text-right font-mono text-blue-700 dark:text-blue-400 text-sm">
+                          {filteredKpiTasks.reduce((s, i) => s + i.targetMorning, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-right font-mono font-bold text-indigo-700 dark:text-indigo-400">
-                          {item.targetEvening.toLocaleString()}
+                        <td className="px-4 py-3.5 text-right font-mono text-indigo-700 dark:text-indigo-400 text-sm">
+                          {filteredKpiTasks.reduce((s, i) => s + i.targetEvening, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={`inline-flex px-2 py-0.5 rounded-md font-mono font-bold text-[11px] ${
-                            item.remain > 0 
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' 
-                              : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                          }`}>
-                            {item.remain.toLocaleString()}
-                          </span>
+                        <td className="px-4 py-3.5 text-right font-mono text-amber-700 dark:text-amber-400 text-sm">
+                          {filteredKpiTasks.reduce((s, i) => s + i.remain, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className="inline-flex px-2 py-0.5 rounded-md font-mono font-bold text-[11px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                            {item.result.toLocaleString()}
-                          </span>
+                        <td className="px-4 py-3.5 text-right font-mono text-emerald-700 dark:text-emerald-400 text-sm">
+                          {filteredKpiTasks.reduce((s, i) => s + i.result, 0).toLocaleString()}
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="inline-flex flex-col items-end gap-0.5">
-                            <span className="font-mono font-black text-purple-700 dark:text-purple-400">
-                              {item.ratio}
-                            </span>
-                            <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden">
-                              <div 
-                                className="bg-gradient-to-r from-blue-500 to-emerald-500 h-full rounded-full"
-                                style={{ width: `${Math.min(100, item.ratioVal || 0)}%` }}
-                              ></div>
-                            </div>
-                          </div>
+                        <td className="px-4 py-3.5 text-right font-mono text-purple-700 dark:text-purple-400 text-sm">
+                          {(() => {
+                            const totalMorning = filteredKpiTasks.reduce((s, i) => s + i.targetMorning, 0);
+                            const totalEvening = filteredKpiTasks.reduce((s, i) => s + i.targetEvening, 0);
+                            const totalResult = filteredKpiTasks.reduce((s, i) => s + i.result, 0);
+                            const totalInSystem = filteredKpiTasks.reduce((s, i) => s + i.inSystem, 0);
+                            const effective = (currentTime.getHours() < 12) ? totalMorning : (totalEvening > 0 ? totalEvening : totalMorning);
+                            return effective > 0 ? ((totalResult / effective) * 100).toFixed(1) + '%' : (totalInSystem > 0 ? ((totalResult / totalInSystem) * 100).toFixed(1) + '%' : '0.0%');
+                          })()}
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <span className="inline-flex px-2 py-0.5 rounded-md font-mono font-bold text-[11px] bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
-                            {item.inSystem.toLocaleString()}
-                          </span>
+                        <td className="px-4 py-3.5 text-right font-mono text-sky-700 dark:text-sky-400 text-sm">
+                          {filteredKpiTasks.reduce((s, i) => s + i.inSystem, 0).toLocaleString()}
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-                {/* Total Summary Footer Row */}
-                <tfoot className="bg-slate-100/90 dark:bg-gray-900/90 border-t-2 border-slate-300 dark:border-gray-600 text-xs font-black text-gray-900 dark:text-white">
-                  <tr>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <span>📊</span>
-                        <span>សរុប (TOTAL - {filteredKpiTasks.length} TASKS)</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5 text-right font-mono text-blue-700 dark:text-blue-400 text-sm">
-                      {filteredKpiTasks.reduce((s, i) => s + i.targetMorning, 0).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3.5 text-right font-mono text-indigo-700 dark:text-indigo-400 text-sm">
-                      {filteredKpiTasks.reduce((s, i) => s + i.targetEvening, 0).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3.5 text-right font-mono text-amber-700 dark:text-amber-400 text-sm">
-                      {filteredKpiTasks.reduce((s, i) => s + i.remain, 0).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3.5 text-right font-mono text-emerald-700 dark:text-emerald-400 text-sm">
-                      {filteredKpiTasks.reduce((s, i) => s + i.result, 0).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3.5 text-right font-mono text-purple-700 dark:text-purple-400 text-sm">
-                      {(() => {
-                        const totalMorning = filteredKpiTasks.reduce((s, i) => s + i.targetMorning, 0);
-                        const totalEvening = filteredKpiTasks.reduce((s, i) => s + i.targetEvening, 0);
-                        const totalResult = filteredKpiTasks.reduce((s, i) => s + i.result, 0);
-                        const totalInSystem = filteredKpiTasks.reduce((s, i) => s + i.inSystem, 0);
-                        const effective = (currentTime.getHours() < 12) ? totalMorning : (totalEvening > 0 ? totalEvening : totalMorning);
-                        return effective > 0 ? ((totalResult / effective) * 100).toFixed(1) + '%' : (totalInSystem > 0 ? ((totalResult / totalInSystem) * 100).toFixed(1) + '%' : '0.0%');
-                      })()}
-                    </td>
-                    <td className="px-4 py-3.5 text-right font-mono text-sky-700 dark:text-sky-400 text-sm">
-                      {filteredKpiTasks.reduce((s, i) => s + i.inSystem, 0).toLocaleString()}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    )}
+        )}
 
         {/* ─── RECENT ACTIVITIES ─── */}
         {recentActivities.length > 0 && (
-          <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-6">
-            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4 flex items-center gap-2">
-              <span>🔄</span> Recent Activities
+          <div className="mt-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xs p-4 sm:p-6">
+            <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-indigo-600" />
+              <span>Recent Activities</span>
             </h3>
             <div className="space-y-2">
               {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                <div key={activity.id} className="flex items-center justify-between p-3 bg-slate-50/80 dark:bg-slate-700/40 rounded-xl border border-slate-100 dark:border-slate-700">
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="text-sm">{activity.type}</span>
-                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">{activity.description}</span>
+                    <span className="p-1 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100 dark:border-emerald-900/40 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{activity.description}</span>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{activity.unit}</span>
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{activity.time}</span>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600">{activity.unit}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{activity.time}</span>
                   </div>
                 </div>
               ))}
@@ -1377,27 +1518,32 @@ const MainDashboard = ({ onNavigate }) => {
         )}
 
         {/* ─── FOOTER ─── */}
-        <div className="mt-8 sm:mt-12 text-center text-[10px] sm:text-xs text-gray-400 dark:text-gray-500 border-t pt-4 sm:pt-6 border-gray-200 dark:border-gray-700">
+        <div className="mt-8 sm:mt-12 text-center text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 border-t pt-4 sm:pt-6 border-slate-200 dark:border-slate-700">
           <span>© 2026 GIS Asset Management System</span>
           <span className="mx-2 sm:mx-3">•</span>
           <span>Version 3.0.1</span>
           <span className="mx-2 sm:mx-3">•</span>
-          <span>🟢 All systems operational</span>
+          <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>All systems operational</span>
+          </span>
         </div>
 
         {/* ─── TELEGRAM BOT SEND MODAL (BY UNIT) ─── */}
         {isTelegramModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-2xl w-full border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl max-w-2xl w-full border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]">
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 px-5 sm:px-6 py-4 text-white flex items-center justify-between">
+              <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950 px-5 sm:px-6 py-4 text-white flex items-center justify-between border-b border-slate-800">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">✈️</span>
+                  <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+                    <Send className="w-5 h-5" />
+                  </div>
                   <div>
                     <h3 className="text-base sm:text-lg font-black tracking-tight">
                       ផ្ញើរូបភាពតារាង KPI (11 Tasks) ទៅ Telegram Bot
                     </h3>
-                    <p className="text-xs text-blue-100 font-medium">
+                    <p className="text-xs text-slate-300 font-medium">
                       ជ្រើសរើស Unit ដើម្បី Capture រូបភាពតារាង KPI និងផ្ញើចូល Telegram Group ស្វ័យប្រវត្តិ
                     </p>
                   </div>
@@ -1409,9 +1555,9 @@ const MainDashboard = ({ onNavigate }) => {
                     }
                     setIsTelegramModalOpen(false);
                   }}
-                  className="text-white/80 hover:text-white text-xl font-bold p-1 rounded-lg hover:bg-white/10 transition-all cursor-pointer"
+                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center"
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -1419,7 +1565,7 @@ const MainDashboard = ({ onNavigate }) => {
               <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
                 {/* 1. Scope Selector */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
                     1. ជ្រើសរើសទម្រង់ទិន្នន័យ (Data Scope):
                   </label>
                   <div className="grid grid-cols-2 gap-2">
@@ -1427,22 +1573,22 @@ const MainDashboard = ({ onNavigate }) => {
                       onClick={() => setTelegramScope('unit')}
                       className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 cursor-pointer ${
                         telegramScope === 'unit'
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
-                          : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 font-black'
+                          : 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
                       }`}
                     >
-                      <span>📌</span>
+                      <Building2 className="w-4 h-4" />
                       <span>តារាងតាម Unit ({telegramUnit})</span>
                     </button>
                     <button
                       onClick={() => setTelegramScope('all')}
                       className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all border flex items-center justify-center gap-2 cursor-pointer ${
                         telegramScope === 'all'
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
-                          : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20 font-black'
+                          : 'bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600'
                       }`}
                     >
-                      <span>🌐</span>
+                      <LayoutGrid className="w-4 h-4" />
                       <span>តារាងសរុប 11 Tasks (Overall)</span>
                     </button>
                   </div>
@@ -1451,15 +1597,15 @@ const MainDashboard = ({ onNavigate }) => {
                 {/* 2. Unit Selector Grid */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                       2. ជ្រើសរើស Unit / Province គោលដៅ:
                     </label>
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                       Unit ដែលបានរើស: <strong className="text-blue-600 dark:text-blue-400 font-black">{telegramUnit}</strong>
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-1.5 max-h-40 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-1.5 max-h-40 overflow-y-auto p-2 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
                     {allUnits.map((u) => {
                       const configured = hasGroupId(u);
                       const isSelected = telegramUnit === u;
@@ -1471,8 +1617,8 @@ const MainDashboard = ({ onNavigate }) => {
                             isSelected
                               ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 shadow-md scale-105 z-10'
                               : configured
-                              ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:border-blue-400'
-                              : 'bg-gray-100 dark:bg-gray-800/40 text-gray-400 dark:text-gray-500 border-dashed border-gray-200 dark:border-gray-700 hover:bg-gray-200/50'
+                              ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-400'
+                              : 'bg-slate-100 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 border-dashed border-slate-200 dark:border-slate-700 hover:bg-slate-200/50'
                           }`}
                         >
                           <span>{u}</span>
@@ -1483,7 +1629,7 @@ const MainDashboard = ({ onNavigate }) => {
                       );
                     })}
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400 mt-1 px-1">
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1 px-1">
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
                       <span>មាន Group ID អាចផ្ញើបានភ្លាមៗ</span>
@@ -1494,7 +1640,7 @@ const MainDashboard = ({ onNavigate }) => {
 
                 {/* 3. Note / Comment */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider">
                     3. ចំណាំបន្ថែមលើ Caption & រូបភាព (Optional Note):
                   </label>
                   <input
@@ -1502,15 +1648,15 @@ const MainDashboard = ({ onNavigate }) => {
                     placeholder="ឧទាហរណ៍៖ សូមក្រុមការងារជួយពន្លឿនការងារ KPI ប្រចាំថ្ងៃ..."
                     value={telegramNote}
                     onChange={(e) => setTelegramNote(e.target.value)}
-                    className="w-full px-3.5 py-2 text-xs bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 dark:text-gray-200"
+                    className="w-full px-3.5 py-2 text-xs bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-200"
                   />
                 </div>
 
                 {/* Live Preview Metric Summary */}
-                <div className="p-3.5 bg-gradient-to-br from-slate-900 to-indigo-950 rounded-2xl text-white border border-indigo-500/20">
+                <div className="p-3.5 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 rounded-2xl text-white border border-slate-800 shadow-inner">
                   <div className="flex items-center justify-between text-xs font-bold mb-2">
                     <span className="flex items-center gap-1.5">
-                      <span>📸</span>
+                      <Camera className="w-3.5 h-3.5 text-indigo-400" />
                       <span>Preview ទិន្នន័យលើរូបភាព ({telegramScope === 'unit' ? `Unit ${telegramUnit}` : 'Overall'})</span>
                     </span>
                     <span className="bg-indigo-500/30 text-indigo-300 px-2 py-0.5 rounded-full text-[10px] font-bold">

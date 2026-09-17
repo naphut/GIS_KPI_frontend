@@ -1,6 +1,34 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
+import {
+  Package,
+  Trash2,
+  BarChart3,
+  RefreshCw,
+  FileSpreadsheet,
+  CheckCircle2,
+  AlertTriangle,
+  Search,
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  X,
+  Layers,
+  AlertCircle,
+  ShieldAlert,
+  History,
+  Download,
+  Upload,
+  Copy,
+  Inbox,
+  Maximize2,
+  Minimize2,
+  Columns,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
 
 // Complete list of all possible Units
 const allUnits = [
@@ -219,9 +247,12 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   // Pagination & Days Filter State
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(100);
   const [daysFilter, setDaysFilter] = useState('ALL');
   const [daysSortOrder, setDaysSortOrder] = useState('none');
+  const [isFitScreen, setIsFitScreen] = useState(true);
+  const [tableDensity, setTableDensity] = useState('ultra'); // 'ultra' (fits 70 rows), 'compact' (45 rows), 'normal' (25 rows)
+  const [showStatsBar, setShowStatsBar] = useState(true);
 
   // Load data from DB on mount
   useEffect(() => {
@@ -278,16 +309,16 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   // Columns
   const columns = [
-    { key: 'no', label: '#', width: 'w-10', align: 'text-center' },
-    { key: 'exportCode', label: 'Warehouse Stock out', width: 'whitespace-nowrap', align: 'text-left' },
-    { key: 'exportNo', label: 'Export No', width: 'whitespace-nowrap min-w-[170px]', align: 'text-left' },
-    { key: 'realExport', label: 'Date', width: 'w-24', align: 'text-center' },
-    { key: 'stockReceiver', label: 'Stock Receiver', width: 'w-24', align: 'text-left' },
-    { key: 'groupReceiver', label: 'Group Receiver', width: 'w-36', align: 'text-left' },
-    { key: 'constructionReceiver', label: 'Construction', width: 'w-44', align: 'text-left' },
-    { key: 'unit', label: 'Unit', width: 'w-14', align: 'text-center' },
-    { key: 'daysDiff', label: 'Days', width: 'w-14', align: 'text-center' },
-    { key: 'team', label: 'TEAM', width: 'min-w-[140px]', align: 'text-center' }
+    { key: 'no', label: '#', width: 'w-9 min-w-[36px]', align: 'text-center' },
+    { key: 'exportCode', label: 'Warehouse Stock out', width: isFitScreen ? 'max-w-[135px] truncate' : 'min-w-[160px] whitespace-nowrap', align: 'text-left' },
+    { key: 'exportNo', label: 'Export No', width: isFitScreen ? 'w-[140px] min-w-[140px]' : 'min-w-[170px]', align: 'text-left' },
+    { key: 'realExport', label: 'Date', width: 'w-20 min-w-[80px]', align: 'text-center' },
+    { key: 'stockReceiver', label: 'Stock Receiver', width: isFitScreen ? 'max-w-[125px] truncate' : 'min-w-[150px]', align: 'text-left' },
+    { key: 'groupReceiver', label: 'Group Receiver', width: isFitScreen ? 'max-w-[125px] truncate' : 'min-w-[160px]', align: 'text-left' },
+    { key: 'constructionReceiver', label: 'Construction', width: isFitScreen ? 'max-w-[150px] truncate' : 'min-w-[180px]', align: 'text-left' },
+    { key: 'unit', label: 'Unit', width: 'w-14 min-w-[56px]', align: 'text-center' },
+    { key: 'daysDiff', label: 'Days', width: 'w-14 min-w-[56px]', align: 'text-center' },
+    { key: 'team', label: 'TEAM', width: 'w-[115px] min-w-[115px]', align: 'text-center' }
   ];
 
   // Helper functions
@@ -334,34 +365,34 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   const showNotification = (message, type = 'alarm') => {
     const colors = {
-      alarm: 'bg-rose-600',
-      success: 'bg-emerald-600',
-      info: 'bg-blue-600',
-      warning: 'bg-amber-500'
+      alarm: 'bg-rose-600 border-rose-500',
+      success: 'bg-emerald-600 border-emerald-500',
+      info: 'bg-blue-600 border-blue-500',
+      warning: 'bg-amber-500 border-amber-400'
     };
     const icons = {
-      alarm: '🚨',
-      success: '✅',
-      info: '📊',
-      warning: '⚠️'
+      alarm: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+      success: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      info: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      warning: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
     };
     const titles = {
-      alarm: 'ALARM DETECTED!',
-      success: 'Success!',
-      info: 'Info',
+      alarm: 'ALARM DETECTED',
+      success: 'Success',
+      info: 'Notification',
       warning: 'Warning'
     };
 
     const notification = document.createElement('div');
-    notification.className = `fixed top-20 right-4 z-50 p-4 rounded-2xl shadow-2xl transform transition-all duration-500 animate-slideIn ${colors[type] || 'bg-gray-600'} text-white max-w-sm`;
+    notification.className = `fixed top-16 right-4 z-50 p-3.5 rounded-xl shadow-xl border ${colors[type] || 'bg-slate-800 border-slate-700'} text-white max-w-sm animate-slideIn`;
     notification.innerHTML = `
-      <div class="flex items-start gap-3">
-        <div class="text-2xl animate-bounce">${icons[type] || '📌'}</div>
-        <div class="flex-1">
-          <div class="font-bold text-sm">${titles[type] || 'Notification'}</div>
-          <div class="text-xs opacity-90 whitespace-pre-line">${message}</div>
+      <div class="flex items-start gap-2.5">
+        <div class="mt-0.5">${icons[type] || icons.info}</div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-xs uppercase tracking-wider text-white/90">${titles[type] || 'Notification'}</div>
+          <div class="text-xs text-white/95 mt-0.5 leading-relaxed whitespace-pre-line">${message}</div>
         </div>
-        <button onclick="this.parentElement.parentElement.remove()" class="text-white/70 hover:text-white text-lg leading-none">✕</button>
+        <button onclick="this.parentElement.parentElement.remove()" class="text-white/60 hover:text-white text-base leading-none ml-1 cursor-pointer">✕</button>
       </div>
     `;
     document.body.appendChild(notification);
@@ -447,7 +478,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       setComparisonChanges(changes);
       setShowComparisonAlert(true);
       playAlarmSound();
-      showNotification(`📊 Target changes detected for ${changes.length} Unit(s)!`, 'info');
+      showNotification(`Target changes detected for ${changes.length} Unit(s)!`, 'info');
     }
   };
 
@@ -479,16 +510,16 @@ const STOCKOUT_YET_CONFIRM = () => {
     };
     setTargetHistory(prev => [historyEntry, ...prev]);
     
-    showNotification(`📊 Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit}: ${oldTarget} → ${newTarget}`, 'info');
+    showNotification(`Target (${period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'}) for ${unit}: ${oldTarget} → ${newTarget}`, 'info');
   };
 
   // Process import with auto-target creation and FILTERS
   const processImport = (newRawData) => {
-    // 🚫 Step 1: Filter out excluded items BEFORE processing
+    // Step 1: Filter out excluded items BEFORE processing
     const filteredRawData = newRawData.filter(item => !shouldExcludeItem(item));
     
     if (filteredRawData.length === 0) {
-      showNotification('⚠️ All data was filtered out (GPON or GIS_MOD excluded)!', 'warning');
+      showNotification('All data was filtered out (GPON or GIS_MOD excluded)!', 'warning');
       return;
     }
 
@@ -528,7 +559,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       if (!existingUnits.has(unit)) {
         newUnitsFound.push(unit);
         autoCreateTargetForUnit(unit, unitsInNewData[unit]);
-        showNotification(`🎯 Auto-created target for ${unit}`, 'info');
+        showNotification(`Auto-created target for ${unit}`, 'info');
       }
     });
     
@@ -547,7 +578,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       setCompletionHistory(prev => [...newCompletions, ...prev]);
       
       completedExportNosArray.forEach(no => {
-        showNotification(`✅ COMPLETED: ${no} cleared! +1 Result`, 'success');
+        showNotification(`COMPLETED: ${no} cleared! +1 Result`, 'success');
       });
       playAlarmSound();
     }
@@ -557,7 +588,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     setTimeout(() => checkTargetChanges(), 500);
     
     const excludedCount = newRawData.length - filteredRawData.length;
-    showNotification(`📊 Import Summary:\n✅ Completed: ${completedExportNosArray.length}\n🆕 New Added: ${filteredRawData.length}\n🚫 Excluded: ${excludedCount} (GPON/GIS_MOD)\n🎯 New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}`, 'info');
+    showNotification(`Import Summary:\n• Completed: ${completedExportNosArray.length}\n• New Added: ${filteredRawData.length}\n• Excluded: ${excludedCount} (GPON/GIS_MOD)\n• New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}`, 'info');
   };
 
   // Calculate KPI Data
@@ -793,7 +824,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   };
 
   const clearAllData = async () => {
-    if (window.confirm('⚠️ Are you sure you want to delete ALL data?')) {
+    if (window.confirm('Are you sure you want to delete ALL data?')) {
       setData([]);
       setCompletionHistory([]);
       setTargets({});
@@ -821,7 +852,7 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   const deleteSelectedRows = () => {
     if (selectedRows.size === 0) return;
-    if (window.confirm(`⚠️ Delete ${selectedRows.size} row(s)?`)) {
+    if (window.confirm(`Delete ${selectedRows.size} selected row(s)?`)) {
       const deletedExportNos = data.filter(item => selectedRows.has(item.id)).map(item => item.exportNo);
       const newCompletions = deletedExportNos.map(no => ({
         exportNo: no, completedAt: new Date().toISOString(),
@@ -846,7 +877,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       const newData = data.filter(item => item.id !== id);
       setData(newData.map((item, index) => ({ ...item, no: index + 1 })));
       setSelectedRows(prev => { const newSet = new Set(prev); newSet.delete(id); return newSet; });
-      showNotification(`✅ Completed: ${itemToDelete.exportNo}`, 'success');
+      showNotification(`Completed: ${itemToDelete.exportNo}`, 'success');
       playAlarmSound();
     }
   };
@@ -905,7 +936,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Stockout Data');
     XLSX.writeFile(wb, `stockout_data_${new Date().toISOString().split('T')[0]}.xlsx`);
-    showNotification('📎 Export completed!', 'success');
+    showNotification('Export completed successfully!', 'success');
   };
 
   const exportKPItoExcel = () => {
@@ -936,7 +967,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'KPI Dashboard');
     XLSX.writeFile(wb, `kpi_dashboard_${new Date().toISOString().split('T')[0]}.xlsx`);
-    showNotification('📎 KPI Export completed!', 'success');
+    showNotification('KPI Export completed successfully!', 'success');
   };
 
   // 🚫 Filtered data with exclusions applied
@@ -1052,7 +1083,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       `${item.unit}\n| Code: ${item.exportCode} | No: ${item.exportNo}\n📅 Date: ${item.realExport} | ⏰ Delay: +${item.daysDiff} days\nReceiver: ${item.stockReceiver || '-'} (${item.groupReceiver || '-'})\nConstruction: ${item.constructionReceiver || '-'}\nTEAM: ${item.team || '-'}`
     ).join('\n\n');
     navigator.clipboard.writeText(text);
-    showNotification('📋 Alarm list copied to clipboard!', 'success');
+    showNotification('Alarm list copied to clipboard!', 'success');
   };
 
   useEffect(() => {
@@ -1093,15 +1124,15 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   const getStatusBadge = (status) => {
     const config = {
-      'Completed': { icon: '✅', bg: 'bg-emerald-100', text: 'text-emerald-800' },
-      'Good': { icon: '📈', bg: 'bg-blue-100', text: 'text-blue-800' },
-      'Warning': { icon: '⚠️', bg: 'bg-amber-100', text: 'text-amber-800' },
-      'Critical': { icon: '🚨', bg: 'bg-rose-100', text: 'text-rose-800' },
-      'No Target': { icon: '❓', bg: 'bg-orange-100', text: 'text-orange-800' },
-      'No Data': { icon: '📭', bg: 'bg-gray-100', text: 'text-gray-500' }
+      'Completed': { icon: <CheckCircle2 className="w-3 h-3 text-emerald-600 inline" />, bg: 'bg-emerald-100', text: 'text-emerald-800' },
+      'Good': { icon: <CheckCircle2 className="w-3 h-3 text-blue-600 inline" />, bg: 'bg-blue-100', text: 'text-blue-800' },
+      'Warning': { icon: <AlertTriangle className="w-3 h-3 text-amber-600 inline" />, bg: 'bg-amber-100', text: 'text-amber-800' },
+      'Critical': { icon: <AlertCircle className="w-3 h-3 text-rose-600 inline" />, bg: 'bg-rose-100', text: 'text-rose-800' },
+      'No Target': { icon: <AlertCircle className="w-3 h-3 text-orange-600 inline" />, bg: 'bg-orange-100', text: 'text-orange-800' },
+      'No Data': { icon: <Inbox className="w-3 h-3 text-gray-500 inline" />, bg: 'bg-gray-100', text: 'text-gray-500' }
     };
     const c = config[status] || config['No Data'];
-    return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${c.bg} ${c.text}`}>{c.icon} {status}</span>;
+    return <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${c.bg} ${c.text}`}>{c.icon} {status}</span>;
   };
 
   const alarmCount = alarmItems.length;
@@ -1111,36 +1142,43 @@ const STOCKOUT_YET_CONFIRM = () => {
   const renderComparisonAlert = () => {
     if (!showComparisonAlert) return null;
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4">
-          <div className="bg-gradient-to-r from-orange-500 to-rose-600 px-6 py-4 rounded-t-2xl">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="text-2xl animate-bounce">📊</div>
-                <h2 className="text-xl font-bold text-white">Target Changes (ព្រឹក → ល្ងាច)</h2>
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden">
+          <div className="bg-slate-900 px-6 py-3.5 border-b border-slate-800 text-white flex justify-between items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <BarChart3 className="w-4 h-4" />
               </div>
-              <button onClick={() => setShowComparisonAlert(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
+              <div>
+                <h2 className="text-sm font-black text-white uppercase tracking-tight">Target Changes (ព្រឹក → ល្ងាច)</h2>
+                <p className="text-[11px] text-slate-400">ប្រព័ន្ធរកឃើញការប្រែប្រួលគោលដៅចំនួន {comparisonChanges.length} Unit(s)</p>
+              </div>
             </div>
+            <button 
+              onClick={() => setShowComparisonAlert(false)} 
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
           <div className="p-6">
-            <p className="text-gray-600 mb-4">Changes detected for {comparisonChanges.length} Unit(s):</p>
-            <div className="max-h-64 overflow-y-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="max-h-64 overflow-y-auto border border-slate-200 rounded-lg">
+              <table className="min-w-full divide-y divide-slate-200 text-xs">
+                <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Unit</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">ព្រឹក</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">ល្ងាច</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Change</th>
+                    <th className="px-4 py-2.5 text-left font-bold">Unit</th>
+                    <th className="px-4 py-2.5 text-right font-bold">ព្រឹក</th>
+                    <th className="px-4 py-2.5 text-right font-bold">ល្ងាច</th>
+                    <th className="px-4 py-2.5 text-right font-bold">Change</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-100 font-mono">
                   {comparisonChanges.map((change, idx) => (
-                    <tr key={idx} className={change.diff > 0 ? 'bg-emerald-50' : 'bg-rose-50'}>
-                      <td className="px-4 py-2 text-sm font-medium">{change.unit}</td>
-                      <td className="px-4 py-2 text-sm text-right">{change.morning}</td>
-                      <td className="px-4 py-2 text-sm text-right font-bold">{change.evening}</td>
-                      <td className={`px-4 py-2 text-sm text-right font-bold ${change.diff > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <tr key={idx} className={change.diff > 0 ? 'bg-emerald-50/40' : 'bg-rose-50/40'}>
+                      <td className="px-4 py-2 text-xs font-bold text-slate-900">{change.unit}</td>
+                      <td className="px-4 py-2 text-xs text-right text-slate-600">{change.morning}</td>
+                      <td className="px-4 py-2 text-xs text-right font-bold text-slate-900">{change.evening}</td>
+                      <td className={`px-4 py-2 text-xs text-right font-bold ${change.diff > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                         {change.diff > 0 ? `+${change.diff}` : change.diff} ({change.percentage}%)
                       </td>
                     </tr>
@@ -1148,9 +1186,13 @@ const STOCKOUT_YET_CONFIRM = () => {
                 </tbody>
               </table>
             </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setShowComparisonAlert(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Close</button>
-              <button onClick={() => { setShowComparisonAlert(false); setShowKPIModal(true); }} className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">View KPI Dashboard</button>
+            <div className="mt-6 flex justify-end gap-2.5">
+              <button onClick={() => setShowComparisonAlert(false)} className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs transition-colors cursor-pointer">
+                Close
+              </button>
+              <button onClick={() => { setShowComparisonAlert(false); setShowKPIModal(true); }} className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition-colors shadow-xs cursor-pointer">
+                View KPI Dashboard
+              </button>
             </div>
           </div>
         </div>
@@ -1162,48 +1204,55 @@ const STOCKOUT_YET_CONFIRM = () => {
   const renderTargetHistoryModal = () => {
     if (!showTargetHistoryModal) return null;
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📜</span>
-                <h2 className="text-xl font-bold text-white">Target Change History</h2>
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full border border-slate-200 max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-slate-900 px-6 py-3.5 border-b border-slate-800 text-white flex justify-between items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                <History className="w-4 h-4" />
               </div>
-              <button onClick={() => setShowTargetHistoryModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
+              <h2 className="text-sm font-black text-white uppercase tracking-tight">Target Change History</h2>
             </div>
+            <button 
+              onClick={() => setShowTargetHistoryModal(false)} 
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
           <div className="p-6 overflow-y-auto flex-1">
             {targetHistory.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <div className="text-4xl mb-2">📭</div>
-                <p>No target changes recorded yet.</p>
+              <div className="text-center text-slate-400 py-12 flex flex-col items-center gap-2">
+                <Inbox className="w-8 h-8 text-slate-300" />
+                <p className="font-bold text-slate-600 text-sm">No target changes recorded yet.</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {targetHistory.map(history => (
-                  <div key={history.id} className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-500">
+                  <div key={history.id} className="bg-slate-50 rounded-lg p-3.5 border border-slate-200/80 border-l-4 border-l-blue-600">
                     <div className="flex justify-between items-start">
                       <div>
-                        <div className="font-bold text-lg text-gray-800">{history.unit} {history.period && `(${history.period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'})`}</div>
-                        <div className="text-sm text-gray-600">
+                        <div className="font-bold text-sm text-slate-900">{history.unit} {history.period && `(${history.period === 'morning' ? 'ព្រឹក' : 'ល្ងាច'})`}</div>
+                        <div className="text-xs text-slate-600 mt-0.5">
                           {history.oldTarget !== null ? (
                             <>Changed from <span className="line-through text-rose-500">{history.oldTarget}</span> → <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
                           ) : (
                             <>Auto-created: <span className="text-emerald-600 font-bold">{history.newTarget}</span></>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">{history.reason} | By: {history.changedBy}</div>
+                        <div className="text-[11px] text-slate-400 mt-1">{history.reason} | By: {history.changedBy}</div>
                       </div>
-                      <div className="text-xs text-gray-400">{new Date(history.changedAt).toLocaleString()}</div>
+                      <div className="text-[11px] font-mono text-slate-400">{new Date(history.changedAt).toLocaleString()}</div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <div className="p-4 border-t bg-gray-50 flex justify-end">
-            <button onClick={() => setShowTargetHistoryModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Close</button>
+          <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+            <button onClick={() => setShowTargetHistoryModal(false)} className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 font-bold text-slate-700 rounded-lg text-xs transition-colors cursor-pointer">
+              Close
+            </button>
           </div>
         </div>
       </div>
@@ -1214,153 +1263,195 @@ const STOCKOUT_YET_CONFIRM = () => {
   const renderKPIModal = () => {
     if (!showKPIModal) return null;
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">📊</span>
-                <div>
-                  <h2 className="text-xl font-bold text-white">KPI Dashboard - Stockout Performance</h2>
-                </div>
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full border border-slate-200 max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-slate-900 px-6 py-3.5 border-b border-slate-800 text-white flex justify-between items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+                <BarChart3 className="w-4 h-4" />
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => setShowTargetHistoryModal(true)} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm transition-colors">📜 History</button>
-                <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
-              </div>
+              <h2 className="text-sm font-black text-white uppercase tracking-tight">KPI Performance Matrix - Stockout</h2>
+            </div>
+            <div className="flex gap-2 items-center">
+              <button 
+                onClick={() => setShowTargetHistoryModal(true)} 
+                className="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-3 py-1 rounded-lg text-xs font-bold transition-colors border border-slate-700 cursor-pointer"
+              >
+                <History className="w-3.5 h-3.5" />
+                <span>History</span>
+              </button>
+              <button 
+                onClick={() => setShowKPIModal(false)} 
+                className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
           
           <div className="p-6 overflow-y-auto flex-1">
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">Target ព្រឹក</div>
-                <div className="text-2xl font-bold">{calculateKPIData.summary.targetMorning}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+              <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target ព្រឹក</div>
+                <div className="text-xl font-mono font-black text-slate-900 mt-1">{calculateKPIData.summary.targetMorning}</div>
               </div>
-              <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">Target ល្ងាច</div>
-                <div className="text-2xl font-bold">{calculateKPIData.summary.targetEvening}</div>
+              <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Target ល្ងាច</div>
+                <div className="text-xl font-mono font-black text-slate-900 mt-1">{calculateKPIData.summary.targetEvening}</div>
               </div>
-              <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">Remain</div>
-                <div className="text-2xl font-bold">{calculateKPIData.summary.remain}</div>
+              <div className="bg-amber-50/50 rounded-xl p-3.5 border border-amber-200">
+                <div className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Remain</div>
+                <div className="text-xl font-mono font-black text-amber-700 mt-1">{calculateKPIData.summary.remain}</div>
               </div>
-              <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">Result</div>
-                <div className="text-2xl font-bold">{calculateKPIData.summary.result}</div>
+              <div className="bg-emerald-50/50 rounded-xl p-3.5 border border-emerald-200">
+                <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Result</div>
+                <div className="text-xl font-mono font-black text-emerald-700 mt-1">{calculateKPIData.summary.result}</div>
               </div>
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">Ratio</div>
-                <div className="text-2xl font-bold">{calculateKPIData.summary.ratio.toFixed(1)}%</div>
+              <div className="bg-purple-50/50 rounded-xl p-3.5 border border-purple-200">
+                <div className="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Ratio</div>
+                <div className="text-xl font-mono font-black text-purple-700 mt-1">{calculateKPIData.summary.ratio.toFixed(1)}%</div>
               </div>
-              <div className="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-4 text-white shadow-lg">
-                <div className="text-xs opacity-90">In System</div>
-                <div className="text-2xl font-bold">{calculateKPIData.summary.totalRecords}</div>
+              <div className="bg-blue-50/50 rounded-xl p-3.5 border border-blue-200">
+                <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider">In System</div>
+                <div className="text-xl font-mono font-black text-blue-700 mt-1">{calculateKPIData.summary.totalRecords}</div>
               </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="mb-6">
-              <div className="flex justify-between text-sm text-gray-600 mb-1">
+            <div className="mb-6 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+              <div className="flex justify-between text-xs text-slate-600 mb-1.5 font-bold">
                 <span>Overall Progress (based on Evening Target)</span>
-                <span className="font-bold">{calculateKPIData.summary.ratio.toFixed(1)}%</span>
+                <span className="font-mono text-indigo-600">{calculateKPIData.summary.ratio.toFixed(1)}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                <div className="bg-gradient-to-r from-emerald-500 to-blue-500 h-4 rounded-full transition-all duration-500" style={{ width: `${calculateKPIData.summary.ratio}%` }}></div>
+              <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div 
+                  className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500" 
+                  style={{ width: `${Math.min(100, Math.max(0, calculateKPIData.summary.ratio))}%` }}
+                />
               </div>
             </div>
 
             {/* View Mode Tabs */}
-            <div className="flex gap-2 mb-4 border-b pb-2">
-              <button onClick={() => setKpiViewMode('all')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${kpiViewMode === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>📋 All ({calculateKPIData.allData.length})</button>
-              <button onClick={() => setKpiViewMode('active')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${kpiViewMode === 'active' ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>🔄 Active</button>
-              <button onClick={() => setKpiViewMode('completed')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${kpiViewMode === 'completed' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>✅ Completed</button>
+            <div className="flex gap-2 mb-4 border-b border-slate-200 pb-3">
+              <button 
+                onClick={() => setKpiViewMode('all')} 
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  kpiViewMode === 'all' ? 'bg-slate-900 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>All ({calculateKPIData.allData.length})</span>
+              </button>
+              <button 
+                onClick={() => setKpiViewMode('active')} 
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  kpiViewMode === 'active' ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Active</span>
+              </button>
+              <button 
+                onClick={() => setKpiViewMode('completed')} 
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  kpiViewMode === 'completed' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Completed</span>
+              </button>
             </div>
 
             {/* KPI Table */}
-            <div className="border rounded-xl overflow-hidden">
+            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-slate-200 text-xs">
+                  <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('unit')}>Unit {kpiSortBy === 'unit' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('morning')}>ព្រឹក {kpiSortBy === 'morning' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('evening')}>ល្ងាច {kpiSortBy === 'evening' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('remain')}>Remain</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('result')}>Result</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium cursor-pointer hover:text-gray-700" onClick={() => handleSort('ratio')}>Ratio</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium">In System</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium">Status</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium">Action</th>
+                      <th className="px-4 py-2.5 text-left cursor-pointer hover:text-slate-900" onClick={() => handleSort('unit')}>Unit {kpiSortBy === 'unit' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-2.5 text-right cursor-pointer hover:text-slate-900" onClick={() => handleSort('morning')}>ព្រឹក {kpiSortBy === 'morning' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-2.5 text-right cursor-pointer hover:text-slate-900" onClick={() => handleSort('evening')}>ល្ងាច {kpiSortBy === 'evening' && (kpiSortOrder === 'asc' ? '↑' : '↓')}</th>
+                      <th className="px-4 py-2.5 text-right cursor-pointer hover:text-slate-900" onClick={() => handleSort('remain')}>Remain</th>
+                      <th className="px-4 py-2.5 text-right cursor-pointer hover:text-slate-900" onClick={() => handleSort('result')}>Result</th>
+                      <th className="px-4 py-2.5 text-right cursor-pointer hover:text-slate-900" onClick={() => handleSort('ratio')}>Ratio</th>
+                      <th className="px-4 py-2.5 text-right">In System</th>
+                      <th className="px-4 py-2.5 text-center">Status</th>
+                      <th className="px-4 py-2.5 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-white divide-y divide-slate-100 font-mono">
                     {calculateKPIData.data.map((item) => (
-                      <tr key={item.unit} className={`hover:bg-gray-50 ${item.hasChange ? 'bg-amber-50' : ''}`}>
-                        <td className="px-4 py-3 text-sm font-medium">
+                      <tr key={item.unit} className={`hover:bg-slate-50/80 transition-colors ${item.hasChange ? 'bg-amber-50/40' : ''}`}>
+                        <td className="px-4 py-2 text-xs font-bold text-slate-900">
                           {item.unit}
-                          {item.hasChange && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-amber-200 text-amber-800">📊 Changed</span>}
-                          {item.isNew && <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-emerald-200 text-emerald-800">🆕 New</span>}
+                          {item.hasChange && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-sans font-semibold">Changed</span>}
+                          {item.isNew && <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800 font-sans font-semibold">New</span>}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right">
+                        <td className="px-4 py-2 text-xs text-right">
                           {editingTarget === `${item.unit}-morning` ? (
-                            <input type="number" defaultValue={item.morningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'morning', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border rounded-xl bg-white" />
+                            <input type="number" defaultValue={item.morningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'morning', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-0.5 text-right border border-blue-500 rounded bg-white" />
                           ) : (
-                            <span className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded" onClick={() => setEditingTarget(`${item.unit}-morning`)}>{item.morningTarget || '-'}</span>
+                            <span className="cursor-pointer hover:bg-slate-100 px-2 py-0.5 rounded text-slate-700" onClick={() => setEditingTarget(`${item.unit}-morning`)}>{item.morningTarget || '-'}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right">
+                        <td className="px-4 py-2 text-xs text-right">
                           {editingTarget === `${item.unit}-evening` ? (
-                            <input type="number" defaultValue={item.eveningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'evening', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-1 text-right border rounded-xl bg-white" />
+                            <input type="number" defaultValue={item.eveningTarget} autoFocus onBlur={(e) => { updateTarget(item.unit, 'evening', e.target.value); setEditingTarget(null); }} className="w-20 px-2 py-0.5 text-right border border-blue-500 rounded bg-white" />
                           ) : (
-                            <span className={`cursor-pointer hover:bg-gray-100 px-2 py-1 rounded ${item.hasChange ? 'font-bold text-purple-600' : ''}`} onClick={() => setEditingTarget(`${item.unit}-evening`)}>{item.eveningTarget || '-'}</span>
+                            <span className={`cursor-pointer hover:bg-slate-100 px-2 py-0.5 rounded ${item.hasChange ? 'font-bold text-purple-700' : 'text-slate-700'}`} onClick={() => setEditingTarget(`${item.unit}-evening`)}>{item.eveningTarget || '-'}</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-right"><span className={`font-medium ${item.remain > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{item.remain}</span></td>
-                        <td className="px-4 py-3 text-sm text-right text-emerald-600 font-medium">{item.result}</td>
-                        <td className="px-4 py-3 text-sm text-right">
+                        <td className="px-4 py-2 text-xs text-right"><span className={`font-bold ${item.remain > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>{item.remain}</span></td>
+                        <td className="px-4 py-2 text-xs text-right text-emerald-600 font-bold">{item.result}</td>
+                        <td className="px-4 py-2 text-xs text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <span className="font-medium">{item.ratio.toFixed(1)}%</span>
-                            <div className="w-16 bg-gray-200 rounded-full h-2">
-                              <div className={`h-2 rounded-full ${item.ratio >= 80 ? 'bg-emerald-500' : item.ratio >= 50 ? 'bg-amber-500' : item.ratio > 0 ? 'bg-rose-500' : 'bg-gray-400'}`} style={{ width: `${item.ratio}%` }}></div>
+                            <span className="font-bold">{item.ratio.toFixed(1)}%</span>
+                            <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                              <div className={`h-1.5 rounded-full ${item.ratio >= 80 ? 'bg-emerald-500' : item.ratio >= 50 ? 'bg-amber-500' : item.ratio > 0 ? 'bg-rose-500' : 'bg-slate-300'}`} style={{ width: `${Math.min(100, Math.max(0, item.ratio))}%` }}></div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-sm text-right text-gray-500">{item.total}</td>
-                        <td className="px-4 py-3 text-center">{getStatusBadge(item.status)}</td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-2 text-xs text-right text-slate-500">{item.total}</td>
+                        <td className="px-4 py-2 text-center">{getStatusBadge(item.status)}</td>
+                        <td className="px-4 py-2 text-center">
                           {item.hasData && (
-                            <button onClick={() => { setSearchTerm(item.unit); setShowKPIModal(false); }} className="text-blue-500 hover:text-blue-700 text-xs transition-colors">View</button>
+                            <button onClick={() => { setSearchTerm(item.unit); setShowKPIModal(false); }} className="text-blue-600 hover:text-blue-800 text-xs font-bold transition-colors cursor-pointer">View</button>
                           )}
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-gray-50 font-bold">
+                  <tfoot className="bg-slate-50 font-bold font-mono text-xs border-t border-slate-200">
                     <tr>
-                      <td className="px-4 py-3">សរុប</td>
-                      <td className="px-4 py-3 text-right">{calculateKPIData.summary.targetMorning}</td>
-                      <td className="px-4 py-3 text-right">{calculateKPIData.summary.targetEvening}</td>
-                      <td className="px-4 py-3 text-right text-amber-600">{calculateKPIData.summary.remain}</td>
-                      <td className="px-4 py-3 text-right text-emerald-600">{calculateKPIData.summary.result}</td>
-                      <td className="px-4 py-3 text-right">{calculateKPIData.summary.ratio.toFixed(1)}%</td>
-                      <td className="px-4 py-3 text-right">{calculateKPIData.summary.totalRecords}</td>
-                      <td className="px-4 py-3 text-center">-</td>
-                      <td className="px-4 py-3 text-center">-</td>
+                      <td className="px-4 py-2.5 font-sans font-black text-slate-900">សរុប</td>
+                      <td className="px-4 py-2.5 text-right">{calculateKPIData.summary.targetMorning}</td>
+                      <td className="px-4 py-2.5 text-right">{calculateKPIData.summary.targetEvening}</td>
+                      <td className="px-4 py-2.5 text-right text-amber-600">{calculateKPIData.summary.remain}</td>
+                      <td className="px-4 py-2.5 text-right text-emerald-600">{calculateKPIData.summary.result}</td>
+                      <td className="px-4 py-2.5 text-right">{calculateKPIData.summary.ratio.toFixed(1)}%</td>
+                      <td className="px-4 py-2.5 text-right">{calculateKPIData.summary.totalRecords}</td>
+                      <td className="px-4 py-2.5 text-center">-</td>
+                      <td className="px-4 py-2.5 text-center">-</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
             </div>
-            
-
           </div>
 
-          <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
-            <button onClick={() => setShowKPIModal(false)} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Close</button>
-            <button onClick={exportKPItoExcel} className="px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors">📎 Export KPI</button>
-            <button onClick={exportToExcel} className="px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors">📎 Export Data</button>
+          <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2.5">
+            <button onClick={() => setShowKPIModal(false)} className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-lg text-xs transition-colors cursor-pointer">
+              Close
+            </button>
+            <button onClick={exportKPItoExcel} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-xs">
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span>Export KPI</span>
+            </button>
+            <button onClick={exportToExcel} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-xs">
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Data</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1371,34 +1462,52 @@ const STOCKOUT_YET_CONFIRM = () => {
   const renderPasteModal = () => {
     if (!showPasteModal) return null;
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4 rounded-t-2xl">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-white">🔄 Smart Import</h2>
-                <p className="text-blue-100 text-sm">Auto-filters GPON (for SPE, TAK, KAM, CHH) & GIS_MOD | Unit from Group Receiver</p>
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full border border-slate-200 overflow-hidden">
+          <div className="bg-slate-900 px-6 py-3.5 border-b border-slate-800 text-white flex justify-between items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <Upload className="w-4 h-4" />
               </div>
-              <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-2xl">✕</button>
+              <div>
+                <h2 className="text-sm font-black text-white uppercase tracking-tight">Smart Import Data</h2>
+                <p className="text-[11px] text-slate-400">Auto-filters GPON (for SPE, TAK, KAM, CHH) & GIS_MOD | Extract Unit ពី Group Receiver</p>
+              </div>
             </div>
+            <button 
+              onClick={() => setShowPasteModal(false)} 
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
           <div className="p-6">
             <textarea 
               value={pasteData} 
               onChange={(e) => setPasteData(e.target.value)} 
-              placeholder="Paste your system data here...&#10;&#10;Format: Export Code, Export No, Date, Stock Receiver, Group Receiver, Construction Receiver&#10;&#10;🚫 Items with GPON (for SPE, TAK, KAM, CHH) or GIS_MOD will be automatically excluded" 
-              className="w-full h-64 px-4 py-3 border rounded-xl font-mono text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="បិទភ្ជាប់ (Paste) ទិន្នន័យពី Excel នៅទីនេះ...&#10;&#10;ទម្រង់ជួរឈរ: Export Code, Export No, Date, Stock Receiver, Group Receiver, Construction Receiver&#10;&#10;ចំណាំ: ប្រព័ន្ធនឹងច្រោះចោលស្វ័យប្រវត្តិនូវ GPON (សម្រាប់ SPE, TAK, KAM, CHH) ឬ GIS_MOD" 
+              className="w-full h-64 px-4 py-3 border border-slate-200 rounded-xl font-mono text-xs bg-slate-50 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition-all shadow-inner"
             />
 
             {data.length > 0 && (
-              <div className="mt-3 p-2 bg-amber-50 rounded-xl text-sm text-amber-800">
-                ⚠️ Current data has {data.length} record(s). Import will replace existing data.
+              <div className="mt-3 p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl text-xs text-amber-800 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>បច្ចុប្បន្នមានទិន្នន័យ <strong>{data.length}</strong> ជួរក្នុងប្រព័ន្ធ។ ការ Import ថ្មីនឹងជំនួសទិន្នន័យចាស់ទាំងស្រុង។</span>
               </div>
             )}
           </div>
-          <div className="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-3">
-            <button onClick={() => { setShowPasteModal(false); setPasteData(''); }} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">Cancel</button>
-            <button onClick={handleSmartImport} disabled={!pasteData.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">🔄 Smart Import</button>
+          <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2.5">
+            <button onClick={() => { setShowPasteModal(false); setPasteData(''); }} className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 font-bold text-slate-700 rounded-lg text-xs transition-colors cursor-pointer">
+              Cancel
+            </button>
+            <button 
+              onClick={handleSmartImport} 
+              disabled={!pasteData.trim()} 
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>Smart Import</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1409,85 +1518,102 @@ const STOCKOUT_YET_CONFIRM = () => {
   const renderAlarmModal = () => {
     if (!showAlarmModal) return null;
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
-        <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full mx-4 overflow-hidden flex flex-col max-h-[85vh]">
-          <div className="bg-gradient-to-r from-rose-600 to-rose-700 px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <span className="animate-bounce text-2xl">🚨</span>
-                <div>
-                  <h2 className="text-xl font-bold text-white">ALARM DETECTED!</h2>
-                  <p className="text-rose-100 text-xs">{alarmItems.length} record(s) exceed {alarmThreshold}-day threshold</p>
-                </div>
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 animate-fadeIn p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full border border-slate-200 overflow-hidden flex flex-col max-h-[85vh]">
+          <div className="bg-slate-900 px-6 py-3.5 border-b border-slate-800 text-white flex justify-between items-center">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                <ShieldAlert className="w-4 h-4" />
               </div>
-              <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white text-2xl">✕</button>
+              <div>
+                <h2 className="text-sm font-black text-white uppercase tracking-tight">ALARM DETECTED ({alarmItems.length})</h2>
+                <p className="text-[11px] text-rose-300">មានទិន្នន័យលើសពីកម្រិតកំណត់ {alarmThreshold} ថ្ងៃ (Threshold &ge; {alarmThreshold}d)</p>
+              </div>
             </div>
+            <button 
+              onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} 
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
           
-          <div className="px-6 py-3 bg-gray-50 border-b flex gap-2 justify-between items-center">
+          <div className="px-6 py-3 bg-slate-50 border-b border-slate-200 flex gap-2.5 justify-between items-center flex-wrap">
             <select
               value={selectedAlarmUnit}
               onChange={(e) => setSelectedAlarmUnit(e.target.value)}
-              className="px-3 py-1.5 border rounded-xl text-xs bg-white w-40"
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold bg-white w-40 text-slate-700 shadow-2xs"
             >
               <option value="">All Units</option>
               {alarmUnits.map(unit => (
                 <option key={unit} value={unit}>{unit}</option>
               ))}
             </select>
-            <input 
-              type="text" 
-              placeholder="Search alarm list..." 
-              value={alarmSearchTerm} 
-              onChange={(e) => setAlarmSearchTerm(e.target.value)} 
-              className="flex-1 px-3 py-1.5 border rounded-xl text-xs bg-white"
-            />
-            <button onClick={copyAlarmsToClipboard} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-colors">
-              📋 Copy ({filteredAlarmItems.length})
+            <div className="relative flex-1 max-w-sm">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input 
+                type="text" 
+                placeholder="Search alarm list..." 
+                value={alarmSearchTerm} 
+                onChange={(e) => setAlarmSearchTerm(e.target.value)} 
+                className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs bg-white shadow-2xs font-medium"
+              />
+            </div>
+            <button 
+              onClick={copyAlarmsToClipboard} 
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Copy ({filteredAlarmItems.length})</span>
             </button>
           </div>
 
           <div className="p-6 overflow-y-auto flex-1">
             {filteredAlarmItems.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                <div className="text-3xl mb-2">🔍</div>
-                <p>No alarm items match your search.</p>
+              <div className="text-center text-slate-400 py-12 flex flex-col items-center gap-2">
+                <Search className="w-8 h-8 text-slate-300" />
+                <p className="text-sm font-bold text-slate-600">No alarm items match your search.</p>
               </div>
             ) : (
-              <div className="overflow-x-auto border border-rose-100 rounded-2xl shadow-sm">
-                <table className="min-w-full divide-y divide-rose-100 text-left text-xs bg-white">
-                  <thead className="bg-rose-50/50 text-rose-900 font-bold uppercase tracking-wider">
+              <div className="overflow-x-auto border border-slate-200 rounded-xl shadow-2xs">
+                <table className="min-w-full divide-y divide-slate-200 text-left text-xs bg-white">
+                  <thead className="bg-slate-50 text-slate-700 font-bold uppercase tracking-wider text-[10px]">
                     <tr>
-                      <th className="px-4 py-3 text-center">#</th>
-                      <th className="px-4 py-3">Export No</th>
-                      <th className="px-4 py-3">Stock Receiver</th>
-                      <th className="px-4 py-3">Group Receiver</th>
-                      <th className="px-4 py-3">Construction</th>
-                      <th className="px-4 py-3 text-center">Days</th>
-                      <th className="px-4 py-3 text-center">TEAM</th>
-                      <th className="px-4 py-3 text-center">Action</th>
+                      <th className="px-3.5 py-2.5 text-center">#</th>
+                      <th className="px-3.5 py-2.5">Export No</th>
+                      <th className="px-3.5 py-2.5">Stock Receiver</th>
+                      <th className="px-3.5 py-2.5">Group Receiver</th>
+                      <th className="px-3.5 py-2.5">Construction</th>
+                      <th className="px-3.5 py-2.5 text-center">Days</th>
+                      <th className="px-3.5 py-2.5 text-center">TEAM</th>
+                      <th className="px-3.5 py-2.5 text-center">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-rose-100">
+                  <tbody className="divide-y divide-slate-100 font-mono">
                     {filteredAlarmItems.map((item, idx) => (
                       <tr key={item.id} className="hover:bg-rose-50/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-gray-500 text-center">{idx + 1}</td>
-                        <td className="px-4 py-3 font-mono font-semibold text-gray-800">{item.exportNo || '-'}</td>
-                        <td className="px-4 py-3 text-gray-700">{item.stockReceiver || '-'}</td>
-                        <td className="px-4 py-3 text-gray-700">{item.groupReceiver || '-'}</td>
-                        <td className="px-4 py-3 text-gray-700">{item.constructionReceiver || '-'}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800">
-                            +{item.daysDiff}
+                        <td className="px-3.5 py-2 text-slate-400 text-center">{idx + 1}</td>
+                        <td className="px-3.5 py-2 font-bold text-slate-900">{item.exportNo || '-'}</td>
+                        <td className="px-3.5 py-2 text-slate-700 font-sans">{item.stockReceiver || '-'}</td>
+                        <td className="px-3.5 py-2 text-slate-700 font-sans">{item.groupReceiver || '-'}</td>
+                        <td className="px-3.5 py-2 text-slate-700 font-sans">{item.constructionReceiver || '-'}</td>
+                        <td className="px-3.5 py-2 text-center">
+                          <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            +{item.daysDiff} d
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className="inline-flex px-2 py-0.5 rounded-xl font-bold bg-purple-50 text-purple-700 border border-purple-100 font-mono">
+                        <td className="px-3.5 py-2 text-center">
+                          <span className="inline-flex px-2 py-0.5 rounded-md font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
                             {item.team || '-'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <button onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} className="px-2 py-1 text-[11px] font-semibold text-rose-700 bg-white border border-rose-200 rounded-lg hover:bg-rose-50 transition-colors shadow-xs">Dismiss</button>
+                        <td className="px-3.5 py-2 text-center font-sans">
+                          <button 
+                            onClick={() => setDismissedItems(prev => new Set([...prev, item.id]))} 
+                            className="px-2.5 py-1 text-xs font-bold text-rose-700 bg-white border border-rose-200 rounded-md hover:bg-rose-50 transition-colors shadow-2xs cursor-pointer"
+                          >
+                            Dismiss
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1497,30 +1623,44 @@ const STOCKOUT_YET_CONFIRM = () => {
             )}
           </div>
           
-          <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
-            <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors text-xs">Close</button>
-            <button onClick={() => { setDismissedItems(prev => new Set([...prev, ...alarmItems.map(i => i.id)])); setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs transition-colors shadow-md">Dismiss All</button>
+          <div className="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2.5">
+            <button 
+              onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} 
+              className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 font-bold text-slate-700 rounded-lg text-xs transition-colors cursor-pointer"
+            >
+              Close
+            </button>
+            <button 
+              onClick={() => { setDismissedItems(prev => new Set([...prev, ...alarmItems.map(i => i.id)])); setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} 
+              className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs transition-colors shadow-xs cursor-pointer"
+            >
+              Dismiss All
+            </button>
           </div>
         </div>
       </div>
     );
   };
 
-  // ─── FLOATING BUTTONS (KPI is accessible via top ribbon and stats summary bar) ───
+  // ─── FLOATING BUTTONS ───
   const renderFloatingButtons = () => {
     if (alarmCount === 0 || showAlarmModal) return null;
     return (
-      <div className="fixed bottom-20 right-6 flex flex-col gap-3 z-40">
-        <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 text-white px-4 py-2.5 rounded-full shadow-lg animate-bounce flex items-center gap-2 hover:bg-rose-700 transition-colors border-2 border-white">
-          <span className="text-lg">🚨</span>
-          <span className="font-bold text-sm">{alarmCount}</span>
+      <div className="fixed bottom-14 right-6 flex flex-col gap-3 z-40">
+        <button 
+          onClick={() => setShowAlarmModal(true)} 
+          className="bg-rose-600 text-white px-3.5 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-rose-700 transition-all border-2 border-white cursor-pointer hover:scale-105 active:scale-95"
+          title={`${alarmCount} alarms detected`}
+        >
+          <ShieldAlert className="w-4 h-4 animate-pulse" />
+          <span className="font-mono font-black text-xs">{alarmCount}</span>
         </button>
       </div>
     );
   };
 
   return (
-    <div className="w-full h-screen max-h-screen p-1 sm:p-1.5 bg-slate-100 flex flex-col overflow-hidden">
+    <div className="w-full h-screen max-h-screen p-0 sm:p-0.5 bg-slate-100 flex flex-col overflow-hidden">
       
       {/* ─── MODALS ─── */}
       {renderComparisonAlert()}
@@ -1531,114 +1671,268 @@ const STOCKOUT_YET_CONFIRM = () => {
       {renderFloatingButtons()}
 
       {/* ─── MAIN CONTENT CONTAINER (FULL SCREEN FLEX) ─── */}
-      <div className="bg-white rounded-lg shadow-xl border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
+      <div className="bg-white rounded-none sm:rounded-lg shadow-xs border-0 sm:border border-slate-200 flex-1 flex flex-col h-full overflow-hidden">
         
-        {/* ─── COMPACT EXCEL HEADER RIBBON ─── */}
-        <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 px-3 py-1 border-b border-slate-900 text-white flex-shrink-0">
-          <div className="flex justify-between items-center gap-2 flex-wrap">
-            <div>
+        {/* ─── ENTERPRISE COMPACT HEADER RIBBON ─── */}
+        <div className="bg-slate-900 border-b border-slate-800 px-3.5 py-1.5 text-white flex-shrink-0">
+          <div className="flex justify-between items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-400/30">
+                <Package className="w-4 h-4" />
+              </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
-                  <span>📦</span> STOCKOUT YET CONFIRM
+                <h1 className="text-xs sm:text-sm font-black tracking-tight text-white uppercase">
+                  STOCKOUT YET CONFIRM
                 </h1>
-                <span className="bg-blue-500/30 text-blue-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-blue-400/30 font-bold">
-                  🟢 LIVE • {currentTime.toLocaleTimeString()}
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-950/70 border border-emerald-500/40 text-emerald-400 font-mono text-[10px] font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>LIVE • {currentTime.toLocaleTimeString()}</span>
                 </span>
               </div>
             </div>
-            <div className="flex gap-1.5 items-center">
-              <span className="text-slate-300 text-[10px] hidden lg:inline mr-2">
-                <strong>STEP 1:</strong> តាមដានសម្ភារៈ Request ត្រូវបាន Export ពី METFONE មក GIS
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-[11px] hidden xl:inline mr-1">
+                <strong className="text-slate-200">STEP 1:</strong> តាមដានសម្ភារៈ Request ត្រូវបាន Export ពី METFONE មក GIS
               </span>
-              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer">📊 KPI Matrix</button>
+              <button 
+                onClick={clearAllData} 
+                className="inline-flex items-center gap-1.5 bg-slate-800/90 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-800 text-slate-300 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border border-slate-700 shadow-2xs cursor-pointer"
+                title="សម្អាតទិន្នន័យទាំងអស់"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Clear All</span>
+              </button>
+              <button 
+                onClick={() => setShowKPIModal(true)} 
+                className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>KPI Matrix</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* ─── TOOLBAR & ACTION BAR ─── */}
-        <div className="px-3 py-1 bg-slate-100 border-b border-slate-300 flex-shrink-0">
+        {/* ─── ACTION TOOLBAR ─── */}
+        <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0">
           <div className="flex flex-wrap gap-2 justify-between items-center">
-            <div className="flex flex-wrap gap-1.5 items-center">
-              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">📎 Export Excel</button>
+            {/* Left Actions & Filters */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <button 
+                onClick={() => setShowPasteModal(true)} 
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Smart Import</span>
+              </button>
+              <button 
+                onClick={exportToExcel} 
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Export Excel</span>
+              </button>
+
               {selectedRows.size > 0 && (
-                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">🗑️ Complete ({selectedRows.size})</button>
+                <button 
+                  onClick={deleteSelectedRows} 
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer animate-fadeIn"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Complete ({selectedRows.size})</span>
+                </button>
               )}
-              
-              {/* 🗓️ DAYS QUICK FILTER CHIPS */}
-              <div className="flex items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
-                <span className="text-[10px] font-extrabold text-slate-600">🗓️ Days:</span>
+
+              {/* Days Quick Filter Pills */}
+              <div className="flex items-center gap-1 ml-1 pl-2.5 border-l border-slate-200 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-500 mr-0.5 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-slate-400" />
+                  <span>Days:</span>
+                </span>
                 {[
                   { id: 'ALL', label: 'All' },
                   { id: '0', label: '0d' },
                   { id: '1-3', label: '1-3d' },
                   { id: '4-6', label: '4-6d' },
-                  { id: '>=4', label: '>=4d 🚨' },
-                  { id: '>=7', label: '>=7d 🔴' },
+                  { id: '>=4', label: '≥4d Alarms' },
+                  { id: '>=7', label: '≥7d Critical' },
                 ].map(pill => (
                   <button
                     key={pill.id}
                     onClick={() => { setDaysFilter(pill.id); setCurrentPage(1); }}
-                    className={`px-1.5 py-0.25 rounded text-[9.5px] font-black transition-all cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                       daysFilter === pill.id 
-                        ? 'bg-blue-600 text-white shadow-2xs' 
-                        : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+                        ? 'bg-blue-600 text-white shadow-xs font-black' 
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-2xs'
                     }`}
                   >
-                    {pill.label}
+                    <span>{pill.label}</span>
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Right: Threshold & Search */}
             <div className="flex gap-2 items-center flex-wrap">
-              <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-xs text-[10px]">
-                <span className="font-bold text-amber-900">⚠️ Threshold &ge;</span>
-                <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} className="w-10 px-1 py-0 text-[10px] font-bold border border-amber-300 rounded text-center bg-white" min="1"/>
-                <span className="font-bold text-amber-900">days</span>
+              <div className="flex items-center gap-1.5 bg-amber-50/80 border border-amber-200/80 px-2 py-0.5 rounded-lg shadow-2xs text-xs">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                <span className="font-bold text-amber-900 text-[10.5px]">Threshold ≥</span>
+                <input 
+                  type="number" 
+                  value={alarmThreshold} 
+                  onChange={(e) => setAlarmThreshold(parseInt(e.target.value) || 4)} 
+                  className="w-9 px-1 py-0 text-xs font-mono font-bold border border-amber-300 rounded text-center bg-white" 
+                  min="1"
+                />
+                <span className="font-bold text-amber-900 text-[10.5px]">days</span>
               </div>
+
               <div className="relative">
-                <input type="text" placeholder="Search export code, receiver, team..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-44 sm:w-56 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-blue-500 focus:border-transparent transition-all shadow-xs" />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input 
+                  type="text" 
+                  placeholder="Search export code, receiver, team..." 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  className="w-44 sm:w-56 pl-8 pr-7 py-1 text-xs font-medium border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs" 
+                />
+                {searchTerm && (
+                  <button 
+                    onClick={() => setSearchTerm('')} 
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </div>
+
+              {/* Density Toggle (Ultra 70 rows / Compact / Standard) */}
+              <button
+                onClick={() => setTableDensity(prev => prev === 'ultra' ? 'compact' : prev === 'compact' ? 'normal' : 'ultra')}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
+                  tableDensity === 'ultra'
+                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                    : tableDensity === 'compact'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+                title="ចុចដើម្បីប្តូរទំហំជួរដេក (Ultra 70 rows → Compact → Standard)"
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span>
+                  {tableDensity === 'ultra' ? 'Ultra View (70 rows)' : tableDensity === 'compact' ? 'Compact (45 rows)' : 'Standard'}
+                </span>
+              </button>
+
+              {/* Fit Screen / Scroll Mode Toggle */}
+              <button
+                onClick={() => setIsFitScreen(prev => !prev)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
+                  isFitScreen 
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
+                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={isFitScreen ? 'Switch to Expanded (Horizontal Scroll)' : 'Switch to Fit Screen (100% Responsive)'}
+              >
+                {isFitScreen ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Fit Screen</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Expanded</span>
+                  </>
+                )}
+              </button>
+
+              {/* Stats Ribbon Toggle (Save vertical space) */}
+              <button
+                onClick={() => setShowStatsBar(prev => !prev)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+                title={showStatsBar ? 'លាក់របារស្ថិតិ (Hide Stats bar) ដើម្បីពង្រីកតារាងឱ្យវែងបំផុត' : 'បង្ហាញរបារស្ថិតិ (Show Stats bar)'}
+              >
+                {showStatsBar ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* ─── STATS SUMMARY BAR (ULTRA COMPACT INLINE) ─── */}
-        <div className="px-3 py-0.5 bg-slate-200/70 border-b border-slate-300 grid grid-cols-3 sm:grid-cols-6 gap-1.5 flex-shrink-0 text-[9.5px]">
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-slate-500">In System</span>
-            <span className="text-xs font-black text-slate-900">{data.length}</span>
+        {/* ─── STATS SUMMARY BAR (HIGH-DENSITY METRICS RIBBON) ─── */}
+        {showStatsBar && (
+        <div className="px-3.5 py-1 bg-slate-100/80 border-b border-slate-200 grid grid-cols-3 sm:grid-cols-6 gap-1.5 flex-shrink-0 text-xs">
+          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500 flex items-center gap-1">
+              <Layers className="w-3 h-3 text-slate-400" />
+              <span>In System</span>
+            </span>
+            <span className="text-xs font-mono font-black text-slate-900">{data.length}</span>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-emerald-600">GIS Records</span>
-            <span className="text-xs font-black text-emerald-700">{filteredData.length}</span>
+
+          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-emerald-600 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+              <span>GIS Records</span>
+            </span>
+            <span className="text-xs font-mono font-black text-emerald-700">{filteredData.length}</span>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-indigo-600">Selected</span>
-            <span className="text-xs font-black text-indigo-700">{selectedRows.size}</span>
+
+          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-blue-600">Selected</span>
+            <span className="text-xs font-mono font-black text-blue-700">{selectedRows.size}</span>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-amber-600">Threshold</span>
-            <span className="text-xs font-black text-amber-700">&ge;{alarmThreshold}d</span>
+
+          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-amber-600">Threshold</span>
+            <span className="text-xs font-mono font-black text-amber-700">≥{alarmThreshold}d</span>
           </div>
-          <div className={`bg-white rounded px-2 py-0.5 border shadow-xs cursor-pointer flex items-center justify-between hover:bg-rose-50 transition-all ${alarmCount > 0 ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300'}`} onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}>
-            <span className="font-black uppercase tracking-wider text-rose-700">Alarms</span>
-            <span className={`text-xs font-black ${alarmCount > 0 ? 'text-rose-600 animate-pulse' : 'text-emerald-600'}`}>{alarmCount}</span>
+
+          <div 
+            className={`bg-white rounded-lg px-2.5 py-1 border shadow-2xs cursor-pointer flex items-center justify-between hover:bg-rose-50/50 transition-all ${
+              alarmCount > 0 ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200/80'
+            }`} 
+            onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}
+            title={alarmCount > 0 ? 'Click to view Alarms' : ''}
+          >
+            <span className="font-bold uppercase tracking-wider text-[10px] text-rose-700 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3 text-rose-500" />
+              <span>Alarms</span>
+            </span>
+            <span className={`text-xs font-mono font-black ${alarmCount > 0 ? 'text-rose-600 animate-pulse' : 'text-slate-400'}`}>
+              {alarmCount}
+            </span>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between cursor-pointer hover:bg-purple-50 transition-all" onClick={() => setShowKPIModal(true)}>
-            <span className="font-black uppercase tracking-wider text-purple-600">Cleared Result</span>
-            <span className="text-xs font-black text-purple-700">{calculateKPIData.summary.result}</span>
+
+          <div 
+            className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between cursor-pointer hover:bg-indigo-50/50 transition-all" 
+            onClick={() => setShowKPIModal(true)}
+            title="Click to view KPI Matrix"
+          >
+            <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-600 flex items-center gap-1">
+              <BarChart3 className="w-3 h-3 text-indigo-500" />
+              <span>Cleared Result</span>
+            </span>
+            <span className="text-xs font-mono font-black text-indigo-700">{calculateKPIData.summary.result}</span>
           </div>
         </div>
+        )}
 
-        {/* ─── EXCEL MATRIX TABLE (DYNAMIC FILL SCREEN) ─── */}
+        {/* ─── DATA GRID TABLE (ENTERPRISE SPREADSHEET MATRIX) ─── */}
         <div className="flex-1 min-h-0 overflow-auto bg-white">
-          <table className="min-w-full border-collapse border border-slate-300 text-[9.5px] leading-tight table-auto">
+          <table className="min-w-full border-collapse border border-slate-200 leading-tight table-auto">
             <thead>
-              <tr className="bg-slate-800 text-white font-black uppercase tracking-wider text-[9px]">
-                <th className="border border-slate-700 px-1 py-0.5 w-6 text-center sticky top-0 z-20 bg-slate-800">
-                  <input type="checkbox" checked={selectedRows.size === data.length && data.length > 0} onChange={toggleSelectAll} className="rounded" />
+              <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10px]">
+                <th className={`border border-slate-800 text-center sticky top-0 z-20 bg-slate-900 w-8 ${
+                  tableDensity === 'ultra' ? 'px-1 py-0.5' : tableDensity === 'compact' ? 'px-1.5 py-1' : 'px-2 py-1.5'
+                }`}>
+                  <input 
+                    type="checkbox" 
+                    checked={selectedRows.size === data.length && data.length > 0} 
+                    onChange={toggleSelectAll} 
+                    className="rounded border-slate-600 cursor-pointer" 
+                  />
                 </th>
                 {columns.map(col => (
                   <th 
@@ -1648,82 +1942,186 @@ const STOCKOUT_YET_CONFIRM = () => {
                         setDaysSortOrder(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none');
                       }
                     }}
-                    className={`border border-slate-700 px-1.5 py-0.5 font-extrabold whitespace-nowrap sticky top-0 z-20 bg-slate-800 ${col.width} ${col.align || 'text-left'} ${col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-700 select-none text-amber-300' : ''}`}
+                    className={`border border-slate-800 font-black whitespace-nowrap sticky top-0 z-20 bg-slate-900 ${col.width} ${col.align || 'text-left'} ${
+                      tableDensity === 'ultra' ? 'px-1.5 py-0.5 text-[9px]' : tableDensity === 'compact' ? 'px-2 py-1 text-[9.5px]' : 'px-2.5 py-1.5 text-[10px]'
+                    } ${
+                      col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-800 select-none text-amber-400' : ''
+                    }`}
                     title={col.key === 'daysDiff' ? 'Click to sort by Days (Descending / Ascending)' : ''}
                   >
-                    {col.label}
-                    {col.key === 'daysDiff' && (
-                      <span className="ml-1 text-[9px]">
-                        {daysSortOrder === 'desc' ? '⬇️' : daysSortOrder === 'asc' ? '⬆️' : '↕️'}
-                      </span>
-                    )}
+                    <div className="inline-flex items-center gap-1">
+                      <span>{col.label}</span>
+                      {col.key === 'daysDiff' && (
+                        <span>
+                          {daysSortOrder === 'desc' ? (
+                            <ArrowDown className="w-3 h-3 text-amber-400 inline" />
+                          ) : daysSortOrder === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-amber-400 inline" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 inline" />
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-300 font-normal text-slate-800 bg-white">
+            <tbody className={`divide-y divide-slate-200 text-slate-800 bg-white ${
+              tableDensity === 'ultra' ? 'text-[10px] leading-none' : tableDensity === 'compact' ? 'text-[11px] leading-tight' : 'text-xs'
+            }`}>
               {paginatedData.map((item) => {
                 const isAlarm = item.daysDiff >= alarmThreshold && !dismissedItems.has(item.id);
                 return (
-                  <tr key={item.id} className={`transition-colors ${isAlarm ? 'bg-rose-50/90 font-semibold' : selectedRows.has(item.id) ? 'bg-blue-50/90' : 'even:bg-slate-50/70 odd:bg-white hover:bg-amber-50/80'}`}>
-                    <td className="border border-slate-300 px-1 py-0.25 text-center bg-white/50">
-                      <input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" />
+                  <tr 
+                    key={item.id} 
+                    className={`transition-colors ${
+                      tableDensity === 'ultra' ? 'h-5 max-h-5' : tableDensity === 'compact' ? 'h-6 max-h-6' : 'h-7.5'
+                    } ${
+                      isAlarm 
+                        ? 'bg-rose-50/60 font-semibold' 
+                        : selectedRows.has(item.id) 
+                        ? 'bg-blue-50/70' 
+                        : 'even:bg-slate-50/50 odd:bg-white hover:bg-slate-100/70'
+                    }`}
+                  >
+                    <td className={`border border-slate-200 text-center bg-white/40 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0' : tableDensity === 'compact' ? 'px-1.5 py-0.5' : 'px-2 py-1'
+                    }`}>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedRows.has(item.id)} 
+                        onChange={() => toggleRowSelection(item.id)} 
+                        className="rounded border-slate-300 cursor-pointer" 
+                      />
                     </td>
-                    <td className="border border-slate-300 px-1 py-0.25 text-slate-500 font-bold text-center bg-slate-100/70">{item.no}</td>
-                    <td className="border border-slate-300 px-1.5 py-0.25 font-mono font-bold text-slate-900 whitespace-nowrap">
+                    <td className={`border border-slate-200 text-slate-400 font-mono text-center bg-slate-50/60 ${
+                      tableDensity === 'ultra' ? 'px-0.5 py-0 text-[9.5px]' : tableDensity === 'compact' ? 'px-1 py-0.5 text-[10px]' : 'px-2 py-1 text-[11px]'
+                    }`}>
+                      {item.no}
+                    </td>
+                    <td className={`border border-slate-200 font-mono font-bold text-slate-900 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : tableDensity === 'compact' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-1 text-xs'
+                    } ${isFitScreen ? 'max-w-[135px] truncate' : 'whitespace-nowrap'}`} title={item.exportCode || ''}>
                       {editingCell?.id === item.id && editingCell?.field === 'exportCode' ? (
-                        <input type="text" defaultValue={item.exportCode} autoFocus onBlur={(e) => saveEdit(item.id, 'exportCode', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'exportCode')} className="w-full px-0.5 py-0 border border-blue-500 rounded text-[9.5px] bg-white font-mono" />
+                        <input 
+                          type="text" 
+                          defaultValue={item.exportCode} 
+                          autoFocus 
+                          onBlur={(e) => saveEdit(item.id, 'exportCode', e.target.value)} 
+                          onKeyDown={(e) => handleKeyPress(e, item.id, 'exportCode')} 
+                          className="w-full px-1 py-0 border border-blue-500 rounded text-xs bg-white font-mono" 
+                        />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'exportCode', item.exportCode)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors font-mono whitespace-nowrap">{item.exportCode || '-'}</div>
+                        <div 
+                          onClick={() => startEdit(item.id, 'exportCode', item.exportCode)} 
+                          className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors font-mono ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : 'whitespace-nowrap'}`}
+                        >
+                          {item.exportCode || '-'}
+                        </div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-1.5 py-0.25 font-mono font-bold text-slate-900 whitespace-nowrap min-w-[170px]">
+                    <td className={`border border-slate-200 font-mono font-bold text-slate-900 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : tableDensity === 'compact' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-1 text-xs'
+                    } ${isFitScreen ? 'w-[140px] truncate' : 'whitespace-nowrap min-w-[170px]'}`} title={item.exportNo || ''}>
                       {editingCell?.id === item.id && editingCell?.field === 'exportNo' ? (
-                        <input type="text" defaultValue={item.exportNo} autoFocus onBlur={(e) => saveEdit(item.id, 'exportNo', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'exportNo')} className="w-full px-0.5 py-0 border border-blue-500 rounded text-[9.5px] bg-white font-mono" />
+                        <input 
+                          type="text" 
+                          defaultValue={item.exportNo} 
+                          autoFocus 
+                          onBlur={(e) => saveEdit(item.id, 'exportNo', e.target.value)} 
+                          onKeyDown={(e) => handleKeyPress(e, item.id, 'exportNo')} 
+                          className="w-full px-1 py-0 border border-blue-500 rounded text-xs bg-white font-mono" 
+                        />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'exportNo', item.exportNo)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors font-mono whitespace-nowrap">{item.exportNo || '-'}</div>
+                        <div 
+                          onClick={() => startEdit(item.id, 'exportNo', item.exportNo)} 
+                          className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors font-mono ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : 'whitespace-nowrap'}`}
+                        >
+                          {item.exportNo || '-'}
+                        </div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-1.5 py-0.25 text-center font-mono text-slate-700 whitespace-nowrap">
+                    <td className={`border border-slate-200 text-center font-mono text-slate-600 whitespace-nowrap ${
+                      tableDensity === 'ultra' ? 'px-0.5 py-0 text-[9.5px]' : tableDensity === 'compact' ? 'px-1 py-0.5 text-[10px]' : 'px-1.5 py-1 text-[11px]'
+                    }`}>
                       {editingCell?.id === item.id && editingCell?.field === 'realExport' ? (
-                        <input type="text" defaultValue={item.realExport} placeholder="DD/MM/YYYY" autoFocus onBlur={(e) => saveEdit(item.id, 'realExport', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'realExport')} className="w-full px-0.5 py-0 border border-blue-500 rounded text-[9.5px] text-center bg-white font-mono" />
+                        <input 
+                          type="text" 
+                          defaultValue={item.realExport} 
+                          placeholder="DD/MM/YYYY" 
+                          autoFocus 
+                          onBlur={(e) => saveEdit(item.id, 'realExport', e.target.value)} 
+                          onKeyDown={(e) => handleKeyPress(e, item.id, 'realExport')} 
+                          className="w-full px-1 py-0 border border-blue-500 rounded text-xs text-center bg-white font-mono" 
+                        />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'realExport', item.realExport)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded text-center transition-colors font-mono">{item.realExport || '-'}</div>
+                        <div 
+                          onClick={() => startEdit(item.id, 'realExport', item.realExport)} 
+                          className={`cursor-pointer hover:bg-slate-200/60 rounded text-center transition-colors font-mono ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'}`}
+                        >
+                          {item.realExport || '-'}
+                        </div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-1.5 py-0.25 whitespace-normal break-words text-slate-800">
-                      <div onClick={() => startEdit(item.id, 'stockReceiver', item.stockReceiver)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors">
+                    <td className={`border border-slate-200 text-slate-800 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : tableDensity === 'compact' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-1 text-xs'
+                    } ${isFitScreen ? 'max-w-[125px] truncate' : 'whitespace-normal break-words'}`} title={item.stockReceiver || ''}>
+                      <div onClick={() => startEdit(item.id, 'stockReceiver', item.stockReceiver)} className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : ''}`}>
                         {item.stockReceiver?.includes('GIS') ? (
                           <span className="text-emerald-700 font-bold">{item.stockReceiver}</span>
                         ) : item.stockReceiver || '-'}
                       </div>
                     </td>
-                    <td className="border border-slate-300 px-1.5 py-0.25 whitespace-normal break-words text-slate-800">
-                      <div onClick={() => startEdit(item.id, 'groupReceiver', item.groupReceiver)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors">
+                    <td className={`border border-slate-200 text-slate-800 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : tableDensity === 'compact' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-1 text-xs'
+                    } ${isFitScreen ? 'max-w-[125px] truncate' : 'whitespace-normal break-words'}`} title={item.groupReceiver || ''}>
+                      <div onClick={() => startEdit(item.id, 'groupReceiver', item.groupReceiver)} className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : ''}`}>
                         {(item.groupReceiver?.includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null) ? (
                           <span className="text-emerald-700 font-bold">{item.groupReceiver}</span>
                         ) : item.groupReceiver || '-'}
                       </div>
                     </td>
-                    <td className="border border-slate-300 px-1.5 py-0.25 whitespace-normal break-words text-slate-800">
-                      <div onClick={() => startEdit(item.id, 'constructionReceiver', item.constructionReceiver)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors">
+                    <td className={`border border-slate-200 text-slate-800 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : tableDensity === 'compact' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-1 text-xs'
+                    } ${isFitScreen ? 'max-w-[150px] truncate' : 'whitespace-normal break-words'}`} title={item.constructionReceiver || ''}>
+                      <div onClick={() => startEdit(item.id, 'constructionReceiver', item.constructionReceiver)} className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : ''}`}>
                         {item.constructionReceiver?.toUpperCase().includes('GPON') && ['SPE', 'TAK', 'KAM', 'CHH'].includes(item.unit) ? (
-                          <span className="text-rose-600 line-through font-bold">{item.constructionReceiver} 🚫</span>
+                          <span className="text-rose-600 line-through font-bold">{item.constructionReceiver} (GPON Filtered)</span>
                         ) : item.constructionReceiver || '-'}
                       </div>
                     </td>
-                    <td className="border border-slate-300 px-1 py-0.25 text-center whitespace-nowrap">
-                      <span className={`inline-flex px-1 py-0 rounded text-[8.5px] font-extrabold ${isAlarm ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-slate-200 text-slate-800 border border-slate-300'}`}>{item.unit}</span>
+                    <td className={`border border-slate-200 text-center whitespace-nowrap ${
+                      tableDensity === 'ultra' ? 'px-0.5 py-0' : tableDensity === 'compact' ? 'px-1 py-0.5' : 'px-1.5 py-1'
+                    }`}>
+                      <span className={`inline-flex rounded font-mono font-bold ${
+                        tableDensity === 'ultra' ? 'px-1 py-0 text-[9px]' : tableDensity === 'compact' ? 'px-1.5 py-0.2 text-[9.5px]' : 'px-1.5 py-0.5 text-[10px]'
+                      } ${
+                        isAlarm 
+                          ? 'bg-rose-100 text-rose-800 border border-rose-300' 
+                          : 'bg-slate-100 text-slate-700 border border-slate-200'
+                      }`}>
+                        {item.unit}
+                      </span>
                     </td>
-                    <td className="border border-slate-300 px-1 py-0.25 text-center font-bold whitespace-nowrap">
-                      <span className={`inline-flex px-1 py-0 rounded font-mono text-[9px] font-black ${
-                        item.daysDiff >= alarmThreshold ? 'bg-rose-100 text-rose-800 border border-rose-300 animate-pulse' :
-                        item.daysDiff > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    <td className={`border border-slate-200 text-center font-bold whitespace-nowrap ${
+                      tableDensity === 'ultra' ? 'px-0.5 py-0' : tableDensity === 'compact' ? 'px-1 py-0.5' : 'px-1.5 py-1'
+                    }`}>
+                      <span className={`inline-flex items-center rounded-md font-mono font-bold border ${
+                        tableDensity === 'ultra' ? 'px-1 py-0 text-[9px]' : tableDensity === 'compact' ? 'px-1.5 py-0.2 text-[9.5px]' : 'px-1.5 py-0.5 text-[10px]'
+                      } ${
+                        item.daysDiff >= alarmThreshold 
+                          ? 'bg-rose-50 text-rose-700 border-rose-300 font-black animate-pulse' 
+                          : item.daysDiff > 0 
+                          ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                       }`}>
                         {item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} d
                       </span>
                     </td>
-                    <td className="border border-slate-300 px-1 py-0.25 text-center whitespace-nowrap font-mono font-bold text-purple-700 bg-purple-50/70">
+                    <td className={`border border-slate-200 text-center whitespace-nowrap font-mono font-bold text-indigo-700 bg-indigo-50/40 ${
+                      tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : tableDensity === 'compact' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-1 text-xs'
+                    }`}>
                       {item.team || '-'}
                     </td>
                   </tr>
@@ -1731,12 +2129,14 @@ const STOCKOUT_YET_CONFIRM = () => {
               })}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length + 1} className="border border-slate-300 px-6 py-12 text-center text-slate-400 font-bold text-sm bg-white">
+                  <td colSpan={columns.length + 1} className="border border-slate-200 px-6 py-16 text-center text-slate-400 font-bold bg-white">
                     <div className="flex flex-col items-center gap-3">
-                      <div className="text-4xl">📭</div>
-                      <p className="text-lg font-bold text-slate-700">No data in system</p>
+                      <Inbox className="w-12 h-12 text-slate-300" />
+                      <p className="text-base font-bold text-slate-700">No data in system</p>
                       <p className="text-xs text-slate-500">Click "Smart Import" to import data</p>
-                      <p className="text-xs text-rose-500 font-bold">🚫 GPON (for SPE, TAK, KAM, CHH) and GIS_MOD are automatically filtered out</p>
+                      <p className="text-xs text-rose-500 font-bold flex items-center justify-center gap-1.5">
+                        <ShieldAlert className="w-3.5 h-3.5" /> GPON (for SPE, TAK, KAM, CHH) and GIS_MOD are automatically filtered out
+                      </p>
                     </div>
                   </td>
                 </tr>
@@ -1746,9 +2146,9 @@ const STOCKOUT_YET_CONFIRM = () => {
         </div>
 
         {/* ─── PAGINATION BAR ─── */}
-        <div className="bg-slate-100 px-3 py-1 border-t border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-2 text-[11px] text-slate-700 flex-shrink-0">
+        <div className="bg-slate-50 px-3.5 py-1.5 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-700 flex-shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-slate-600">Show</span>
+            <span className="font-semibold text-slate-500">Show</span>
             <select 
               value={pageSize} 
               onChange={(e) => { 
@@ -1756,19 +2156,20 @@ const STOCKOUT_YET_CONFIRM = () => {
                 setPageSize(val === 'ALL' ? 'ALL' : parseInt(val)); 
                 setCurrentPage(1); 
               }} 
-              className="border border-slate-300 rounded px-1.5 py-0.5 bg-white font-bold text-slate-800 shadow-xs text-[11px]"
+              className="border border-slate-200 rounded-md px-2 py-0.5 bg-white font-bold text-slate-800 shadow-2xs text-xs"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
+              <option value={70}>70</option>
               <option value={100}>100</option>
               <option value={200}>200</option>
               <option value={500}>500</option>
               <option value={1000}>1000</option>
               <option value="ALL">All</option>
             </select>
-            <span className="font-semibold text-slate-600">entries</span>
-            <span className="text-slate-400">|</span>
+            <span className="font-semibold text-slate-500">entries</span>
+            <span className="text-slate-300">|</span>
             <span className="font-bold text-slate-800">
               Showing {totalItems > 0 ? (pageSize === 'ALL' ? 1 : (currentPage - 1) * pageSize + 1) : 0} to {pageSize === 'ALL' ? totalItems : Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
             </span>
@@ -1778,7 +2179,11 @@ const STOCKOUT_YET_CONFIRM = () => {
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
               disabled={currentPage === 1}
-              className={`px-2 py-0.5 rounded border font-bold text-[11px] cursor-pointer transition-colors ${currentPage === 1 ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
+              className={`px-2.5 py-1 rounded-md border font-bold text-xs cursor-pointer transition-colors ${
+                currentPage === 1 
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' 
+                  : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50 shadow-2xs'
+              }`}
             >
               Prev
             </button>
@@ -1797,7 +2202,11 @@ const STOCKOUT_YET_CONFIRM = () => {
                 <button 
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-2 py-0.5 rounded border text-[11px] font-black cursor-pointer transition-colors ${currentPage === pageNum ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50'}`}
+                  className={`px-2.5 py-1 rounded-md border text-xs font-black cursor-pointer transition-colors ${
+                    currentPage === pageNum 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                      : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
+                  }`}
                 >
                   {pageNum}
                 </button>
@@ -1807,16 +2216,35 @@ const STOCKOUT_YET_CONFIRM = () => {
             <button 
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
               disabled={currentPage === totalPages}
-              className={`px-2 py-0.5 rounded border font-bold text-[11px] cursor-pointer transition-colors ${currentPage === totalPages ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
+              className={`px-2.5 py-1 rounded-md border font-bold text-xs cursor-pointer transition-colors ${
+                currentPage === totalPages 
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' 
+                  : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50 shadow-2xs'
+              }`}
             >
               Next
             </button>
           </div>
         </div>
 
-        {/* ─── FOOTER ─── */}
-        <div className="bg-slate-100 px-4 py-1.5 border-t border-slate-300 text-[11px] font-semibold text-slate-600 flex justify-between flex-wrap gap-2 flex-shrink-0">
-          <span>📋 In System: <strong>{data.length}</strong> rows | GIS: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
+        {/* ─── FOOTER STATUS STRIP ─── */}
+        <div className="bg-slate-100/90 px-4 py-1 border-t border-slate-200 text-[11px] font-semibold text-slate-600 flex justify-between items-center flex-wrap gap-2 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5">
+              <Layers className="w-3 h-3 text-slate-400" />
+              <span>In System: <strong>{data.length}</strong> rows</span>
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5 text-emerald-700">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span>GIS: <strong>{filteredData.length}</strong> rows</span>
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5 text-rose-700">
+              <AlertCircle className="w-3 h-3 text-rose-500" />
+              <span>Alarms: <strong>{alarmCount}</strong></span>
+            </span>
+          </div>
         </div>
       </div>
 
