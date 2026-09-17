@@ -4,6 +4,28 @@ import {
   generateMetfoneExcelBlob,
   getConfiguredUnits 
 } from '../../services/telegramBot';
+import {
+  LayoutDashboard,
+  ClipboardCheck,
+  PackageCheck,
+  FileEdit,
+  Clock,
+  HardHat,
+  FileSignature,
+  Upload,
+  Download,
+  ArrowLeftRight,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Radio,
+  FileSpreadsheet,
+  Send,
+  Target,
+  ChevronDown,
+  Activity,
+  Building2,
+  StopCircle
+} from 'lucide-react';
 
 const unitOptions = [
   { code: 'BAN', name: 'BAN (បន្ទាយមានជ័យ)' },
@@ -86,41 +108,47 @@ const Sidebar = ({
     { 
       id: 'dashboard', 
       label: 'MAIN DASHBOARD', 
-      icon: '🏠',
+      Icon: LayoutDashboard,
+      iconColor: 'text-blue-500',
       number: '00'
     },
     { 
       id: 'stockout_group', 
       label: 'CONFIRMED HAND OVER', 
-      icon: '📋',
+      Icon: ClipboardCheck,
+      iconColor: 'text-indigo-500',
       number: '01',
       isGroup: true,
       children: [
         { 
           id: 'STOCKOUT_YET_CONFIRM', 
           label: 'STOCKOUT YET CONFIRM', 
-          icon: '📦',
+          Icon: PackageCheck,
+          iconColor: 'text-amber-500',
           number: '01',
           desc: 'Pending confirmations'
         },
         { 
           id: 'NO_CREATE_HAND_OVER', 
           label: 'NOT CREATE HAND OVER', 
-          icon: '📝',
+          Icon: FileEdit,
+          iconColor: 'text-sky-500',
           number: '02',
           desc: 'Not yet created'
         },
         { 
           id: 'STOCK_OUT_NOTE_CONFIRMED', 
           label: 'HAND OVER YET CONFIRM', 
-          icon: '⚠️',
+          Icon: Clock,
+          iconColor: 'text-rose-500',
           number: '03',
           desc: 'Awaiting confirmation'
         },
         { 
           id: 'NEW_CONSTRUCTION', 
           label: 'NEW CONSTRUCTION', 
-          icon: '🏗️',
+          Icon: HardHat,
+          iconColor: 'text-emerald-500',
           number: '04',
           desc: 'Construction tracker'
         },
@@ -129,21 +157,24 @@ const Sidebar = ({
     { 
       id: 'signed_ca_group', 
       label: 'SIGNED "CA" SYSTEM', 
-      icon: '✅',
+      Icon: FileSignature,
+      iconColor: 'text-emerald-500',
       number: '02',
       isGroup: true,
       children: [
         { 
           id: 'STOCK_OUT_IS_SIGNING', 
           label: 'STOCK OUT IS SIGNING', 
-          icon: '📤',
+          Icon: Upload,
+          iconColor: 'text-indigo-500',
           number: '01',
           desc: 'Export signing'
         },
         { 
           id: 'STOCK_IN_IS_SIGNING', 
           label: 'STOCK IN IS SIGNING', 
-          icon: '📥',
+          Icon: Download,
+          iconColor: 'text-emerald-500',
           number: '02',
           desc: 'Import signing'
         },
@@ -152,21 +183,24 @@ const Sidebar = ({
     { 
       id: 'restock_group', 
       label: 'RESTOCK IN / OUT', 
-      icon: '🔄',
+      Icon: ArrowLeftRight,
+      iconColor: 'text-violet-500',
       number: '03',
       isGroup: true,
       children: [
         { 
           id: 'RESTOCK_IN', 
           label: 'RESTOCK IN', 
-          icon: '📥',
+          Icon: ArrowDownToLine,
+          iconColor: 'text-emerald-500',
           number: '01',
           desc: 'Incoming restock'
         },
         { 
           id: 'RESTOCK_OUT', 
           label: 'RESTOCK OUT', 
-          icon: '📤',
+          Icon: ArrowUpFromLine,
+          iconColor: 'text-rose-500',
           number: '02',
           desc: 'Outgoing restock'
         },
@@ -175,28 +209,32 @@ const Sidebar = ({
     { 
       id: 'metfone_net_group', 
       label: 'SYSTEM METFONE NET', 
-      icon: '🌐',
+      Icon: Radio,
+      iconColor: 'text-cyan-500',
       number: '04',
       isGroup: true,
       children: [
         { 
           id: 'METFONE_STOCKOUT_YET_CONFIRM', 
           label: '01_STOCKOUT_YET CONFIRM', 
-          icon: '📦',
+          Icon: PackageCheck,
+          iconColor: 'text-amber-500',
           number: '01',
           desc: 'Stockout yet confirm'
         },
         { 
           id: 'METFONE_NOT_CREATE_HAND_OVER', 
           label: '02_NOT CREATE HAND OVER', 
-          icon: '📝',
+          Icon: FileEdit,
+          iconColor: 'text-sky-500',
           number: '02',
           desc: 'Not create hand over'
         },
         { 
           id: 'METFONE_HAND_OVER_YET_CONFIRM', 
           label: '03_HAND OVER_YET CONFIRM', 
-          icon: '⚠️',
+          Icon: Clock,
+          iconColor: 'text-rose-500',
           number: '03',
           desc: 'Hand over yet confirm'
         },
@@ -413,13 +451,21 @@ const Sidebar = ({
                     }`}>
                       {item.number}
                     </span>
-                    <span className="text-base flex-shrink-0">{item.icon}</span>
+                    {item.Icon && (
+                      <span className={`p-1.5 rounded-lg flex-shrink-0 transition-all flex items-center justify-center ${
+                        isGroupActive(item) || selected === item.id || isGroupOpen(item.id)
+                          ? 'bg-white/20 text-white shadow-xs'
+                          : 'bg-slate-100/90 ' + item.iconColor + ' group-hover:bg-slate-200'
+                      }`}>
+                        <item.Icon className="w-4 h-4" />
+                      </span>
+                    )}
                     <span className="text-[11.5px] font-extrabold flex-1 text-left tracking-tight uppercase truncate">
                       {item.label}
                     </span>
-                    <span className={`transition-transform duration-300 text-[10px] flex-shrink-0 ${isGroupOpen(item.id) ? 'rotate-180' : ''}`}>
-                      ▼
-                    </span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 flex-shrink-0 ${
+                      isGroupOpen(item.id) ? 'rotate-180 text-white' : 'text-slate-400 group-hover:text-slate-600'
+                    }`} />
                     {(isGroupActive(item) || selected === item.id || isGroupOpen(item.id)) && (
                       <span className="w-2 h-2 rounded-full bg-white animate-pulse flex-shrink-0"></span>
                     )}
@@ -456,7 +502,15 @@ const Sidebar = ({
                         }`}>
                           {child.number}
                         </span>
-                        <span className="text-base flex-shrink-0">{child.icon}</span>
+                        {child.Icon && (
+                          <span className={`p-1 rounded-md flex-shrink-0 transition-colors flex items-center justify-center ${
+                            selected === child.id
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'bg-slate-100 ' + child.iconColor + ' group-hover:bg-slate-200'
+                          }`}>
+                            <child.Icon className="w-3.5 h-3.5" />
+                          </span>
+                        )}
                         <div className="flex-1 min-w-0">
                           <span className="text-xs font-bold truncate block">
                             {child.label}
@@ -492,7 +546,15 @@ const Sidebar = ({
                   }`}>
                     {item.number}
                   </span>
-                  <span className="text-base flex-shrink-0">{item.icon}</span>
+                  {item.Icon && (
+                    <span className={`p-1.5 rounded-lg flex-shrink-0 transition-all flex items-center justify-center ${
+                      selected === item.id
+                        ? 'bg-white/20 text-white shadow-xs'
+                        : 'bg-slate-100/90 ' + item.iconColor + ' group-hover:bg-slate-200'
+                    }`}>
+                      <item.Icon className="w-4 h-4" />
+                    </span>
+                  )}
                   <span className="text-[11.5px] font-extrabold flex-1 text-left tracking-tight uppercase truncate">
                     {item.label}
                   </span>
@@ -515,8 +577,18 @@ const Sidebar = ({
               របាយការណ៍ & ផ្ញើ TELEGRAM
             </span>
           </div>
-          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase">
-            {selectedSystem === 'metfone' ? '📡 Metfone' : '🗺️ GIS'}
+          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase flex items-center gap-1">
+            {selectedSystem === 'metfone' ? (
+              <>
+                <Radio className="w-3 h-3 text-indigo-600" />
+                <span>Metfone</span>
+              </>
+            ) : (
+              <>
+                <Building2 className="w-3 h-3 text-indigo-600" />
+                <span>GIS</span>
+              </>
+            )}
           </span>
         </div>
 
@@ -525,7 +597,7 @@ const Sidebar = ({
           onClick={handleExportAll}
           className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-black tracking-wide uppercase shadow-md shadow-emerald-500/10 hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer"
         >
-          <span className="text-sm">📊</span>
+          <FileSpreadsheet className="w-4 h-4 text-emerald-100" />
           <span>ទាញទិន្នន័យទាំងអស់ (Excel)</span>
         </button>
 
@@ -538,10 +610,12 @@ const Sidebar = ({
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-base">🚀</span>
+              <div className="p-1 rounded-md bg-blue-100/80 text-blue-600 flex items-center justify-center">
+                <Send className="w-3.5 h-3.5" />
+              </div>
               <span className="text-xs uppercase tracking-tight">Send All (25)</span>
             </div>
-            <span className={`transition-transform duration-300 text-[8px] text-slate-400 font-bold ${isSendAllOpen ? 'rotate-180 text-slate-700' : ''}`}>▼</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 text-slate-400 ${isSendAllOpen ? 'rotate-180 text-slate-700' : ''}`} />
           </button>
           
           {isSendAllOpen && (
@@ -549,7 +623,10 @@ const Sidebar = ({
               {/* Select System for Send All */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                  <span>⚙️ Select System</span>
+                  <div className="flex items-center gap-1">
+                    <Activity className="w-3 h-3 text-indigo-500" />
+                    <span>Select System</span>
+                  </div>
                   <span className="text-indigo-600 font-black">{selectedSystem === 'metfone' ? 'Metfone NET' : 'GIS System'}</span>
                 </div>
                 <div className="relative">
@@ -560,8 +637,8 @@ const Sidebar = ({
                     className="w-full px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50/40 text-indigo-950 text-xs font-black focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                     style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'none\'%3E%3Cpath d=\'M7 9l3 3 3-3\' stroke=\'%236366F1\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")', backgroundPosition: 'right 10px center', backgroundSize: '16px', backgroundRepeat: 'no-repeat' }}
                   >
-                    <option value="metfone">📡 Metfone NET</option>
-                    <option value="gis">🗺️ GIS System</option>
+                    <option value="metfone">Metfone NET</option>
+                    <option value="gis">GIS System</option>
                   </select>
                 </div>
               </div>
@@ -574,7 +651,7 @@ const Sidebar = ({
                     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500'
                 }`}
               >
-                <span className="text-sm">{isSending ? '🛑' : '📤'}</span>
+                {isSending ? <StopCircle className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                 <span>{isSending ? 'បោះបង់ (Cancel)' : 'ផ្ញើតាមខេត្តនីមួយៗ (Excel)'}</span>
               </button>
             </div>
@@ -591,10 +668,12 @@ const Sidebar = ({
             }`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-base">🎯</span>
+              <div className="p-1 rounded-md bg-teal-100/80 text-teal-600 flex items-center justify-center">
+                <Target className="w-3.5 h-3.5" />
+              </div>
               <span className="text-xs uppercase tracking-tight">Send Single Branch (1)</span>
             </div>
-            <span className={`transition-transform duration-300 text-[8px] text-slate-400 font-bold ${isSendSingleOpen ? 'rotate-180 text-slate-700' : ''}`}>▼</span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 text-slate-400 ${isSendSingleOpen ? 'rotate-180 text-slate-700' : ''}`} />
           </button>
           
           {isSendSingleOpen && (
@@ -602,7 +681,10 @@ const Sidebar = ({
               {/* Select Branch */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                  <span>🏢 Select Branch</span>
+                  <div className="flex items-center gap-1">
+                    <Building2 className="w-3 h-3 text-slate-500" />
+                    <span>Select Branch</span>
+                  </div>
                   <span className="text-slate-700 font-bold">{selectedUnit}</span>
                 </div>
                 <div className="relative">
@@ -625,7 +707,10 @@ const Sidebar = ({
               {/* Select System (Metfone NET vs GIS System) */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                  <span>⚙️ Select System</span>
+                  <div className="flex items-center gap-1">
+                    <Activity className="w-3 h-3 text-indigo-500" />
+                    <span>Select System</span>
+                  </div>
                   <span className="text-indigo-600 font-black">{selectedSystem === 'metfone' ? 'Metfone NET' : 'GIS System'}</span>
                 </div>
                 <div className="relative">
@@ -636,8 +721,8 @@ const Sidebar = ({
                     className="w-full px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50/40 text-indigo-950 text-xs font-black focus:outline-none focus:ring-1 focus:ring-indigo-500 appearance-none disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
                     style={{ backgroundImage: 'url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'none\'%3E%3Cpath d=\'M7 9l3 3 3-3\' stroke=\'%236366F1\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")', backgroundPosition: 'right 10px center', backgroundSize: '16px', backgroundRepeat: 'no-repeat' }}
                   >
-                    <option value="metfone">📡 Metfone NET</option>
-                    <option value="gis">🗺️ GIS System</option>
+                    <option value="metfone">Metfone NET</option>
+                    <option value="gis">GIS System</option>
                   </select>
                 </div>
               </div>
@@ -650,7 +735,7 @@ const Sidebar = ({
                     : 'bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500'
                 }`}
               >
-                <span className="text-sm">{isSending ? '🛑' : '📤'}</span>
+                {isSending ? <StopCircle className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                 <span>{isSending ? 'បោះបង់ (Cancel)' : 'ផ្ញើទិន្នន័យ UNIT នេះ'}</span>
               </button>
             </div>
