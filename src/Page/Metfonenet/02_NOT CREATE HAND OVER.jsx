@@ -1,6 +1,31 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
+import { archiveClearedRecords, checkAndRevokeBackupConflicts } from '../../services/backupStore';
+import {
+  FileEdit,
+  Trash2,
+  BarChart3,
+  Upload,
+  FileSpreadsheet,
+  CheckCircle2,
+  Calendar,
+  AlertTriangle,
+  Copy,
+  X,
+  Search,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Layers,
+  AlertCircle,
+  Maximize2,
+  Minimize2,
+  Columns,
+  ChevronDown,
+  ChevronUp,
+  Inbox
+} from 'lucide-react';
 
 // All standard 25 Units
 const allUnits = [
@@ -193,9 +218,12 @@ const NotCreateHandOverMetfone = () => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(100);
   const [daysFilter, setDaysFilter] = useState('ALL');
   const [daysSortOrder, setDaysSortOrder] = useState('none');
+  const [isFitScreen, setIsFitScreen] = useState(true);
+  const [tableDensity, setTableDensity] = useState('ultra'); // 'ultra', 'compact', 'normal'
+  const [showStatsBar, setShowStatsBar] = useState(true);
 
   // Load data from DB on mount
   useEffect(() => {
@@ -347,7 +375,7 @@ const NotCreateHandOverMetfone = () => {
   };
 
   // Requirement: Recipient ចាប់យកតែ GIS (GIS ONLY)
-  const processImport = (newRawData) => {
+  const processImport = async (newRawData) => {
     const gisData = newRawData.filter(item => 
       item.recipient && item.recipient.toUpperCase().includes('GIS') &&
       getYearFromDate(item.date) >= 2025
@@ -358,24 +386,109 @@ const NotCreateHandOverMetfone = () => {
       return;
     }
 
-    const currentCodes = new Set(data.map(item => item.code));
-    const newCodesSet = new Set(gisData.map(item => item.code));
+    // Active current records (from state or localStorage cache fallback)
+    let localPending = [];
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.DATA);
+      if (raw) localPending = JSON.parse(raw);
+    } catch (e) {}
+    const activeCurrentData = (data && data.length > 0) ? data : localPending;
+
+    // 1. Pre-build HashMaps for O(1) Instant Lookups
+    const currentDataMap = new Map();
+    activeCurrentData.forEach(d => {
+      const code = (d.code || '').trim().toUpperCase();
+      if (code) currentDataMap.set(code, d);
+    });
+
+    let backupRecords = [];
+    try {
+      const rawBackup = localStorage.getItem('BACKUP_ARCHIVE_METFONE_NET_METFONE_NOT_CREATE_HAND_OVER');
+      if (rawBackup) backupRecords = JSON.parse(rawBackup);
+    } catch (e) {}
+
+    const backupDataMap = new Map();
+    backupRecords.forEach(d => {
+      const code = (d.code || '').trim().toUpperCase();
+      if (code) backupDataMap.set(code, d);
+    });
+
+    const currentCodes = new Set(activeCurrentData.map(item => (item.code || '').trim().toUpperCase()).filter(Boolean));
+    const newCodesSet = new Set(gisData.map(item => (item.code || '').trim().toUpperCase()).filter(Boolean));
+
+    // 1. Reback Conflict Check & Auto-revoke from Backup
+    try {
+      const rebackedCodes = await checkAndRevokeBackupConflicts(
+        'METFONE_NET',
+        'METFONE_NOT_CREATE_HAND_OVER',
+        Array.from(newCodesSet)
+      );
+      if (rebackedCodes && rebackedCodes.length > 0) {
+        const rebackedSet = new Set(rebackedCodes.map(s => s.toUpperCase()));
+        setCompletionHistory(prev => {
+          const next = prev.filter(c => !rebackedSet.has((c.code || '').toUpperCase()));
+          saveToDb(STORAGE_KEYS.COMPLETION, next);
+          return next;
+        });
+        showNotification(`⚠️ Reback detected: ${rebackedCodes.length} record(s) restored from backup!`, 'warning');
+      }
+    } catch (e) {
+      console.warn('Reback check notice:', e);
+    }
+
+    // 2. Identify missing records (Completed items that moved out of pending)
+    const completedCodesArray = [...currentCodes].filter(code => !newCodesSet.has(code));
+    if (completedCodesArray.length > 0) {
+      const fullClearedRows = completedCodesArray
+        .map(code => currentDataMap.get(code))
+        .filter(Boolean);
+
+      const newCompletions = completedCodesArray.map(code => {
+        const foundItem = currentDataMap.get(code);
+        return {
+          code: foundItem?.code || code,
+          completedAt: new Date().toISOString(),
+          unit: foundItem?.unit || 'UNKNOWN'
+        };
+      });
+
+      setCompletionHistory(prev => {
+        const next = [...newCompletions, ...prev];
+        saveToDb(STORAGE_KEYS.COMPLETION, next);
+        return next;
+      });
+
+      setConfirmedStatus(prev => {
+        const newStatus = { ...prev };
+        completedCodesArray.forEach(code => delete newStatus[code]);
+        saveToDb(STORAGE_KEYS.CONFIRMED, newStatus);
+        return newStatus;
+      });
+
+      // Archive in background asynchronously
+      archiveClearedRecords('METFONE_NET', 'METFONE_NOT_CREATE_HAND_OVER', fullClearedRows, 'SYSTEM_A_AUTO')
+        .catch(err => console.error('Error archiving cleared records:', err));
+
+      playAlarmSound();
+    }
 
     const processedNewData = gisData.map((item, index) => {
-      const unit = getUnitFromRecipient(item.recipient, item.code);
-      const team = getTeamFromRecipient(item.recipient);
+      const codeKey = (item.code || '').trim().toUpperCase();
+      const existing = (codeKey && currentDataMap.get(codeKey)) || (codeKey && backupDataMap.get(codeKey));
+      const unit = item.unit || (existing?.unit) || getUnitFromRecipient(item.recipient, item.code);
+      const team = item.team || (existing?.team) || getTeamFromRecipient(item.recipient);
       return {
-        id: Math.max(...data.map(d => d.id), 0, index) + index + 1,
+        id: Math.max(...activeCurrentData.map(d => d.id || 0), 0, index) + index + 1,
         no: index + 1,
         code: item.code,
-        warehouse: item.warehouse,
-        recipient: item.recipient,
-        creator: item.creator,
-        date: item.date,
-        daysDiff: calculateDaysDiff(item.date),
+        warehouse: item.warehouse || existing?.warehouse || '-',
+        recipient: item.recipient || existing?.recipient || '-',
+        creator: item.creator || existing?.creator || '-',
+        date: item.date || existing?.date || '',
+        daysDiff: calculateDaysDiff(item.date || existing?.date || ''),
         unit,
         team,
-        status: 'Not confirmed'
+        status: item.status || existing?.status || 'Not confirmed'
       };
     });
 
@@ -387,28 +500,11 @@ const NotCreateHandOverMetfone = () => {
     });
 
     const existingUnits = new Set(Object.keys(targets));
-    const newUnitsFound = [];
     Object.keys(unitsInNewData).forEach(unit => {
       if (!existingUnits.has(unit)) {
-        newUnitsFound.push(unit);
         autoCreateTargetForUnit(unit, unitsInNewData[unit]);
       }
     });
-
-    const completedCodesArray = [...currentCodes].filter(code => !newCodesSet.has(code));
-    if (completedCodesArray.length > 0) {
-      const newCompletions = completedCodesArray.map(code => {
-        const foundItem = data.find(item => item.code === code);
-        return { code, completedAt: new Date().toISOString(), unit: foundItem?.unit || 'UNKNOWN' };
-      });
-      setCompletionHistory(prev => [...newCompletions, ...prev]);
-      setConfirmedStatus(prev => {
-        const newStatus = { ...prev };
-        completedCodesArray.forEach(code => delete newStatus[code]);
-        return newStatus;
-      });
-      playAlarmSound();
-    }
 
     setData(processedNewData);
     saveToDb(STORAGE_KEYS.DATA, processedNewData);
@@ -417,10 +513,13 @@ const NotCreateHandOverMetfone = () => {
 
   // KPI Calculations
   const calculateKPIData = useMemo(() => {
+    // Fast O(1) code-to-unit map to eliminate O(N*M) nested loop
+    const codeToUnitMap = new Map();
     const unitGroups = {};
     data.forEach(item => {
       const unit = item.unit;
-      if (unit !== 'OTHER') {
+      if (item.code) codeToUnitMap.set(item.code, unit);
+      if (unit && unit !== 'OTHER') {
         if (!unitGroups[unit]) {
           unitGroups[unit] = { codes: new Set(), unit, count: 0 };
         }
@@ -431,16 +530,16 @@ const NotCreateHandOverMetfone = () => {
 
     const completedByUnit = {};
     completionHistory.forEach(completion => {
-      if (completion.unit !== 'UNKNOWN') {
+      if (completion.unit && completion.unit !== 'UNKNOWN') {
         completedByUnit[completion.unit] = (completedByUnit[completion.unit] || 0) + 1;
       }
     });
 
     Object.entries(confirmedStatus).forEach(([code, isConfirmed]) => {
       if (isConfirmed) {
-        const item = data.find(d => d.code === code);
-        if (item && item.unit !== 'OTHER') {
-          completedByUnit[item.unit] = (completedByUnit[item.unit] || 0) + 1;
+        const unit = codeToUnitMap.get(code);
+        if (unit && unit !== 'OTHER') {
+          completedByUnit[unit] = (completedByUnit[unit] || 0) + 1;
         }
       }
     });
@@ -556,13 +655,13 @@ const NotCreateHandOverMetfone = () => {
     return parsedRows;
   };
 
-  const handleSmartImport = () => {
+  const handleSmartImport = async () => {
     const parsedData = parsePastedData(pasteData);
     if (parsedData.length === 0) {
       showNotification('No valid data found to import!', 'warning');
       return;
     }
-    processImport(parsedData);
+    await processImport(parsedData);
     setShowPasteModal(false);
     setPasteData('');
   };
@@ -580,11 +679,23 @@ const NotCreateHandOverMetfone = () => {
       }
       return item;
     });
-    setData(updatedData.filter(item => getYearFromDate(item.date) >= 2025));
+    const finalData = updatedData.filter(item => 
+      getYearFromDate(item.date) >= 2025 &&
+      item.recipient && item.recipient.toUpperCase().includes('GIS')
+    );
+    setData(finalData);
+    saveToDb(STORAGE_KEYS.DATA, finalData);
   };
 
   const clearAllData = async () => {
     if (window.confirm('⚠️ Are you sure you want to clear ALL Metfone Not Create Hand Over data?')) {
+      if (data && data.length > 0) {
+        try {
+          await archiveClearedRecords('METFONE_NET', 'METFONE_NOT_CREATE_HAND_OVER', data, 'MANUAL_CLEAR_ALL');
+        } catch (e) {
+          console.error('Error archiving on clearAllData:', e);
+        }
+      }
       setData([]);
       setCompletionHistory([]);
       setTargets({});
@@ -596,7 +707,7 @@ const NotCreateHandOverMetfone = () => {
       localStorage.removeItem(STORAGE_KEYS.TARGET_HISTORY);
       localStorage.removeItem(STORAGE_KEYS.CONFIRMED);
 
-      showNotification('All data cleared!', 'warning');
+      showNotification('All data cleared! Moved to Backup', 'warning');
 
       Promise.all([
         clearStore(STORAGE_KEYS.DATA),
@@ -610,7 +721,7 @@ const NotCreateHandOverMetfone = () => {
     }
   };
 
-  const deleteSelectedRows = () => {
+  const deleteSelectedRows = async () => {
     if (selectedRows.size === 0) return;
     if (window.confirm(`⚠️ Mark ${selectedRows.size} row(s) as completed?`)) {
       const selectedItems = data.filter(item => selectedRows.has(item.id));
@@ -619,12 +730,25 @@ const NotCreateHandOverMetfone = () => {
         completedAt: new Date().toISOString(),
         unit: item.unit
       }));
-      setCompletionHistory(prev => [...newCompletions, ...prev]);
+      setCompletionHistory(prev => {
+        const next = [...newCompletions, ...prev];
+        saveToDb(STORAGE_KEYS.COMPLETION, next);
+        return next;
+      });
 
       const newData = data.filter(item => !selectedRows.has(item.id));
-      setData(newData.map((item, index) => ({ ...item, no: index + 1, id: index + 1 })));
+      const reindexed = newData.map((item, index) => ({ ...item, no: index + 1, id: index + 1 }));
+      setData(reindexed);
+      saveToDb(STORAGE_KEYS.DATA, reindexed);
       setSelectedRows(new Set());
-      showNotification(`✅ Completed ${selectedRows.size} row(s)!`, 'success');
+
+      try {
+        await archiveClearedRecords('METFONE_NET', 'METFONE_NOT_CREATE_HAND_OVER', selectedItems, 'MANUAL_COMPLETE');
+      } catch (e) {
+        console.error('Error archiving manual completed items:', e);
+      }
+
+      showNotification(`✅ Completed ${selectedRows.size} row(s)! Moved to Backup`, 'success');
       playAlarmSound();
     }
   };
@@ -676,45 +800,43 @@ const NotCreateHandOverMetfone = () => {
     XLSX.writeFile(wb, `METFONE_NOT_CREATE_HAND_OVER_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // Main Filtered Data (Recipient MUST contain GIS silently)
+  // Main Filtered Data (Recipient MUST contain GIS silently - Single Pass)
   const filteredData = useMemo(() => {
+    const term = searchTerm ? searchTerm.toLowerCase().trim() : '';
+    const isTermUnit = term ? (allUnits.some(u => u.toLowerCase() === term) || term === 'other') : false;
+
     let filtered = data.filter(item => {
-      const recipient = (item.recipient || '').toUpperCase();
-      return recipient.includes('GIS');
-    });
+      // 1. Silent GIS filter
+      if (!(item.recipient && item.recipient.toUpperCase().includes('GIS'))) return false;
 
-    if (daysFilter !== 'ALL') {
-      if (daysFilter === '0') {
-        filtered = filtered.filter(item => item.daysDiff === 0);
-      } else if (daysFilter === '1-3') {
-        filtered = filtered.filter(item => (item.daysDiff || 0) >= 1 && (item.daysDiff || 0) <= 3);
-      } else if (daysFilter === '4-6') {
-        filtered = filtered.filter(item => (item.daysDiff || 0) >= 4 && (item.daysDiff || 0) <= 6);
-      } else if (daysFilter === '>=4') {
-        filtered = filtered.filter(item => (item.daysDiff || 0) >= alarmThreshold);
-      } else if (daysFilter === '>=7') {
-        filtered = filtered.filter(item => (item.daysDiff || 0) >= 7);
+      // 2. Days filter
+      if (daysFilter !== 'ALL') {
+        const d = item.daysDiff || 0;
+        if (daysFilter === '0' && d !== 0) return false;
+        if (daysFilter === '1-3' && (d < 1 || d > 3)) return false;
+        if (daysFilter === '4-6' && (d < 4 || d > 6)) return false;
+        if (daysFilter === '>=4' && d < alarmThreshold) return false;
+        if (daysFilter === '>=7' && d < 7) return false;
       }
-    }
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase().trim();
-      const isTermUnit = allUnits.some(u => u.toLowerCase() === term) || term === 'other';
-      filtered = filtered.filter(item => {
+      // 3. Search Term filter
+      if (term) {
         if (isTermUnit) {
           return item.unit?.toLowerCase() === term;
         }
         return (
-          item.code?.toLowerCase().includes(term) ||
-          item.warehouse?.toLowerCase().includes(term) ||
-          item.recipient?.toLowerCase().includes(term) ||
-          item.creator?.toLowerCase().includes(term) ||
-          item.date?.toLowerCase().includes(term) ||
-          item.unit?.toLowerCase().includes(term) ||
-          item.team?.toLowerCase().includes(term)
+          (item.code && item.code.toLowerCase().includes(term)) ||
+          (item.warehouse && item.warehouse.toLowerCase().includes(term)) ||
+          (item.recipient && item.recipient.toLowerCase().includes(term)) ||
+          (item.creator && item.creator.toLowerCase().includes(term)) ||
+          (item.date && item.date.toLowerCase().includes(term)) ||
+          (item.unit && item.unit.toLowerCase().includes(term)) ||
+          (item.team && item.team.toLowerCase().includes(term))
         );
-      });
-    }
+      }
+
+      return true;
+    });
 
     // Days sorting
     if (daysSortOrder !== 'none') {
@@ -802,14 +924,16 @@ const NotCreateHandOverMetfone = () => {
         <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           <div className="bg-gradient-to-r from-indigo-900 via-blue-900 to-indigo-950 px-5 py-3 text-white flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">📊</span>
+              <BarChart3 className="w-5 h-5 text-white" />
               <div>
                 <h2 className="text-base font-black">SYSTEM METFONE NET — NOT CREATE HAND OVER KPI</h2>
                 <p className="text-[10px] text-indigo-200">Target vs Realized Results by Province Unit</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white text-2xl font-bold ml-2">✕</button>
+              <button onClick={() => setShowKPIModal(false)} className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors ml-2">
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
@@ -937,13 +1061,15 @@ const NotCreateHandOverMetfone = () => {
         <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col overflow-hidden">
           <div className="bg-gradient-to-r from-emerald-800 to-teal-800 px-5 py-3 text-white flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="text-xl">📋</span>
+              <Upload className="w-5 h-5 text-white" />
               <div>
                 <h3 className="text-sm font-black">Smart Import: Not Create Hand Over</h3>
                 <p className="text-[10px] text-emerald-200">Copy table rows from Excel or web and paste here</p>
               </div>
             </div>
-            <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white text-xl font-bold">✕</button>
+            <button onClick={() => setShowPasteModal(false)} className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
           </div>
           <div className="p-4 flex-1 flex flex-col gap-3">
             <p className="text-xs text-slate-600">
@@ -958,7 +1084,9 @@ const NotCreateHandOverMetfone = () => {
             />
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
               <button onClick={() => setShowPasteModal(false)} className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 rounded-lg text-xs font-bold transition-all">Cancel</button>
-              <button onClick={handleSmartImport} className="px-5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition-all shadow-md">Import Data</button>
+              <button onClick={handleSmartImport} className="px-5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold transition-all shadow-md flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5" /> Import Data
+              </button>
             </div>
           </div>
         </div>
@@ -973,13 +1101,17 @@ const NotCreateHandOverMetfone = () => {
         <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col">
           <div className="bg-gradient-to-r from-rose-700 to-red-800 px-5 py-3 text-white flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <span className="text-2xl animate-bounce">🚨</span>
+              <div className="p-1.5 rounded-lg bg-white/15 animate-bounce">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
               <div>
                 <h3 className="text-base font-black">Delay Alarms (&ge; {alarmThreshold} days)</h3>
                 <p className="text-[10px] text-rose-200">Items pending hand over creation longer than threshold</p>
               </div>
             </div>
-            <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white text-2xl font-bold">✕</button>
+            <button onClick={() => { setShowAlarmModal(false); setAlarmSearchTerm(''); setSelectedAlarmUnit(''); }} className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Alarm Filters */}
@@ -1005,7 +1137,9 @@ const NotCreateHandOverMetfone = () => {
               />
             </div>
             <div className="flex gap-2">
-              <button onClick={copyAlarmsToClipboard} className="px-3 py-1 bg-slate-800 text-white rounded text-xs font-bold hover:bg-slate-900 transition-all">📋 Copy Telegram Text</button>
+              <button onClick={copyAlarmsToClipboard} className="px-3 py-1 bg-slate-800 text-white rounded text-xs font-bold hover:bg-slate-900 transition-all flex items-center gap-1.5">
+                <Copy className="w-3.5 h-3.5" /> Copy Telegram Text
+              </button>
             </div>
           </div>
 
@@ -1072,7 +1206,7 @@ const NotCreateHandOverMetfone = () => {
     return (
       <div className="fixed bottom-20 right-6 flex flex-col gap-3 z-40">
         <button onClick={() => setShowAlarmModal(true)} className="bg-rose-600 text-white px-4 py-2.5 rounded-full shadow-xl animate-bounce flex items-center gap-2 hover:bg-rose-700 transition-colors cursor-pointer border-2 border-white">
-          <span className="text-lg">🚨</span>
+          <AlertTriangle className="w-5 h-5 text-white" />
           <span className="font-black text-sm">{alarmCount}</span>
         </button>
       </div>
@@ -1080,15 +1214,44 @@ const NotCreateHandOverMetfone = () => {
   };
 
   return (
-    <div className="w-full h-screen max-h-screen p-1 sm:p-1.5 bg-slate-100 flex flex-col overflow-hidden">
+    <div className="w-full h-screen max-h-screen p-0 sm:p-0.5 bg-slate-100 flex flex-col overflow-hidden">
       {/* Toast Notification */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-2 rounded-xl shadow-xl text-white text-xs font-bold flex items-center gap-2 animate-bounce ${
-          notification.type === 'success' ? 'bg-emerald-600' :
-          notification.type === 'warning' ? 'bg-amber-600' :
-          notification.type === 'error' ? 'bg-rose-600' : 'bg-blue-600'
+        <div className={`fixed bottom-[75px] right-4 sm:right-6 z-[9999998] max-w-[340px] w-full rounded-xl shadow-2xl backdrop-blur-md border border-slate-700/70 bg-slate-900/95 text-slate-100 overflow-hidden select-none pointer-events-auto transition-all duration-200 animate-toast-in ${
+          notification.type === 'success' ? 'border-l-4 border-l-emerald-500 shadow-emerald-950/30' :
+          notification.type === 'warning' ? 'border-l-4 border-l-amber-500 shadow-amber-950/30' :
+          notification.type === 'error' ? 'border-l-4 border-l-rose-500 shadow-rose-950/30' :
+          'border-l-4 border-l-blue-500 shadow-blue-950/30'
         }`}>
-          <span>{notification.message}</span>
+          <div className="p-2.5 sm:p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> :
+                 notification.type === 'error' ? <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" /> :
+                 <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
+                <span className={`text-[10.5px] font-bold tracking-wide uppercase ${
+                  notification.type === 'success' ? 'text-emerald-400' :
+                  notification.type === 'warning' ? 'text-amber-400' :
+                  notification.type === 'error' ? 'text-rose-400' : 'text-blue-400'
+                }`}>
+                  {notification.type === 'success' ? 'Success' : notification.type === 'error' ? 'Error' : 'Notification'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button onClick={() => setNotification(null)} className="text-slate-400 hover:text-white p-0.5 rounded hover:bg-slate-800 transition-colors cursor-pointer leading-none text-xs">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            <p className="text-[11.5px] font-medium text-slate-200 mt-1 pl-5.5 leading-snug">{notification.message}</p>
+          </div>
+          <div className="h-0.5 bg-slate-800 w-full overflow-hidden">
+            <div className={`h-full ${
+              notification.type === 'success' ? 'bg-emerald-500' :
+              notification.type === 'warning' ? 'bg-amber-500' :
+              notification.type === 'error' ? 'bg-rose-500' : 'bg-blue-500'
+            } animate-toast-bar`}></div>
+          </div>
         </div>
       )}
 
@@ -1098,197 +1261,381 @@ const NotCreateHandOverMetfone = () => {
       {renderAlarmModal()}
       {renderFloatingButtons()}
 
-      {/* Main Content Container */}
-      <div className="bg-white rounded-lg shadow-xl border border-slate-300 flex-1 flex flex-col h-full overflow-hidden">
+      {/* ─── MAIN CONTENT CONTAINER (FULL SCREEN FLEX) ─── */}
+      <div className="bg-white rounded-none sm:rounded-lg shadow-xs border-0 sm:border border-slate-200 flex-1 flex flex-col h-full overflow-hidden">
         
-        {/* Compact Ribbon Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 px-3 py-1 border-b border-slate-900 text-white flex-shrink-0">
-          <div className="flex justify-between items-center gap-2 flex-wrap">
-            <div>
+        {/* ─── ENTERPRISE COMPACT HEADER RIBBON ─── */}
+        <div className="bg-slate-900 border-b border-slate-800 px-3.5 py-1.5 text-white flex-shrink-0">
+          <div className="flex justify-between items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1 rounded-lg bg-blue-500/20 text-blue-400 border border-blue-400/30">
+                <FileEdit className="w-4 h-4" />
+              </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-sm font-black tracking-tight text-white flex items-center gap-1">
-                  <span>📝</span> 02 NOT CREATE HAND OVER
+                <h1 className="text-xs sm:text-sm font-black tracking-tight text-white uppercase">
+                  02_NOT CREATE HAND OVER
                 </h1>
-                <span className="bg-indigo-500/30 text-indigo-200 text-[9px] font-mono px-1.5 py-0.25 rounded-full uppercase tracking-wider border border-indigo-400/30 font-bold">
-                  SYSTEM METFONE NET • LIVE • {currentTime.toLocaleTimeString()}
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-950/70 border border-emerald-500/40 text-emerald-400 font-mono text-[10px] font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>LIVE • {currentTime.toLocaleTimeString()}</span>
                 </span>
               </div>
             </div>
-            <div className="flex gap-1.5 items-center">
-              <span className="text-slate-300 text-[10px] hidden lg:inline mr-2">
-                <strong>METFONE NET:</strong> តាមដានមិនទាន់ Create Hand Over
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-[11px] hidden xl:inline mr-1">
+                <strong className="text-slate-200">STEP 2:</strong> តាមដានបង្កើត Handover សម្ភារៈ METFONE NET
               </span>
-              <button onClick={clearAllData} className="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-bold transition-all border border-rose-500/50 shadow-xs cursor-pointer">🗑️ Clear All</button>
-              <button onClick={() => setShowKPIModal(true)} className="bg-purple-600 hover:bg-purple-700 text-white px-2.5 py-0.5 rounded text-[10px] font-bold transition-all shadow-xs cursor-pointer">📊 KPI Matrix</button>
+              <button 
+                onClick={clearAllData} 
+                className="inline-flex items-center gap-1.5 bg-slate-800/90 hover:bg-rose-950/60 hover:text-rose-300 hover:border-rose-800 text-slate-300 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all border border-slate-700 shadow-2xs cursor-pointer"
+                title="សម្អាតទិន្នន័យទាំងអស់"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Clear All</span>
+              </button>
+              <button 
+                onClick={() => setShowKPIModal(true)} 
+                className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1 rounded-lg text-[11px] font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>KPI Matrix</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Toolbar & Action Bar */}
-        <div className="px-3 py-1 bg-slate-100 border-b border-slate-300 flex-shrink-0">
+        {/* ─── ACTION TOOLBAR ─── */}
+        <div className="px-3.5 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0">
           <div className="flex flex-wrap gap-2 justify-between items-center">
-            <div className="flex flex-wrap gap-1.5 items-center">
-              <button onClick={() => setShowPasteModal(true)} className="px-2.5 py-0.5 bg-emerald-700 text-white rounded hover:bg-emerald-800 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">🔄 Smart Import</button>
-              <button onClick={exportToExcel} className="px-2.5 py-0.5 bg-slate-800 text-white rounded hover:bg-slate-900 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">📎 Export Excel</button>
+            {/* Left Actions & Filters */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <button 
+                onClick={() => setShowPasteModal(true)} 
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Smart Import</span>
+              </button>
+              <button 
+                onClick={exportToExcel} 
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+                <span>Export Excel</span>
+              </button>
+
               {selectedRows.size > 0 && (
-                <button onClick={deleteSelectedRows} className="px-2.5 py-0.5 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all text-[11px] font-bold flex items-center gap-1 shadow-xs cursor-pointer">🗑️ Complete ({selectedRows.size})</button>
+                <button 
+                  onClick={deleteSelectedRows} 
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-all text-xs font-bold shadow-xs cursor-pointer animate-fadeIn"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Complete ({selectedRows.size})</span>
+                </button>
               )}
 
-              {/* Days Quick Filter */}
-              <div className="flex items-center gap-1 ml-1 pl-2 border-l border-slate-300 flex-wrap">
-                <span className="text-[10px] font-extrabold text-slate-600">🗓️ Days:</span>
+              {/* Days Quick Filter Pills */}
+              <div className="flex items-center gap-1 ml-1 pl-2.5 border-l border-slate-200 flex-wrap">
+                <span className="text-[11px] font-bold text-slate-500 mr-0.5 flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-slate-400" />
+                  <span>Days:</span>
+                </span>
                 {[
                   { id: 'ALL', label: 'All' },
                   { id: '0', label: '0d' },
                   { id: '1-3', label: '1-3d' },
                   { id: '4-6', label: '4-6d' },
-                  { id: '>=4', label: '>=4d 🚨' },
-                  { id: '>=7', label: '>=7d 🔴' },
+                  { id: '>=4', label: '≥4d Alarms' },
+                  { id: '>=7', label: '≥7d Critical' },
                 ].map(pill => (
                   <button
                     key={pill.id}
                     onClick={() => { setDaysFilter(pill.id); setCurrentPage(1); }}
-                    className={`px-1.5 py-0.25 rounded text-[9.5px] font-black transition-all cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                       daysFilter === pill.id 
-                        ? 'bg-indigo-600 text-white shadow-2xs' 
-                        : 'bg-white text-slate-700 hover:bg-slate-200 border border-slate-300'
+                        ? 'bg-blue-600 text-white shadow-xs font-black' 
+                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 shadow-2xs'
                     }`}
                   >
-                    {pill.label}
+                    <span>{pill.label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
+            {/* Right: Threshold, Search, Density, Fit, Stats Toggle */}
             <div className="flex gap-2 items-center flex-wrap">
-              <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded shadow-xs text-[10px]">
-                <span className="font-bold text-amber-900">⚠️ Threshold &ge;</span>
-                <input type="number" value={alarmThreshold} onChange={(e) => setAlarmThreshold(parseInt(e.target.value, 10) || 4)} className="w-10 px-1 py-0 text-[10px] font-bold border border-amber-300 rounded text-center bg-white" min="1"/>
-                <span className="font-bold text-amber-900">days</span>
+              <div className="flex items-center gap-1.5 bg-amber-50/80 border border-amber-200/80 px-2 py-0.5 rounded-lg shadow-2xs text-xs">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                <span className="font-bold text-amber-900 text-[10.5px]">Threshold ≥</span>
+                <input 
+                  type="number" 
+                  value={alarmThreshold} 
+                  onChange={(e) => setAlarmThreshold(parseInt(e.target.value, 10) || 4)} 
+                  className="w-9 px-1 py-0 text-xs font-mono font-bold border border-amber-300 rounded text-center bg-white" 
+                  min="1"
+                />
+                <span className="font-bold text-amber-900 text-[10.5px]">days</span>
               </div>
+
               <div className="relative">
-                <input type="text" placeholder="Search code, warehouse, recipient..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-44 sm:w-56 px-2 py-0.5 text-[11px] font-medium border border-slate-300 rounded bg-white focus:ring-1 focus:ring-indigo-500 focus:border-transparent transition-all shadow-xs" />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input 
+                  type="text" 
+                  placeholder="Search code, warehouse, recipient..." 
+                  value={searchTerm} 
+                  onChange={(e) => setSearchTerm(e.target.value)} 
+                  className="w-44 sm:w-56 pl-8 pr-7 py-1 text-xs font-medium border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-2xs" 
+                />
+                {searchTerm && (
+                  <button 
+                    onClick={() => setSearchTerm('')} 
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
               </div>
+
+              {/* Density Toggle (Ultra 70 rows / Compact / Standard) */}
+              <button
+                onClick={() => setTableDensity(prev => prev === 'ultra' ? 'compact' : prev === 'compact' ? 'normal' : 'ultra')}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
+                  tableDensity === 'ultra'
+                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                    : tableDensity === 'compact'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+                title="ចុចដើម្បីប្តូរទំហំជួរដេក (Ultra 70 rows → Compact → Standard)"
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span>
+                  {tableDensity === 'ultra' ? 'Ultra View (70 rows)' : tableDensity === 'compact' ? 'Compact (45 rows)' : 'Standard'}
+                </span>
+              </button>
+
+              {/* Fit Screen / Scroll Mode Toggle */}
+              <button
+                onClick={() => setIsFitScreen(prev => !prev)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold border transition-all cursor-pointer shadow-2xs ${
+                  isFitScreen 
+                    ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100' 
+                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                }`}
+                title={isFitScreen ? 'Switch to Expanded (Horizontal Scroll)' : 'Switch to Fit Screen (100% Responsive)'}
+              >
+                {isFitScreen ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Fit Screen</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5 text-slate-600" />
+                    <span>Expanded</span>
+                  </>
+                )}
+              </button>
+
+              {/* Stats Ribbon Toggle */}
+              <button
+                onClick={() => setShowStatsBar(prev => !prev)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all cursor-pointer shadow-2xs"
+                title={showStatsBar ? 'លាក់របារស្ថិតិ (Hide Stats bar) ដើម្បីពង្រីកតារាងឱ្យវែងបំផុត' : 'បង្ហាញរបារស្ថិតិ (Show Stats bar)'}
+              >
+                {showStatsBar ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Stats Summary Bar */}
-        <div className="px-3 py-0.5 bg-slate-200/70 border-b border-slate-300 grid grid-cols-3 sm:grid-cols-6 gap-1.5 flex-shrink-0 text-[9.5px]">
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-slate-500">Total</span>
-            <span className="text-xs font-black text-slate-900">{data.length}</span>
+        {/* ─── STATS SUMMARY BAR (HIGH-DENSITY METRICS RIBBON) ─── */}
+        {showStatsBar && (
+        <div className="px-3.5 py-1 bg-slate-100/80 border-b border-slate-200 grid grid-cols-3 sm:grid-cols-6 gap-1.5 flex-shrink-0 text-xs">
+          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-slate-500 flex items-center gap-1">
+              <Layers className="w-3 h-3 text-slate-400" />
+              <span>In System</span>
+            </span>
+            <span className="text-xs font-mono font-black text-slate-900">{data.length}</span>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-emerald-600">GIS Records</span>
-            <span className="text-xs font-black text-emerald-700">{filteredData.length}</span>
+
+          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-emerald-600 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+              <span>GIS Records</span>
+            </span>
+            <span className="text-xs font-mono font-black text-emerald-700">{filteredData.length}</span>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-indigo-600">Selected</span>
-            <span className="text-xs font-black text-indigo-700">{selectedRows.size}</span>
+
+          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-blue-600">Selected</span>
+            <span className="text-xs font-mono font-black text-blue-700">{selectedRows.size}</span>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between">
-            <span className="font-black uppercase tracking-wider text-amber-600">Threshold</span>
-            <span className="text-xs font-black text-amber-700">&ge;{alarmThreshold}d</span>
+
+          <div className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between">
+            <span className="font-bold uppercase tracking-wider text-[10px] text-amber-600">Threshold</span>
+            <span className="text-xs font-mono font-black text-amber-700">≥{alarmThreshold}d</span>
           </div>
-          <div className={`bg-white rounded px-2 py-0.5 border shadow-xs cursor-pointer flex items-center justify-between hover:bg-rose-50 transition-all ${alarmCount > 0 ? 'border-rose-500 bg-rose-50/50' : 'border-slate-300'}`} onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}>
-            <span className="font-black uppercase tracking-wider text-rose-700">Alarms</span>
-            <span className={`text-xs font-black ${alarmCount > 0 ? 'text-rose-600 animate-pulse' : 'text-emerald-600'}`}>{alarmCount}</span>
+
+          <div 
+            className={`bg-white rounded-lg px-2.5 py-1 border shadow-2xs cursor-pointer flex items-center justify-between hover:bg-rose-50/50 transition-all ${
+              alarmCount > 0 ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200/80'
+            }`} 
+            onClick={() => { if (alarmCount > 0) setShowAlarmModal(true); }}
+            title={alarmCount > 0 ? 'Click to view Alarms' : ''}
+          >
+            <span className="font-bold uppercase tracking-wider text-[10px] text-rose-700 flex items-center gap-1">
+              <AlertCircle className="w-3 h-3 text-rose-500" />
+              <span>Alarms</span>
+            </span>
+            <span className={`text-xs font-mono font-black ${alarmCount > 0 ? 'text-rose-600 animate-pulse' : 'text-slate-400'}`}>
+              {alarmCount}
+            </span>
           </div>
-          <div className="bg-white rounded px-2 py-0.5 border border-slate-300 shadow-xs flex items-center justify-between cursor-pointer hover:bg-purple-50 transition-all" onClick={() => setShowKPIModal(true)}>
-            <span className="font-black uppercase tracking-wider text-purple-600">Total Completed</span>
-            <span className="text-xs font-black text-purple-700">{completionHistory.length}</span>
+
+          <div 
+            className="bg-white rounded-lg px-2.5 py-1 border border-slate-200/80 shadow-2xs flex items-center justify-between cursor-pointer hover:bg-indigo-50/50 transition-all" 
+            onClick={() => setShowKPIModal(true)}
+            title="Click to view KPI Matrix"
+          >
+            <span className="font-bold uppercase tracking-wider text-[10px] text-indigo-600 flex items-center gap-1">
+              <BarChart3 className="w-3 h-3 text-indigo-500" />
+              <span>Cleared Result</span>
+            </span>
+            <span className="text-xs font-mono font-black text-indigo-700">{completionHistory.length}</span>
           </div>
         </div>
+        )}
 
-        {/* Excel Matrix Table */}
-        <div className="flex-1 overflow-auto bg-slate-50 relative min-h-0">
-          <table className="w-full border-collapse text-[11px] leading-tight select-text">
-            <thead className="sticky top-0 z-30 shadow-xs">
-              <tr className="bg-slate-800 text-white font-black text-[10.5px] uppercase tracking-wider">
-                <th className="border border-slate-700 px-1 py-1 w-8 text-center bg-slate-900 sticky top-0 z-20">
-                  <input type="checkbox" checked={filteredData.length > 0 && selectedRows.size === filteredData.length} onChange={toggleSelectAll} className="rounded" />
+        {/* ─── DATA GRID TABLE (ENTERPRISE SPREADSHEET MATRIX) ─── */}
+        <div className="flex-1 min-h-0 overflow-auto bg-white">
+          <table className="min-w-full border-collapse border border-slate-200 leading-tight table-auto">
+            <thead>
+              <tr className="bg-slate-900 text-slate-200 font-bold uppercase tracking-wider text-[10px]">
+                <th className={`border border-slate-800 text-center sticky top-0 z-20 bg-slate-900 w-8 ${
+                  tableDensity === 'ultra' ? 'px-1 py-0.5' : tableDensity === 'compact' ? 'px-1.5 py-1' : 'px-2 py-1.5'
+                }`}>
+                  <input 
+                    type="checkbox" 
+                    checked={filteredData.length > 0 && selectedRows.size === filteredData.length} 
+                    onChange={toggleSelectAll} 
+                    className="rounded border-slate-600 cursor-pointer" 
+                  />
                 </th>
                 {columns.map(col => (
-                  <th
-                    key={col.key}
+                  <th 
+                    key={col.key} 
                     onClick={() => {
                       if (col.key === 'daysDiff') {
                         setDaysSortOrder(prev => prev === 'none' ? 'desc' : prev === 'desc' ? 'asc' : 'none');
                       }
                     }}
-                    className={`border border-slate-700 px-1.5 py-0.5 font-extrabold whitespace-nowrap sticky top-0 z-20 bg-slate-800 ${col.width} ${col.align || 'text-left'} ${col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-700 select-none text-amber-300' : ''}`}
+                    className={`border border-slate-800 font-black whitespace-nowrap sticky top-0 z-20 bg-slate-900 ${col.width} ${col.align || 'text-left'} ${
+                      tableDensity === 'ultra' ? 'px-1.5 py-0.5 text-[9px]' : tableDensity === 'compact' ? 'px-2 py-1 text-[9.5px]' : 'px-2.5 py-1.5 text-[10px]'
+                    } ${
+                      col.key === 'daysDiff' ? 'cursor-pointer hover:bg-slate-800 select-none text-amber-400' : ''
+                    }`}
                     title={col.key === 'daysDiff' ? 'Click to sort by Days (Descending / Ascending)' : ''}
                   >
-                    {col.label}
-                    {col.key === 'daysDiff' && (
-                      <span className="ml-1 text-[9px]">
-                        {daysSortOrder === 'desc' ? '⬇️' : daysSortOrder === 'asc' ? '⬆️' : '↕️'}
-                      </span>
-                    )}
+                    <div className="inline-flex items-center gap-1">
+                      <span>{col.label}</span>
+                      {col.key === 'daysDiff' && (
+                        <span>
+                          {daysSortOrder === 'desc' ? (
+                            <ArrowDown className="w-3 h-3 text-amber-400 inline" />
+                          ) : daysSortOrder === 'asc' ? (
+                            <ArrowUp className="w-3 h-3 text-amber-400 inline" />
+                          ) : (
+                            <ArrowUpDown className="w-3 h-3 text-slate-400 inline" />
+                          )}
+                        </span>
+                      )}
+                    </div>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-300 font-normal text-slate-800 bg-white">
+            <tbody className="divide-y divide-slate-200 font-normal text-slate-800 bg-white">
               {paginatedData.map((item) => {
                 const isAlarm = item.daysDiff >= alarmThreshold && !dismissedItems.has(item.id);
+                const cellPy = tableDensity === 'ultra' ? 'py-0.25' : tableDensity === 'compact' ? 'py-0.5' : 'py-1';
                 return (
-                  <tr key={item.id} className={`transition-colors ${isAlarm ? 'bg-rose-50/90 font-semibold' : selectedRows.has(item.id) ? 'bg-indigo-50/90' : 'even:bg-slate-50/70 odd:bg-white hover:bg-amber-50/80'}`}>
-                    <td className="border border-slate-300 px-1.5 py-1 text-center bg-white/50">
-                      <input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded" />
+                  <tr key={item.id} className={`transition-colors ${isAlarm ? 'bg-rose-50/90 font-semibold' : selectedRows.has(item.id) ? 'bg-blue-50/90' : 'even:bg-slate-50/60 hover:bg-blue-50/50'}`}>
+                    <td className={`border border-slate-200 px-1 ${cellPy} text-center bg-white/50`}>
+                      <input type="checkbox" checked={selectedRows.has(item.id)} onChange={() => toggleRowSelection(item.id)} className="rounded cursor-pointer" />
                     </td>
-                    <td className="border border-slate-300 px-1.5 py-1 text-slate-500 font-bold text-center bg-slate-100/70">{item.no}</td>
-                    <td className="border border-slate-300 px-1.5 py-0.25 font-mono font-bold text-slate-900 whitespace-nowrap min-w-[170px]">
+                    <td className={`border border-slate-200 px-1 ${cellPy} text-slate-500 font-bold text-center bg-slate-100/70 text-[10px]`}>{item.no}</td>
+                    
+                    {/* Code of stock-out note */}
+                    <td className={`border border-slate-200 px-1.5 ${cellPy} font-mono font-bold text-slate-900 whitespace-nowrap min-w-[170px] text-[10px]`}>
                       {editingCell?.id === item.id && editingCell?.field === 'code' ? (
                         <input type="text" defaultValue={item.code} autoFocus onBlur={(e) => saveEdit(item.id, 'code', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'code')} className="w-full px-0.5 py-0 border border-blue-500 rounded text-[9.5px] bg-white font-mono" />
                       ) : (
-                        <div onClick={() => startEdit(item.id, 'code', item.code)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors font-mono whitespace-nowrap">{item.code || '-'}</div>
+                        <div onClick={() => startEdit(item.id, 'code', item.code)} className="cursor-pointer hover:bg-slate-200/60 px-0.5 py-0 rounded transition-colors font-mono whitespace-nowrap text-indigo-700">{item.code || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
+
+                    {/* Warehouse */}
+                    <td className={`border border-slate-200 px-1.5 ${cellPy} break-words text-slate-800 text-[10px]`}>
                       {editingCell?.id === item.id && editingCell?.field === 'warehouse' ? (
                         <input type="text" defaultValue={item.warehouse} autoFocus onBlur={(e) => saveEdit(item.id, 'warehouse', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'warehouse')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
                         <div onClick={() => startEdit(item.id, 'warehouse', item.warehouse)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{item.warehouse || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
+
+                    {/* Recipient */}
+                    <td className={`border border-slate-200 px-1.5 ${cellPy} break-words text-slate-800 text-[10px]`}>
                       {editingCell?.id === item.id && editingCell?.field === 'recipient' ? (
                         <input type="text" defaultValue={item.recipient} autoFocus onBlur={(e) => saveEdit(item.id, 'recipient', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'recipient')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
                         <div onClick={() => startEdit(item.id, 'recipient', item.recipient)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{getRecipientBadge(item.recipient)}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 break-words text-slate-800">
+
+                    {/* Creator */}
+                    <td className={`border border-slate-200 px-1.5 ${cellPy} break-words text-slate-800 text-[10px]`}>
                       {editingCell?.id === item.id && editingCell?.field === 'creator' ? (
                         <input type="text" defaultValue={item.creator} autoFocus onBlur={(e) => saveEdit(item.id, 'creator', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'creator')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] bg-white" />
                       ) : (
                         <div onClick={() => startEdit(item.id, 'creator', item.creator)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded transition-colors">{item.creator || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-mono text-slate-700 whitespace-nowrap">
+
+                    {/* Date */}
+                    <td className={`border border-slate-200 px-1.5 ${cellPy} text-center font-mono text-slate-700 whitespace-nowrap text-[10px]`}>
                       {editingCell?.id === item.id && editingCell?.field === 'date' ? (
                         <input type="text" defaultValue={item.date} autoFocus onBlur={(e) => saveEdit(item.id, 'date', e.target.value)} onKeyDown={(e) => handleKeyPress(e, item.id, 'date')} className="w-full px-1 py-0.5 border border-blue-500 rounded text-[10.5px] text-center bg-white font-mono" />
                       ) : (
                         <div onClick={() => startEdit(item.id, 'date', item.date)} className="cursor-pointer hover:bg-slate-200/60 px-1 py-0.5 rounded font-mono text-center transition-colors">{item.date || '-'}</div>
                       )}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center whitespace-nowrap">
-                      <span className="inline-flex px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold bg-slate-200 text-slate-800 border border-slate-300">{item.unit}</span>
+
+                    {/* Unit */}
+                    <td className={`border border-slate-200 px-1 ${cellPy} text-center whitespace-nowrap`}>
+                      <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-extrabold ${isAlarm ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-slate-100 text-slate-800 border border-slate-200'}`}>{item.unit}</span>
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-bold whitespace-nowrap">
-                      <span className={`inline-flex px-1.5 py-0.5 rounded font-mono text-[10px] font-black ${
+
+                    {/* Days */}
+                    <td className={`border border-slate-200 px-1 ${cellPy} text-center font-bold whitespace-nowrap`}>
+                      <span className={`inline-flex px-1.5 py-0.5 rounded font-mono text-[9px] font-black ${
                         item.daysDiff >= alarmThreshold ? 'bg-rose-100 text-rose-800 border border-rose-300 animate-pulse' :
                         item.daysDiff > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                       }`}>
                         {item.daysDiff > 0 ? `+${item.daysDiff}` : item.daysDiff} d
                       </span>
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-bold text-purple-700 whitespace-nowrap bg-purple-50/70 font-mono">
+
+                    {/* TEAM */}
+                    <td className={`border border-slate-200 px-1 ${cellPy} text-center font-bold text-purple-700 whitespace-nowrap bg-purple-50/70 font-mono text-[10px]`}>
                       {item.team || '-'}
                     </td>
-                    <td className="border border-slate-300 px-2 py-1 text-center font-bold text-slate-700 whitespace-nowrap">
+
+                    {/* Status */}
+                    <td className={`border border-slate-200 px-1 ${cellPy} text-center font-bold text-slate-700 whitespace-nowrap text-[10px]`}>
                       {item.status || '-'}
                     </td>
                   </tr>
@@ -1296,11 +1643,11 @@ const NotCreateHandOverMetfone = () => {
               })}
               {filteredData.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length + 1} className="border border-slate-300 px-6 py-12 text-center text-slate-400 font-bold text-sm bg-white">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="text-4xl">📭</div>
-                      <p className="text-lg font-bold text-slate-700">No GIS records found</p>
-                      <p className="text-xs text-slate-500">Please click "Smart Import" to enter data.</p>
+                  <td colSpan={columns.length + 1} className="border border-slate-200 px-6 py-12 text-center text-slate-400 font-bold text-sm bg-white">
+                    <div className="flex flex-col items-center gap-2">
+                      <Inbox className="w-10 h-10 text-slate-300" />
+                      <p className="text-base font-bold text-slate-700">No GIS records found</p>
+                      <p className="text-xs text-slate-400">Please click "Smart Import" to enter data.</p>
                     </div>
                   </td>
                 </tr>
@@ -1309,10 +1656,10 @@ const NotCreateHandOverMetfone = () => {
           </table>
         </div>
 
-        {/* Pagination Bar */}
-        <div className="bg-slate-100 px-3 py-1 border-t border-slate-300 flex flex-col sm:flex-row justify-between items-center gap-2 text-[11px] text-slate-700 flex-shrink-0">
+        {/* ─── PAGINATION BAR ─── */}
+        <div className="bg-slate-50 px-3.5 py-1.5 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-700 flex-shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="font-semibold text-slate-600">Show</span>
+            <span className="font-semibold text-slate-500">Show</span>
             <select 
               value={pageSize} 
               onChange={(e) => { 
@@ -1320,29 +1667,34 @@ const NotCreateHandOverMetfone = () => {
                 setPageSize(val === 'ALL' ? 'ALL' : parseInt(val, 10)); 
                 setCurrentPage(1); 
               }} 
-              className="border border-slate-300 rounded px-1.5 py-0.5 bg-white font-bold text-slate-800 shadow-xs text-[11px]"
+              className="border border-slate-200 rounded-md px-2 py-0.5 bg-white font-bold text-slate-800 shadow-2xs text-xs"
             >
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
+              <option value={70}>70</option>
               <option value={100}>100</option>
               <option value={200}>200</option>
               <option value={500}>500</option>
               <option value={1000}>1000</option>
               <option value="ALL">All</option>
             </select>
-            <span className="font-semibold text-slate-600">entries</span>
-            <span className="text-slate-400">|</span>
+            <span className="font-semibold text-slate-500">entries</span>
+            <span className="text-slate-300">|</span>
             <span className="font-bold text-slate-800">
               Showing {totalItems > 0 ? (pageSize === 'ALL' ? 1 : (currentPage - 1) * pageSize + 1) : 0} to {pageSize === 'ALL' ? totalItems : Math.min(currentPage * pageSize, totalItems)} of {totalItems} entries
             </span>
           </div>
           
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
               disabled={currentPage === 1}
-              className={`px-2.5 py-0.5 rounded border font-bold text-xs cursor-pointer transition-colors ${currentPage === 1 ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
+              className={`px-2.5 py-1 rounded-md border font-bold text-xs cursor-pointer transition-colors ${
+                currentPage === 1 
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' 
+                  : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50 shadow-2xs'
+              }`}
             >
               Prev
             </button>
@@ -1361,7 +1713,11 @@ const NotCreateHandOverMetfone = () => {
                 <button 
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-2 py-0.5 rounded border text-xs font-black cursor-pointer transition-colors ${currentPage === pageNum ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50'}`}
+                  className={`px-2.5 py-1 rounded-md border text-xs font-black cursor-pointer transition-colors ${
+                    currentPage === pageNum 
+                      ? 'bg-slate-900 text-white border-slate-900 shadow-xs' 
+                      : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50'
+                  }`}
                 >
                   {pageNum}
                 </button>
@@ -1371,16 +1727,35 @@ const NotCreateHandOverMetfone = () => {
             <button 
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
               disabled={currentPage === totalPages}
-              className={`px-2.5 py-0.5 rounded border font-bold text-xs cursor-pointer transition-colors ${currentPage === totalPages ? 'bg-slate-200 text-slate-400 border-slate-300 cursor-not-allowed' : 'bg-white text-slate-800 border-slate-300 hover:bg-slate-50 shadow-xs'}`}
+              className={`px-2.5 py-1 rounded-md border font-bold text-xs cursor-pointer transition-colors ${
+                currentPage === totalPages 
+                  ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed' 
+                  : 'bg-white text-slate-800 border-slate-200 hover:bg-slate-50 shadow-2xs'
+              }`}
             >
               Next
             </button>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-slate-100 px-4 py-1.5 border-t border-slate-300 text-[11px] font-semibold text-slate-600 flex justify-between flex-wrap gap-2 flex-shrink-0">
-          <span>📋 Total GIS: <strong>{filteredData.length}</strong> rows | Alarms: <strong>{alarmCount}</strong></span>
+        {/* ─── FOOTER STATUS STRIP ─── */}
+        <div className="bg-slate-100/90 px-4 py-1 border-t border-slate-200 text-[11px] font-semibold text-slate-600 flex justify-between items-center flex-wrap gap-2 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5">
+              <Layers className="w-3 h-3 text-slate-400" />
+              <span>In System: <strong>{data.length}</strong> rows</span>
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5 text-emerald-700">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              <span>GIS: <strong>{filteredData.length}</strong> rows</span>
+            </span>
+            <span>•</span>
+            <span className="flex items-center gap-1.5 text-rose-700">
+              <AlertCircle className="w-3 h-3 text-rose-500" />
+              <span>Alarms: <strong>{alarmCount}</strong></span>
+            </span>
+          </div>
         </div>
       </div>
     </div>

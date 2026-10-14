@@ -566,13 +566,20 @@ export default function StockoutYetConfirmMetfone() {
   };
 
   const saveEdit = (id, field, value) => {
-    setData(prev => prev.map(item => {
-      if (item.id === id) {
-        const updated = { ...item, [field]: value };
-        return enrichItem(updated, updated.no - 1);
+    setData(prev => {
+      const updatedList = prev.map(item => {
+        if (item.id === id) {
+          const updated = { ...item, [field]: value };
+          return enrichItem(updated, updated.no - 1);
+        }
+        return item;
+      });
+      const gisOnly = updatedList.filter(item => item.isGis).map((item, idx) => ({ ...item, no: idx + 1 }));
+      if (gisOnly.length < updatedList.length) {
+        showNotification('🗑️ ទិន្នន័យត្រូវបានលុបចោលដោយសារមិនមាន GIS (ទាំង Stock Receiver និង Group Receiver)!', 'warning');
       }
-      return item;
-    }));
+      return gisOnly;
+    });
     setEditingCell(null);
   };
 
