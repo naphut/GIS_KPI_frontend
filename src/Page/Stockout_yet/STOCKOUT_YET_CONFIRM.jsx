@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { loadFromDb, saveToDb, clearStore } from '../../services/dbStore';
+import { archiveClearedRecords, checkAndRevokeBackupConflicts } from '../../services/backupStore';
 import {
   Package,
   Trash2,
@@ -18,7 +19,6 @@ import {
   Layers,
   AlertCircle,
   ShieldAlert,
-  History,
   Download,
   Upload,
   Copy,
@@ -54,22 +54,22 @@ const getStorageData = (key) => {
   }
 };
 
-// Helper function to extract Unit from Group Receiver
+// Helper function to extract Unit from Group Receiver or Stock Receiver
 // Uses 2-step approach: province from GIS_XXX_ prefix + FBC/SOS number anywhere in string
 // This correctly handles complex names like GIS_KAN_STOCK_NOC_FBCTEAM01 → KANZ1
-const getUnitFromGroupReceiver = (groupReceiver) => {
-  if (!groupReceiver) return null;
+const getUnitFromGroupReceiver = (receiver) => {
+  if (!receiver || receiver === '-') return null;
   
-  let upper = groupReceiver.toUpperCase().replace(/\s+/g, '');
+  let upper = receiver.toUpperCase().replace(/\s+/g, '');
   upper = upper.replace(/FB_TEAMC/g, 'FBC').replace(/FB_TEAM/g, 'FBC').replace(/FBC012/g, 'FBC12');
   
-  // Direct unit label overrides (explicit _PNPZ1_, ^KANZ1, etc.)
-  if (/_PNPZ1_/.test(upper) || /^PNPZ1\b/.test(upper)) return 'PNPZ1';
-  if (/_PNPZ2_/.test(upper) || /^PNPZ2\b/.test(upper)) return 'PNPZ2';
-  if (/_KANZ1_/.test(upper) || /^KANZ1\b/.test(upper)) return 'KANZ1';
+  // Direct unit label overrides (explicit _PNPZ1_, ^PNPZ1, etc.)
+  if (/_PNPZ1_/.test(upper) || /(?:^|_)PNPZ1\b/.test(upper)) return 'PNPZ1';
+  if (/_PNPZ2_/.test(upper) || /(?:^|_)PNPZ2\b/.test(upper)) return 'PNPZ2';
+  if (/_KANZ1_/.test(upper) || /(?:^|_)KANZ1\b/.test(upper)) return 'KANZ1';
 
-  // Step 1: Extract province from GIS_XXX_ prefix
-  const gisMatch = upper.match(/^GIS_([A-Z]+)_/);
+  // Step 1: Extract province from GIS_XXX_ prefix (anywhere in string)
+  const gisMatch = upper.match(/(?:^|_)GIS_([A-Z]+)_/);
   const province = gisMatch ? gisMatch[1] : null;
 
   // Step 2: Find FBC or SOS number ANYWHERE in the string
@@ -201,6 +201,27 @@ const getTeam = (stockReceiver, groupReceiver) => {
         }
       }
     }
+
+    // Fallback: If province not found in rawTeam (e.g. rawTeam is just "SOS01"), check stockReceiver
+    if (!province && stockReceiver) {
+      const stockUpper = stockReceiver.toUpperCase();
+      const stockGisMatch = stockUpper.match(/(?:^|_)GIS_([A-Z]+)_/);
+      if (stockGisMatch) {
+        province = stockGisMatch[1];
+      } else {
+        const units = [
+          'BAN','BAT','CHA','CHH','KAM','KOH','KRA','MON','ODD',
+          'PNP','PRE','PRH','PUR','ROT','SIE','SIH','SPE','STU',
+          'SVA','TAK','THO','KAN'
+        ].sort((a, b) => b.length - a.length);
+        for (const u of units) {
+          if (new RegExp(`(^|_)${u}($|_)`).test(stockUpper)) {
+            province = u;
+            break;
+          }
+        }
+      }
+    }
     
     if (province) {
       return `GIS_${province}_${teamType}${teamNum}`;
@@ -251,27 +272,37 @@ const STOCKOUT_YET_CONFIRM = () => {
   const [tableDensity, setTableDensity] = useState('ultra'); // 'ultra' (fits 70 rows), 'compact' (45 rows), 'normal' (25 rows)
   const [showStatsBar, setShowStatsBar] = useState(true);
 
-  // Load data from DB on mount
+  // Load data from DB on mount in parallel for ultra-fast startup
   useEffect(() => {
     const fetchDbData = async () => {
-      const dbData = await loadFromDb(STORAGE_KEYS.DATA, []);
-      
-      // Enrich/update data with correct unit and full team name
-      // This auto-corrects any previously stored wrong unit values (e.g. KAN → KANZ1)
-      const enrichedData = dbData.map(item => ({
-        ...item,
-        unit: getUnit(item.exportCode, item.exportNo, item.groupReceiver, item.stockReceiver),
-        team: getTeam(item.stockReceiver, item.groupReceiver)
-      }));
-      setData(enrichedData);
-      
-      const dbCompletion = await loadFromDb(STORAGE_KEYS.COMPLETION, []);
-      setCompletionHistory(dbCompletion);
+      try {
+        const [dbData, dbCompletion, dbTargets] = await Promise.all([
+          loadFromDb(STORAGE_KEYS.DATA, []),
+          loadFromDb(STORAGE_KEYS.COMPLETION, []),
+          loadFromDb(STORAGE_KEYS.TARGETS, {})
+        ]);
 
-      const dbTargets = await loadFromDb(STORAGE_KEYS.TARGETS, {});
-      setTargets(dbTargets);
-      
-      isLoaded.current = true;
+        if (dbData && dbData.length > 0) {
+          const enrichedData = dbData.map(item => ({
+            ...item,
+            unit: getUnit(item.exportCode, item.exportNo, item.groupReceiver, item.stockReceiver),
+            team: getTeam(item.stockReceiver, item.groupReceiver)
+          }));
+          setData(enrichedData);
+        }
+
+        if (dbCompletion && dbCompletion.length > 0) {
+          setCompletionHistory(dbCompletion);
+        }
+
+        if (dbTargets && Object.keys(dbTargets).length > 0) {
+          setTargets(dbTargets);
+        }
+      } catch (err) {
+        console.warn("Background DB sync notice:", err);
+      } finally {
+        isLoaded.current = true;
+      }
     };
     fetchDbData();
   }, []);
@@ -352,17 +383,32 @@ const STOCKOUT_YET_CONFIRM = () => {
   };
 
   const showNotification = (message, type = 'alarm') => {
-    const colors = {
-      alarm: 'bg-rose-600 border-rose-500',
-      success: 'bg-emerald-600 border-emerald-500',
-      info: 'bg-blue-600 border-blue-500',
-      warning: 'bg-amber-500 border-amber-400'
+    // Remove existing notifications to avoid overlapping popups
+    document.querySelectorAll('.app-page-toast').forEach(el => el.remove());
+
+    const borderColors = {
+      alarm: 'border-l-4 border-l-rose-500 shadow-rose-950/30',
+      success: 'border-l-4 border-l-emerald-500 shadow-emerald-950/30',
+      info: 'border-l-4 border-l-blue-500 shadow-blue-950/30',
+      warning: 'border-l-4 border-l-amber-500 shadow-amber-950/30'
+    };
+    const titleColors = {
+      alarm: 'text-rose-400',
+      success: 'text-emerald-400',
+      info: 'text-blue-400',
+      warning: 'text-amber-400'
+    };
+    const barColors = {
+      alarm: 'bg-rose-500',
+      success: 'bg-emerald-500',
+      info: 'bg-blue-500',
+      warning: 'bg-amber-500'
     };
     const icons = {
-      alarm: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
-      success: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-      info: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-      warning: '<svg class="w-5 h-5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
+      alarm: '<svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+      success: '<svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      info: '<svg class="w-4 h-4 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+      warning: '<svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
     };
     const titles = {
       alarm: 'ALARM DETECTED',
@@ -371,20 +417,30 @@ const STOCKOUT_YET_CONFIRM = () => {
       warning: 'Warning'
     };
 
+    const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
     const notification = document.createElement('div');
-    notification.className = `fixed top-16 right-4 z-50 p-3.5 rounded-xl shadow-xl border ${colors[type] || 'bg-slate-800 border-slate-700'} text-white max-w-sm animate-slideIn`;
+    notification.className = `app-page-toast fixed bottom-[75px] right-4 sm:right-6 z-[9999998] max-w-[340px] w-full rounded-xl shadow-2xl backdrop-blur-md border border-slate-700/70 bg-slate-900/95 text-slate-100 overflow-hidden select-none pointer-events-auto transition-all duration-200 animate-toast-in ${borderColors[type] || 'border-l-4 border-l-slate-500'}`;
     notification.innerHTML = `
-      <div class="flex items-start gap-2.5">
-        <div class="mt-0.5">${icons[type] || icons.info}</div>
-        <div class="flex-1 min-w-0">
-          <div class="font-bold text-xs uppercase tracking-wider text-white/90">${titles[type] || 'Notification'}</div>
-          <div class="text-xs text-white/95 mt-0.5 leading-relaxed whitespace-pre-line">${message}</div>
+      <div class="p-2.5 sm:p-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 min-w-0">
+            ${icons[type] || icons.info}
+            <span class="text-[10.5px] font-bold tracking-wide uppercase ${titleColors[type] || 'text-slate-300'}">${titles[type] || 'Notification'}</span>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-[9.5px] text-slate-400 font-mono">${timeStr}</span>
+            <button onclick="this.closest('.app-page-toast').remove()" class="text-slate-400 hover:text-white p-0.5 rounded hover:bg-slate-800 transition-colors cursor-pointer leading-none text-xs">✕</button>
+          </div>
         </div>
-        <button onclick="this.parentElement.parentElement.remove()" class="text-white/60 hover:text-white text-base leading-none ml-1 cursor-pointer">✕</button>
+        <p class="text-[11.5px] font-medium text-slate-200 mt-1 pl-5.5 leading-snug">${message}</p>
+      </div>
+      <div class="h-0.5 bg-slate-800 w-full overflow-hidden">
+        <div class="h-full ${barColors[type] || 'bg-slate-500'} animate-toast-bar"></div>
       </div>
     `;
     document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 4000);
+    setTimeout(() => notification.remove(), 3800);
   };
 
   // 🚫 FILTER FUNCTION: Check if item should be excluded
@@ -403,10 +459,12 @@ const STOCKOUT_YET_CONFIRM = () => {
         item.groupReceiver.toUpperCase().includes('GIS_MOD')) {
       return true;
     }
-    // Exclude if not a GIS item (neither stockReceiver has GIS nor groupReceiver has GIS/unit)
-    const isStockReceiverGIS = item.stockReceiver && item.stockReceiver.toUpperCase().includes('GIS');
+    // Exclude if not a GIS item (when receivers are specified, at least one must be GIS)
+    const isStockReceiverGIS = item.stockReceiver && (item.stockReceiver.toUpperCase().includes('GIS') || getUnitFromGroupReceiver(item.stockReceiver) !== null);
     const isGroupReceiverGIS = item.groupReceiver && (item.groupReceiver.toUpperCase().includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null);
-    if (!isStockReceiverGIS && !isGroupReceiverGIS) {
+    const hasReceivers = (item.stockReceiver && item.stockReceiver.trim() && item.stockReceiver.trim() !== '-') || 
+                         (item.groupReceiver && item.groupReceiver.trim() && item.groupReceiver.trim() !== '-');
+    if (hasReceivers && !isStockReceiverGIS && !isGroupReceiverGIS) {
       return true;
     }
     return false;
@@ -478,7 +536,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   };
 
   // Process import with auto-target creation and FILTERS
-  const processImport = (newRawData) => {
+  const processImport = async (newRawData) => {
     // Step 1: Filter out excluded items BEFORE processing
     const filteredRawData = newRawData.filter(item => !shouldExcludeItem(item));
     
@@ -487,24 +545,111 @@ const STOCKOUT_YET_CONFIRM = () => {
       return;
     }
 
-    const currentExportNos = new Set(data.map(item => item.exportNo));
-    const newExportNosSet = new Set(filteredRawData.map(item => item.exportNo));
+    // Robustly obtain current active records (from state or local cache) to ensure no missing item is lost
+    const activeCurrentData = (data && data.length > 0) ? data : (getStorageData(STORAGE_KEYS.DATA) || []);
+    const currentExportNos = new Set(activeCurrentData.map(item => (item.exportNo || '').trim().toUpperCase()).filter(Boolean));
+    const newExportNosSet = new Set(filteredRawData.map(item => (item.exportNo || '').trim().toUpperCase()).filter(Boolean));
+
+    // ⚡ STEP 1.5: REBACK CONFLICT CHECK & AUTO-REVOKE FROM BACKUP
+    // If any Export No in the new import was previously Cleared into Backup (System 1 Reback scenario),
+    // restore it cleanly to Pending and revoke/delete it from Backup immediately!
+    try {
+      const rebackedExportNos = await checkAndRevokeBackupConflicts(
+        'CONFIRMED_HAND_OVER',
+        'STOCKOUT_YET_CONFIRM',
+        Array.from(newExportNosSet)
+      );
+
+      if (rebackedExportNos && rebackedExportNos.length > 0) {
+        const rebackedSet = new Set(rebackedExportNos.map(s => s.toUpperCase()));
+        setCompletionHistory(prev => {
+          const next = prev.filter(c => !rebackedSet.has((c.exportNo || '').toUpperCase()));
+          saveToDb(STORAGE_KEYS.COMPLETION, next);
+          return next;
+        });
+        const sampleList = rebackedExportNos.slice(0, 3).join(', ') + (rebackedExportNos.length > 3 ? '...' : '');
+        showNotification(
+          `⚠️ REBACK DETECTED: ${rebackedExportNos.length} record(s) (${sampleList}) re-appeared in System 1! Restored to Pending & removed from Backup.`,
+          'warning'
+        );
+      }
+    } catch (e) {
+      console.warn('Reback conflict check notice:', e);
+    }
     
+    // 1. Pre-build HashMaps for O(1) Instant Lookups (Eliminates O(N^2) lag)
+    const currentDataMap = new Map();
+    activeCurrentData.forEach(d => {
+      const expNo = (d.exportNo || '').trim().toUpperCase();
+      if (expNo) currentDataMap.set(expNo, d);
+    });
+
+    let backupRecords = [];
+    try {
+      const rawBackup = localStorage.getItem('BACKUP_ARCHIVE_CONFIRMED_HAND_OVER_STOCKOUT_YET_CONFIRM');
+      if (rawBackup) backupRecords = JSON.parse(rawBackup);
+    } catch (e) {}
+
+    const backupDataMap = new Map();
+    backupRecords.forEach(d => {
+      const expNo = (d.exportNo || '').trim().toUpperCase();
+      if (expNo) backupDataMap.set(expNo, d);
+    });
+
+    // 2. Pre-calculate maxId once outside the loop
+    let maxExistingId = 0;
+    for (let i = 0; i < activeCurrentData.length; i++) {
+      const rowId = activeCurrentData[i].id || 0;
+      if (rowId > maxExistingId) maxExistingId = rowId;
+    }
+
     const processedNewData = filteredRawData.map((item, index) => {
-      const stockRec = item.stockReceiver || '';
-      const groupRec = item.groupReceiver || '';
+      const stockRec = (item.stockReceiver || '').trim();
+      const groupRec = (item.groupReceiver || '').trim();
+      const expNo = (item.exportNo || '').trim();
+      const expCode = (item.exportCode || '').trim();
+      const realExp = (item.realExport || '').trim();
+      const constRec = (item.constructionReceiver || '').trim();
+
+      const keyNo = expNo.toUpperCase();
+      const existingItem = (keyNo && currentDataMap.get(keyNo)) || 
+                           (keyNo && backupDataMap.get(keyNo));
+
+      const finalExpNo = expNo || expCode || existingItem?.exportNo || `REC_${index + 1}`;
+      const finalExpCode = expCode || existingItem?.exportCode || existingItem?.warehouseStockOut || finalExpNo;
+      const finalRealExp = realExp || existingItem?.realExport || existingItem?.date || new Date().toISOString().split('T')[0];
+      const finalStockRec = stockRec || existingItem?.stockReceiver || '-';
+
+      let finalGroupRec = groupRec || existingItem?.groupReceiver || '';
+      if (!finalGroupRec || finalGroupRec === '-') {
+        // If stockReceiver has an SOS or FBC team, extract it as groupReceiver (e.g. SOSTEAM01 -> SOS01)
+        const sosMatch = finalStockRec.match(/SOS(?:TEAM)?\s*(\d+)/i);
+        const fbcMatch = finalStockRec.match(/FBC(?:TEAM)?\s*(\d+)/i);
+        if (sosMatch) {
+          const num = String(parseInt(sosMatch[1], 10)).padStart(2, '0');
+          finalGroupRec = `SOS${num}`;
+        } else if (fbcMatch) {
+          const num = String(parseInt(fbcMatch[1], 10)).padStart(2, '0');
+          finalGroupRec = `FBC${num}`;
+        } else {
+          finalGroupRec = '-';
+        }
+      }
+
+      const finalConstRec = constRec || existingItem?.constructionReceiver || existingItem?.construction || '-';
+
       return {
-        id: Math.max(...data.map(d => d.id), 0, index) + index + 1,
+        id: maxExistingId + index + 1,
         no: index + 1,
-        exportCode: item.exportCode,
-        exportNo: item.exportNo,
-        realExport: item.realExport,
-        stockReceiver: stockRec,
-        groupReceiver: groupRec,
-        constructionReceiver: item.constructionReceiver || '',
-        unit: getUnit(item.exportCode, item.exportNo, groupRec, stockRec),
-        team: getTeam(stockRec, groupRec),
-        daysDiff: calculateDaysDiff(item.realExport)
+        exportCode: finalExpCode,
+        exportNo: finalExpNo,
+        realExport: finalRealExp,
+        stockReceiver: finalStockRec,
+        groupReceiver: finalGroupRec,
+        constructionReceiver: finalConstRec,
+        unit: getUnit(finalExpCode, finalExpNo, finalGroupRec, finalStockRec) || existingItem?.unit || 'OTHER',
+        team: getTeam(finalStockRec, finalGroupRec) || existingItem?.team || '-',
+        daysDiff: calculateDaysDiff(finalRealExp)
       };
     });
     
@@ -523,36 +668,45 @@ const STOCKOUT_YET_CONFIRM = () => {
       if (!existingUnits.has(unit)) {
         newUnitsFound.push(unit);
         autoCreateTargetForUnit(unit, unitsInNewData[unit]);
-        showNotification(`Auto-created target for ${unit}`, 'info');
       }
     });
     
-    // Find completed items
+    // Find completed items strictly by Export No (missing in new import from System A)
     const completedExportNosArray = [...currentExportNos].filter(no => !newExportNosSet.has(no));
     
     if (completedExportNosArray.length > 0) {
+      const fullClearedRows = completedExportNosArray
+        .map(no => currentDataMap.get(no))
+        .filter(Boolean);
+
       const newCompletions = completedExportNosArray.map(no => {
-        const foundItem = data.find(item => item.exportNo === no);
+        const foundItem = currentDataMap.get(no);
         return {
-          exportNo: no,
+          exportNo: foundItem?.exportNo || no,
           completedAt: new Date().toISOString(),
           unit: foundItem?.unit || 'UNKNOWN'
         };
       });
-      setCompletionHistory(prev => [...newCompletions, ...prev]);
-      
-      completedExportNosArray.forEach(no => {
-        showNotification(`COMPLETED: ${no} cleared! +1 Result`, 'success');
+      setCompletionHistory(prev => {
+        const next = [...newCompletions, ...prev];
+        saveToDb(STORAGE_KEYS.COMPLETION, next);
+        return next;
       });
+
+      // Archive in background without blocking UI
+      archiveClearedRecords('CONFIRMED_HAND_OVER', 'STOCKOUT_YET_CONFIRM', fullClearedRows, 'SYSTEM_A_AUTO')
+        .catch(err => console.error('Error archiving cleared records:', err));
+      
+      showNotification(`COMPLETED: ${completedExportNosArray.length} record(s) cleared and moved to Backup!`, 'success');
       playAlarmSound();
     }
     
     setData(processedNewData);
     saveToDb(STORAGE_KEYS.DATA, processedNewData);
-    setTimeout(() => checkTargetChanges(), 500);
+    setTimeout(() => checkTargetChanges(), 300);
     
     const excludedCount = newRawData.length - filteredRawData.length;
-    showNotification(`Import Summary:\n• Completed: ${completedExportNosArray.length}\n• New Added: ${filteredRawData.length}\n• Excluded: ${excludedCount} (GPON/GIS_MOD)\n• New Units: ${newUnitsFound.length > 0 ? newUnitsFound.join(', ') : 'None'}`, 'info');
+    showNotification(`Import Summary: Completed: ${completedExportNosArray.length}, New Added: ${filteredRawData.length}, Excluded: ${excludedCount}`, 'info');
   };
 
   // Calculate KPI Data
@@ -670,58 +824,78 @@ const STOCKOUT_YET_CONFIRM = () => {
 
   // Parse pasted data
   const parsePastedData = (text) => {
-    const rows = text.split(/\r?\n/);
-    const parsedRows = [];
-    if (rows.length === 0) return parsedRows;
+    if (!text || !text.trim()) return [];
+    const rows = text.trim().split(/\r?\n/);
+    if (rows.length === 0) return [];
 
-    let exportCodeIdx = -1;
-    let exportNoIdx = -1;
-    let realExportIdx = -1;
+    let exportCodeIdx = -1; // Warehouse Stock out
+    let exportNoIdx = -1;   // Export code / Export No
+    let realExportIdx = -1; // Date real export
     let stockReceiverIdx = -1;
     let groupReceiverIdx = -1;
     let constructionReceiverIdx = -1;
-
     let startRowIndex = 0;
-    
+
     const firstRow = rows[0].trim();
     if (firstRow) {
       const headerCells = firstRow.split(/\t| {2,}/).map(c => c.trim().toLowerCase());
       
-      const hasHeaderWord = headerCells.some(cell => {
-        const clean = cell.replace(/[^a-z0-9]/g, ' ');
-        return clean.includes('code') || 
-               clean.includes('warehouse') || 
-               clean.includes('stock out') || 
-               clean.includes('stockout') || 
-               clean.includes('no') || 
-               clean.includes('date') || 
-               clean.includes('receiver');
+      headerCells.forEach((cell, idx) => {
+        const clean = cell.replace(/[^a-z0-9]/g, ' ').trim();
+        
+        // Skip pure sequence or index numbers (#, no, seq, stt)
+        if (clean === 'no' || clean === 'seq' || clean === 'stt' || clean === 'id' || clean === '') return;
+        
+        // Match specific columns in order of specificity:
+        // 1. Export No / Export Code (e.g., 'export code', 'export no', 'export number', 'export')
+        if (
+          (clean.includes('export') && (clean.includes('code') || clean.includes('no') || clean.includes('num') || clean.includes('id'))) ||
+          clean === 'export no' || clean === 'export code' || clean === 'export'
+        ) {
+          exportNoIdx = idx;
+        }
+        // 2. Warehouse / Stock out warehouse (e.g. 'warehouse stock out', 'warehouse', 'stock out warehouse', 'kho')
+        else if (
+          clean.includes('warehouse') || 
+          (clean.includes('stock') && clean.includes('out') && !clean.includes('date')) ||
+          clean.startsWith('wh')
+        ) {
+          exportCodeIdx = idx;
+        }
+        // 3. Date / Real Export Date (e.g. 'date real export', 'real export', 'date export', 'ngay xuat')
+        else if (clean.includes('date') || clean.includes('time') || clean.includes('real')) {
+          realExportIdx = idx;
+        }
+        // 4. Stock Receiver (e.g. 'stock receiver', 'stock reciever', 'nguoi nhan kho')
+        else if (clean.includes('stock') && (clean.includes('rec') || clean.includes('nhan'))) {
+          stockReceiverIdx = idx;
+        }
+        // 5. Group Receiver (e.g. 'group receiver', 'group reciever', 'doi nhan')
+        else if (clean.includes('group') && (clean.includes('rec') || clean.includes('nhan') || clean.includes('team'))) {
+          groupReceiverIdx = idx;
+        }
+        // 6. Construction Receiver (e.g. 'construction receiver', 'construction', 'cong trinh')
+        else if (clean.includes('construct') || clean.includes('project') || clean.includes('tuyen')) {
+          constructionReceiverIdx = idx;
+        }
       });
-      
-      if (hasHeaderWord) {
+
+      // ONLY treat row 0 as a header if we actually matched at least one distinct header column:
+      if (exportNoIdx !== -1 || exportCodeIdx !== -1 || realExportIdx !== -1 || stockReceiverIdx !== -1 || groupReceiverIdx !== -1) {
         startRowIndex = 1;
-        headerCells.forEach((cell, idx) => {
-          const clean = cell.replace(/[^a-z0-9]/g, ' ');
-          
-          if (clean.includes('no') && (clean.includes('seq') || clean === 'no')) return;
-          
-          if (clean.includes('code') || clean.includes('warehouse') || clean.includes('stock out') || clean.includes('stockout')) {
-            exportCodeIdx = idx;
-          } else if (clean.includes('export') && (clean.includes('no') || clean.includes('num'))) {
-            exportNoIdx = idx;
-          } else if (clean.includes('date') || clean.includes('time') || clean.includes('real')) {
-            realExportIdx = idx;
-          } else if (clean.includes('stock') && clean.includes('receiver')) {
-            stockReceiverIdx = idx;
-          } else if (clean.includes('group') && clean.includes('receiver')) {
-            groupReceiverIdx = idx;
-          } else if (clean.includes('construction') && clean.includes('receiver')) {
-            constructionReceiverIdx = idx;
-          }
-        });
+      } else {
+        // Reset all indices if this was just a data row
+        exportCodeIdx = -1;
+        exportNoIdx = -1;
+        realExportIdx = -1;
+        stockReceiverIdx = -1;
+        groupReceiverIdx = -1;
+        constructionReceiverIdx = -1;
+        startRowIndex = 0;
       }
     }
 
+    const parsedRows = [];
     for (let i = startRowIndex; i < rows.length; i++) {
       const row = rows[i].trim();
       if (!row) continue;
@@ -731,40 +905,64 @@ const STOCKOUT_YET_CONFIRM = () => {
 
       if (exportCodeIdx === -1 && exportNoIdx === -1 && realExportIdx === -1) {
         const firstCell = cells[0].trim().replace(/\.$/, '');
-        const isSequence = /^\d+$/.test(firstCell);
+        const isSequence = /^\d+$/.test(firstCell) && cells.length > 2;
         const offset = isSequence ? 1 : 0;
+        const available = cells.length - offset;
         
-        if (cells.length - offset >= 3) {
-          parsedRows.push({
-            exportCode: cells[offset + 0] || '',
-            exportNo: cells[offset + 1] || '',
-            realExport: cells[offset + 2] || '',
-            stockReceiver: cells[offset + 3] || '',
-            groupReceiver: cells[offset + 4] || '',
-            constructionReceiver: cells[offset + 5] || ''
-          });
+        if (available >= 1) {
+          let expCode = '';
+          let expNo = '';
+          let realExp = '';
+          let stockRec = '';
+          let groupRec = '';
+          let constRec = '';
+
+          if (available === 1) {
+            expNo = (cells[offset] || '').trim();
+          } else if (available === 2) {
+            expCode = (cells[offset + 0] || '').trim();
+            expNo = (cells[offset + 1] || '').trim();
+          } else {
+            expCode = (cells[offset + 0] || '').trim();
+            expNo = (cells[offset + 1] || '').trim();
+            realExp = (cells[offset + 2] || '').trim();
+            stockRec = (cells[offset + 3] || '').trim();
+            groupRec = (cells[offset + 4] || '').trim();
+            constRec = (cells[offset + 5] || '').trim();
+          }
+
+          if (expNo || expCode) {
+            parsedRows.push({
+              exportCode: expCode,
+              exportNo: expNo || expCode,
+              realExport: realExp,
+              stockReceiver: stockRec,
+              groupReceiver: groupRec,
+              constructionReceiver: constRec
+            });
+          }
         }
       } else {
         parsedRows.push({
-          exportCode: exportCodeIdx !== -1 ? (cells[exportCodeIdx] || '') : '',
-          exportNo: exportNoIdx !== -1 ? (cells[exportNoIdx] || '') : '',
-          realExport: realExportIdx !== -1 ? (cells[realExportIdx] || '') : '',
-          stockReceiver: stockReceiverIdx !== -1 ? (cells[stockReceiverIdx] || '') : '',
-          groupReceiver: groupReceiverIdx !== -1 ? (cells[groupReceiverIdx] || '') : '',
-          constructionReceiver: constructionReceiverIdx !== -1 ? (cells[constructionReceiverIdx] || '') : ''
+          exportCode: exportCodeIdx !== -1 ? (cells[exportCodeIdx] || '').trim() : '',
+          exportNo: exportNoIdx !== -1 ? (cells[exportNoIdx] || '').trim() : '',
+          realExport: realExportIdx !== -1 ? (cells[realExportIdx] || '').trim() : '',
+          stockReceiver: stockReceiverIdx !== -1 ? (cells[stockReceiverIdx] || '').trim() : '',
+          groupReceiver: groupReceiverIdx !== -1 ? (cells[groupReceiverIdx] || '').trim() : '',
+          constructionReceiver: constructionReceiverIdx !== -1 ? (cells[constructionReceiverIdx] || '').trim() : ''
         });
       }
     }
     return parsedRows;
   };
 
-  const handleSmartImport = () => {
+  const handleSmartImport = async () => {
     const parsedData = parsePastedData(pasteData);
     if (parsedData.length === 0) {
       showNotification('No valid data found to import!', 'warning');
       return;
     }
-    processImport(parsedData);
+    await processImport(parsedData);
     setShowPasteModal(false);
     setPasteData('');
   };
@@ -788,7 +986,24 @@ const STOCKOUT_YET_CONFIRM = () => {
   };
 
   const clearAllData = async () => {
-    if (window.confirm('Are you sure you want to delete ALL data?')) {
+    if (!data || data.length === 0) {
+      showNotification('No data to clear.', 'info');
+      return;
+    }
+
+    const confirmMsg = `Are you sure you want to clear all ${data.length} records?\n\n🛡️ SAFETY GUARANTEE: All ${data.length} records will be safely archived into "05. SYSTEM BACKUP & ARCHIVE" first, so ZERO data will be lost!\n\nYou can restore them anytime.`;
+
+    if (window.confirm(confirmMsg)) {
+      const recordsToArchive = [...data];
+
+      // 1. First, safely archive all current records to SYSTEM BACKUP & Backend DB
+      try {
+        await archiveClearedRecords('CONFIRMED_HAND_OVER', 'STOCKOUT_YET_CONFIRM', recordsToArchive, 'MANUAL_CLEAR_ALL');
+      } catch (e) {
+        console.error('Error auto-archiving on clear all:', e);
+      }
+
+      // 2. Clear pending state
       setData([]);
       setCompletionHistory([]);
       setTargets({});
@@ -800,7 +1015,7 @@ const STOCKOUT_YET_CONFIRM = () => {
       localStorage.removeItem(STORAGE_KEYS.TARGET_HISTORY);
       
       // Show notification instantly
-      showNotification('All data cleared!', 'warning');
+      showNotification(`All ${recordsToArchive.length} records safely archived to SYSTEM BACKUP & pending cleared!`, 'success');
       
       // Clear DB stores in background
       Promise.all([
@@ -814,15 +1029,20 @@ const STOCKOUT_YET_CONFIRM = () => {
     }
   };
 
-  const deleteSelectedRows = () => {
+  const deleteSelectedRows = async () => {
     if (selectedRows.size === 0) return;
     if (window.confirm(`Delete ${selectedRows.size} selected row(s)?`)) {
-      const deletedExportNos = data.filter(item => selectedRows.has(item.id)).map(item => item.exportNo);
+      const fullCompletedRows = data.filter(item => selectedRows.has(item.id));
+      const deletedExportNos = fullCompletedRows.map(item => item.exportNo);
       const newCompletions = deletedExportNos.map(no => ({
         exportNo: no, completedAt: new Date().toISOString(),
         unit: data.find(item => item.exportNo === no)?.unit || 'UNKNOWN'
       }));
       setCompletionHistory(prev => [...newCompletions, ...prev]);
+
+      // Archive full row records into System Backup Store
+      await archiveClearedRecords('CONFIRMED_HAND_OVER', 'STOCKOUT_YET_CONFIRM', fullCompletedRows, 'MANUAL_COMPLETE');
+
       const newData = data.filter(item => !selectedRows.has(item.id));
       setData(newData.map((item, index) => ({ ...item, no: index + 1 })));
       setSelectedRows(new Set());
@@ -874,7 +1094,7 @@ const STOCKOUT_YET_CONFIRM = () => {
     const exportData = filteredData.map(item => ({
       'No': item.no, 'Warehouse Stock out': item.exportCode, 'Export No': item.exportNo,
       'Date': item.realExport, 'Stock Receiver': item.stockReceiver,
-      'Group Receiver': item.groupReceiver, 'Construction Receiver': item.constructionReceiver,
+      'Group Receiver': item.groupReceiver, 'Construction': item.constructionReceiver,
       'Unit': item.unit, "Days": item.daysDiff, 'TEAM': item.team || '-',
       'Status': item.daysDiff >= alarmThreshold ? 'ALARM' : 'Normal'
     }));
@@ -942,10 +1162,21 @@ const STOCKOUT_YET_CONFIRM = () => {
     filtered = filtered.filter(item => !shouldExcludeItem(item));
     
     if (filterGIS) {
-      filtered = filtered.filter(item => 
-        (item.stockReceiver && item.stockReceiver.toUpperCase().includes('GIS')) || 
-        (item.groupReceiver && (item.groupReceiver.toUpperCase().includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null))
-      );
+      filtered = filtered.filter(item => {
+        const stockRec = (item.stockReceiver || '').toUpperCase();
+        const groupRec = (item.groupReceiver || '').toUpperCase();
+        const wh = (item.exportCode || '').toUpperCase();
+        const unit = (item.unit || '').toUpperCase();
+
+        const hasReceivers = (stockRec && stockRec !== '-') || (groupRec && groupRec !== '-');
+        if (hasReceivers) {
+          const isStockGIS = stockRec.includes('GIS') || getUnitFromGroupReceiver(item.stockReceiver) !== null;
+          const isGroupGIS = groupRec.includes('GIS') || getUnitFromGroupReceiver(item.groupReceiver) !== null;
+          return isStockGIS || isGroupGIS;
+        }
+        // If no receivers specified (e.g. single-column paste, or test record), keep if unit is GIS or warehouse has GIS or allow general records
+        return unit !== 'OTHER' || wh.includes('GIS') || (!stockRec && !groupRec) || (stockRec === '-' && groupRec === '-');
+      });
     }
 
     // 🗓️ Days Filter
@@ -1544,7 +1775,7 @@ const STOCKOUT_YET_CONFIRM = () => {
   const renderFloatingButtons = () => {
     if (alarmCount === 0 || showAlarmModal) return null;
     return (
-      <div className="fixed bottom-14 right-6 flex flex-col gap-3 z-40">
+      <div className="fixed bottom-20 right-6 flex flex-col gap-3 z-40">
         <button 
           onClick={() => setShowAlarmModal(true)} 
           className="bg-rose-600 text-white px-3.5 py-2 rounded-full shadow-lg flex items-center gap-2 hover:bg-rose-700 transition-all border-2 border-white cursor-pointer hover:scale-105 active:scale-95"
@@ -1965,7 +2196,7 @@ const STOCKOUT_YET_CONFIRM = () => {
                       tableDensity === 'ultra' ? 'px-1 py-0 text-[10px]' : tableDensity === 'compact' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-1 text-xs'
                     } ${isFitScreen ? 'max-w-[125px] truncate' : 'whitespace-normal break-words'}`} title={item.stockReceiver || ''}>
                       <div onClick={() => startEdit(item.id, 'stockReceiver', item.stockReceiver)} className={`cursor-pointer hover:bg-slate-200/60 rounded transition-colors ${tableDensity === 'ultra' ? 'px-0.5 py-0' : 'px-1 py-0.5'} ${isFitScreen ? 'truncate' : ''}`}>
-                        {item.stockReceiver?.includes('GIS') ? (
+                        {(item.stockReceiver?.toUpperCase().includes('GIS') || getUnitFromGroupReceiver(item.stockReceiver) !== null) ? (
                           <span className="text-emerald-700 font-bold">{item.stockReceiver}</span>
                         ) : item.stockReceiver || '-'}
                       </div>
